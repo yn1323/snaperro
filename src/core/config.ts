@@ -7,19 +7,19 @@ import { SnaperroConfigSchema } from "../types/config.js";
  * 設定ファイルを読み込み
  * tsx を使って TypeScript ファイルを動的にインポート
  */
-export async function loadConfig(): Promise<SnaperroConfig> {
-  const configPath = path.resolve(process.cwd(), "snaperro.config.ts");
+export async function loadConfig(configPath?: string): Promise<SnaperroConfig> {
+  const resolvedPath = configPath ?? path.resolve(process.cwd(), "snaperro.config.ts");
 
   try {
     // 動的インポート
-    const configModule = await import(pathToFileURL(configPath).href);
+    const configModule = await import(pathToFileURL(resolvedPath).href);
     const config = configModule.default as SnaperroConfig;
 
     // バリデーション
     return validateConfig(config);
   } catch (error) {
     if (error instanceof Error && "code" in error && error.code === "ERR_MODULE_NOT_FOUND") {
-      throw new Error(`設定ファイルが見つかりません: ${configPath}`);
+      throw new Error(`設定ファイルが見つかりません: ${resolvedPath}`);
     }
     throw error;
   }

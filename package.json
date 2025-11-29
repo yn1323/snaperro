@@ -1,0 +1,19 @@
+{
+  "name": "snaperro",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "format": "biome check --write",
+    "lint": "biome check"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.24.0",
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "dayjs": "^1.11.19",
+    "zod": "4.1.12"
+  }
+}

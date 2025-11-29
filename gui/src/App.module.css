@@ -1,0 +1,44 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.loading,
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+}
+
+.spinner {
+  font-size: 3rem;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.errorIcon {
+  font-size: 3rem;
+}
+
+.hint {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}

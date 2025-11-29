@@ -6,7 +6,9 @@
       "Bash(pnpm test:*)",
       "Bash(pnpm build:*)",
       "Bash(pnpm format:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm type-check:gui:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,48 @@
+.viewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+}
+
+.title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow: auto;
+  background-color: var(--bg-primary);
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}

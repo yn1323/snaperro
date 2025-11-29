@@ -1,6 +1,6 @@
 {
   "name": "snaperro",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化",
   "type": "module",
   "main": "./dist/index.js",

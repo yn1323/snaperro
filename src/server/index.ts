@@ -6,6 +6,7 @@ import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { controlApi } from "./control-api.js";
 import { cors } from "./cors.js";
+import { guiRouter } from "./gui.js";
 import { createHandler } from "./handler.js";
 
 /**
@@ -34,6 +35,9 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // CORS ミドルウェア
   app.use("*", cors());
+
+  // GUI配信（/__snaperro__/gui/*）
+  app.route("/__snaperro__/gui", guiRouter);
 
   // 制御API（/__snaperro__/*）
   app.route("/__snaperro__", controlApi);

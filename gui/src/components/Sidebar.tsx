@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FileInfo } from "../api/client";
 import styles from "./Sidebar.module.css";
 
@@ -23,6 +23,13 @@ export function Sidebar({
 }: SidebarProps) {
   const [newPatternName, setNewPatternName] = useState("");
   const [showInput, setShowInput] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showInput && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showInput]);
 
   const handleCreate = () => {
     if (newPatternName.trim()) {
@@ -51,39 +58,38 @@ export function Sidebar({
         <h3 className={styles.sectionTitle}>Patterns</h3>
         <ul className={styles.patternList}>
           {patterns.map((p) => (
-            <li
-              key={p}
-              className={`${styles.patternItem} ${p === pattern ? styles.active : ""}`}
-              onClick={() => onPatternSelect(p)}
-            >
-              <span className={styles.folderIcon}>📁</span>
-              {p}
+            <li key={p}>
+              <button
+                type="button"
+                className={`${styles.patternItem} ${p === pattern ? styles.active : ""}`}
+                onClick={() => onPatternSelect(p)}
+              >
+                <span className={styles.folderIcon}>📁</span>
+                {p}
+              </button>
             </li>
           ))}
         </ul>
         {showInput ? (
           <div className={styles.inputGroup}>
             <input
+              ref={inputRef}
               type="text"
               value={newPatternName}
               onChange={(e) => setNewPatternName(e.target.value)}
               placeholder="パターン名"
               className={styles.input}
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-              autoFocus
             />
-            <button className="btn-primary" onClick={handleCreate}>
+            <button type="button" className="btn-primary" onClick={handleCreate}>
               作成
             </button>
-            <button className="btn-secondary" onClick={() => setShowInput(false)}>
+            <button type="button" className="btn-secondary" onClick={() => setShowInput(false)}>
               ✕
             </button>
           </div>
         ) : (
-          <button
-            className={`${styles.addBtn} btn-secondary`}
-            onClick={() => setShowInput(true)}
-          >
+          <button type="button" className={`${styles.addBtn} btn-secondary`} onClick={() => setShowInput(true)}>
             + 新規パターン
           </button>
         )}
@@ -97,24 +103,23 @@ export function Sidebar({
           ) : (
             <ul className={styles.fileList}>
               {files.map((f) => (
-                <li
-                  key={f.path}
-                  className={`${styles.fileItem} ${selectedFile === f.path ? styles.active : ""}`}
-                  onClick={() => onFileSelect(f.path)}
-                >
-                  <div className={styles.fileInfo}>
-                    <span className={styles.method}>{f.method}</span>
-                    <span className={styles.path}>{f.path}</span>
-                  </div>
-                  <div className={styles.fileMeta}>
-                    <span
-                      className={styles.status}
-                      style={{ color: getStatusColor(f.status) }}
-                    >
-                      {f.status}
-                    </span>
-                    <span className={styles.size}>{formatSize(f.size)}</span>
-                  </div>
+                <li key={f.path}>
+                  <button
+                    type="button"
+                    className={`${styles.fileItem} ${selectedFile === f.path ? styles.active : ""}`}
+                    onClick={() => onFileSelect(f.path)}
+                  >
+                    <div className={styles.fileInfo}>
+                      <span className={styles.method}>{f.method}</span>
+                      <span className={styles.path}>{f.path}</span>
+                    </div>
+                    <div className={styles.fileMeta}>
+                      <span className={styles.status} style={{ color: getStatusColor(f.status) }}>
+                        {f.status}
+                      </span>
+                      <span className={styles.size}>{formatSize(f.size)}</span>
+                    </div>
+                  </button>
                 </li>
               ))}
             </ul>

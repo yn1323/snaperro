@@ -8,7 +8,12 @@
       "Bash(pnpm format:*)",
       "Bash(pnpm add:*)",
       "Bash(pnpm exec tsc:*)",
-      "Bash(pnpm type-check:gui:*)"
+      "Bash(pnpm type-check:gui:*)",
+      "Bash(pnpm build:gui:*)",
+      "Bash(npx tsx:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

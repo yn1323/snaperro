@@ -1,4 +1,4 @@
-import { defineConfig } from 'snaperro'
+import { defineConfig } from "snaperro";
 
 export default defineConfig({
   port: 3333,
@@ -14,4 +14,4 @@ export default defineConfig({
     //   match: ["/api/users/**"],
     // },
   },
-})
+});

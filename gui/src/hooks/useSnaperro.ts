@@ -15,7 +15,7 @@ export function useSnaperro() {
       const data = await api.getStatus();
       setStatus(data);
       setError(null);
-    } catch (e) {
+    } catch {
       setError("サーバーに接続できません");
     }
   }, []);
@@ -51,24 +51,30 @@ export function useSnaperro() {
     }
   }, []);
 
-  const changePattern = useCallback(async (pattern: string) => {
-    try {
-      const data = await api.setPattern(pattern);
-      setStatus((prev) => (prev ? { ...prev, pattern: data.pattern } : null));
-      await fetchFiles(pattern);
-    } catch {
-      setError("パターンの変更に失敗しました");
-    }
-  }, [fetchFiles]);
+  const changePattern = useCallback(
+    async (pattern: string) => {
+      try {
+        const data = await api.setPattern(pattern);
+        setStatus((prev) => (prev ? { ...prev, pattern: data.pattern } : null));
+        await fetchFiles(pattern);
+      } catch {
+        setError("パターンの変更に失敗しました");
+      }
+    },
+    [fetchFiles],
+  );
 
-  const createPattern = useCallback(async (name: string) => {
-    try {
-      await api.createPattern(name);
-      await fetchPatterns();
-    } catch {
-      setError("パターンの作成に失敗しました");
-    }
-  }, [fetchPatterns]);
+  const createPattern = useCallback(
+    async (name: string) => {
+      try {
+        await api.createPattern(name);
+        await fetchPatterns();
+      } catch {
+        setError("パターンの作成に失敗しました");
+      }
+    },
+    [fetchPatterns],
+  );
 
   const resetCounter = useCallback(async () => {
     try {
@@ -92,20 +98,23 @@ export function useSnaperro() {
     }
   }, []);
 
-  const deleteFile = useCallback(async (filePath: string) => {
-    try {
-      await api.deleteFile(filePath);
-      if (status?.pattern) {
-        await fetchFiles(status.pattern);
+  const deleteFile = useCallback(
+    async (filePath: string) => {
+      try {
+        await api.deleteFile(filePath);
+        if (status?.pattern) {
+          await fetchFiles(status.pattern);
+        }
+        if (selectedFile === filePath) {
+          setSelectedFile(null);
+          setFileContent(null);
+        }
+      } catch {
+        setError("ファイルの削除に失敗しました");
       }
-      if (selectedFile === filePath) {
-        setSelectedFile(null);
-        setFileContent(null);
-      }
-    } catch {
-      setError("ファイルの削除に失敗しました");
-    }
-  }, [status?.pattern, fetchFiles, selectedFile]);
+    },
+    [status?.pattern, fetchFiles, selectedFile],
+  );
 
   useEffect(() => {
     const init = async () => {

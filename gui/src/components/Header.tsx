@@ -16,14 +16,7 @@ const MODES: { value: Mode; label: string; color: string }[] = [
   { value: "mock", label: "Mock", color: "#4ade80" },
 ];
 
-export function Header({
-  mode,
-  pattern,
-  patterns,
-  onModeChange,
-  onPatternChange,
-  onReset,
-}: HeaderProps) {
+export function Header({ mode, pattern, patterns, onModeChange, onPatternChange, onReset }: HeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.logo}>
@@ -36,6 +29,7 @@ export function Header({
           <span className={styles.label}>Mode:</span>
           {MODES.map((m) => (
             <button
+              type="button"
               key={m.value}
               className={`${styles.modeBtn} ${mode === m.value ? styles.active : ""}`}
               style={{ "--mode-color": m.color } as React.CSSProperties}
@@ -48,11 +42,7 @@ export function Header({
 
         <div className={styles.patternSelector}>
           <span className={styles.label}>Pattern:</span>
-          <select
-            value={pattern}
-            onChange={(e) => onPatternChange(e.target.value)}
-            className={styles.select}
-          >
+          <select value={pattern} onChange={(e) => onPatternChange(e.target.value)} className={styles.select}>
             <option value="">(none)</option>
             {patterns.map((p) => (
               <option key={p} value={p}>
@@ -62,7 +52,7 @@ export function Header({
           </select>
         </div>
 
-        <button className="btn-secondary" onClick={onReset}>
+        <button type="button" className="btn-secondary" onClick={onReset}>
           Reset Counter
         </button>
       </div>

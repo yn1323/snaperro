@@ -20,16 +20,11 @@ export function FileViewer({ filePath, content, onDelete }: FileViewerProps) {
     <div className={styles.viewer}>
       <div className={styles.header}>
         <h2 className={styles.title}>{filePath}</h2>
-        <button
-          className="btn-secondary"
-          onClick={() => onDelete(filePath)}
-        >
+        <button type="button" className="btn-secondary" onClick={() => onDelete(filePath)}>
           削除
         </button>
       </div>
-      <pre className={styles.content}>
-        {JSON.stringify(content, null, 2)}
-      </pre>
+      <pre className={styles.content}>{JSON.stringify(content, null, 2)}</pre>
     </div>
   );
 }

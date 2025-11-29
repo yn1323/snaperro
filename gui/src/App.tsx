@@ -1,8 +1,8 @@
+import styles from "./App.module.css";
+import { FileViewer } from "./components/FileViewer";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
-import { FileViewer } from "./components/FileViewer";
 import { useSnaperro } from "./hooks/useSnaperro";
-import styles from "./App.module.css";
 
 export function App() {
   const {
@@ -35,9 +35,7 @@ export function App() {
       <div className={styles.error}>
         <span className={styles.errorIcon}>⚠️</span>
         <p>{error || "サーバーに接続できません"}</p>
-        <p className={styles.hint}>
-          サーバーが起動していることを確認してください
-        </p>
+        <p className={styles.hint}>サーバーが起動していることを確認してください</p>
       </div>
     );
   }
@@ -62,11 +60,7 @@ export function App() {
           onFileSelect={selectFile}
           onCreatePattern={createPattern}
         />
-        <FileViewer
-          filePath={selectedFile}
-          content={fileContent}
-          onDelete={deleteFile}
-        />
+        <FileViewer filePath={selectedFile} content={fileContent} onDelete={deleteFile} />
       </main>
     </div>
   );

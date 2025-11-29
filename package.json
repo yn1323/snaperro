@@ -1,19 +1,63 @@
 {
   "name": "snaperro",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "GUI付きモックプロキシサーバー",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "snaperro": "./dist/cli/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "gui/dist",
+    "templates"
+  ],
   "scripts": {
+    "dev": "tsup --watch",
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit",
     "format": "biome check --write",
     "lint": "biome check"
   },
-  "keywords": [],
+  "keywords": [
+    "mock",
+    "proxy",
+    "api",
+    "testing"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "consola": "^3.4.2",
+    "hono": "^4.7.10",
+    "picomatch": "^4.0.2"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
+    "@types/node": "^22.15.29",
+    "@types/picomatch": "^3.0.2",
     "dayjs": "^1.11.19",
-    "zod": "4.1.12"
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.2",
+    "zod": "^4.1.12"
+  },
+  "peerDependencies": {
+    "tsx": "^4.0.0"
   }
 }

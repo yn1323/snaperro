@@ -1,7 +1,7 @@
 # snaperro
 
 <p align="center">
-  <img src="./logo.png" alt="snaperro Logo" width="200" />
+  <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/logo.png" alt="snaperro Logo" width="200" />
 </p>
 
 GUI付きモックプロキシサーバー。複数のAPIからのレスポンスを記録・再生し、開発・テストを効率化します。

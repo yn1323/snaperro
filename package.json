@@ -1,7 +1,7 @@
 {
   "name": "snaperro",
   "version": "1.0.0",
-  "description": "GUI付きモックプロキシサーバー",
+  "description": "GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -17,8 +17,17 @@
   "files": [
     "dist",
     "gui/dist",
-    "templates"
+    "templates",
+    "logo.png"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yn1323/snaperro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yn1323/snaperro/issues"
+  },
+  "homepage": "https://github.com/yn1323/snaperro#readme",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
@@ -35,10 +44,15 @@
     "mock",
     "proxy",
     "api",
-    "testing"
+    "testing",
+    "mock-server",
+    "api-mocking",
+    "record-playback",
+    "gui",
+    "development-tools"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "yn1323",
+  "license": "MIT",
   "packageManager": "pnpm@10.24.0",
   "engines": {
     "node": ">=18"

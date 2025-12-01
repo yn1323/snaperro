@@ -19,7 +19,7 @@ export function FileViewer({ filePath, content, onDelete }: FileViewerProps) {
       <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-bg-secondary">
         <h2 className="text-sm font-medium text-text-primary">{filePath}</h2>
         <button type="button" className="btn-secondary" onClick={() => onDelete(filePath)}>
-          削除
+          Clear
         </button>
       </div>
       <pre className="flex-1 p-6 overflow-auto bg-bg-primary font-mono text-[13px] leading-relaxed text-text-primary m-0">

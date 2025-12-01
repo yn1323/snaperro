@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import type { FileInfo } from "../api/client";
-import styles from "./Sidebar.module.css";
 
 interface SidebarProps {
   pattern: string;
@@ -45,40 +44,59 @@ export function Sidebar({
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
-  const getStatusColor = (status: number): string => {
-    if (status >= 200 && status < 300) return "var(--success)";
-    if (status >= 400 && status < 500) return "var(--warning)";
-    if (status >= 500) return "var(--error)";
-    return "var(--text-secondary)";
+  const getStatusColorClass = (status: number): string => {
+    if (status >= 200 && status < 300) return "text-success";
+    if (status >= 400 && status < 500) return "text-warning";
+    if (status >= 500) return "text-error";
+    return "text-text-secondary";
+  };
+
+  const getMethodColorClass = (method: string): string => {
+    switch (method.toUpperCase()) {
+      case "GET":
+        return "bg-method-get/20 text-method-get";
+      case "POST":
+        return "bg-method-post/20 text-method-post";
+      case "PUT":
+        return "bg-method-put/20 text-method-put";
+      case "PATCH":
+        return "bg-method-patch/20 text-method-patch";
+      case "DELETE":
+        return "bg-method-delete/20 text-method-delete";
+      default:
+        return "bg-bg-tertiary text-text-primary";
+    }
   };
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Patterns</h3>
-        <ul className={styles.patternList}>
+    <aside className="w-[300px] bg-bg-secondary border-r border-border overflow-y-auto flex flex-col">
+      <div className="p-4 border-b border-border">
+        <h3 className="text-xs uppercase text-text-secondary mb-3 tracking-wide">Patterns</h3>
+        <ul className="list-none">
           {patterns.map((p) => (
             <li key={p}>
               <button
                 type="button"
-                className={`${styles.patternItem} ${p === pattern ? styles.active : ""}`}
+                className={`w-full px-3 py-2 rounded cursor-pointer transition-colors duration-200 flex items-center gap-2 text-left ${
+                  p === pattern ? "bg-accent text-white" : "hover:bg-bg-tertiary"
+                }`}
                 onClick={() => onPatternSelect(p)}
               >
-                <span className={styles.folderIcon}>📁</span>
+                <span className="text-base">📁</span>
                 {p}
               </button>
             </li>
           ))}
         </ul>
         {showInput ? (
-          <div className={styles.inputGroup}>
+          <div className="flex gap-2 mt-2">
             <input
               ref={inputRef}
               type="text"
               value={newPatternName}
               onChange={(e) => setNewPatternName(e.target.value)}
               placeholder="パターン名"
-              className={styles.input}
+              className="flex-1 min-w-0"
               onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             />
             <button type="button" className="btn-primary" onClick={handleCreate}>
@@ -89,35 +107,51 @@ export function Sidebar({
             </button>
           </div>
         ) : (
-          <button type="button" className={`${styles.addBtn} btn-secondary`} onClick={() => setShowInput(true)}>
+          <button type="button" className="btn-secondary w-full mt-2" onClick={() => setShowInput(true)}>
             + 新規パターン
           </button>
         )}
       </div>
 
       {pattern && (
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Files in "{pattern}"</h3>
+        <div className="p-4 border-b border-border">
+          <h3 className="text-xs uppercase text-text-secondary mb-3 tracking-wide">Files in "{pattern}"</h3>
           {files.length === 0 ? (
-            <p className={styles.empty}>ファイルがありません</p>
+            <p className="text-text-secondary text-sm text-center py-4">ファイルがありません</p>
           ) : (
-            <ul className={styles.fileList}>
+            <ul className="list-none">
               {files.map((f) => (
                 <li key={f.path}>
                   <button
                     type="button"
-                    className={`${styles.fileItem} ${selectedFile === f.path ? styles.active : ""}`}
+                    className={`w-full px-3 py-2 rounded cursor-pointer transition-colors duration-200 flex flex-col items-start gap-1 text-left ${
+                      selectedFile === f.path ? "bg-accent text-white" : "hover:bg-bg-tertiary"
+                    }`}
                     onClick={() => onFileSelect(f.path)}
                   >
-                    <div className={styles.fileInfo}>
-                      <span className={styles.method}>{f.method}</span>
-                      <span className={styles.path}>{f.path}</span>
+                    <div className="flex items-center gap-2 w-full">
+                      <span
+                        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-sm ${
+                          selectedFile === f.path ? "bg-white/20 text-white" : getMethodColorClass(f.method)
+                        }`}
+                      >
+                        {f.method}
+                      </span>
+                      <span className="text-[13px] overflow-hidden text-ellipsis whitespace-nowrap flex-1">
+                        {f.path}
+                      </span>
                     </div>
-                    <div className={styles.fileMeta}>
-                      <span className={styles.status} style={{ color: getStatusColor(f.status) }}>
+                    <div className="flex gap-3 text-xs">
+                      <span
+                        className={`font-semibold ${
+                          selectedFile === f.path ? "text-white/80" : getStatusColorClass(f.status)
+                        }`}
+                      >
                         {f.status}
                       </span>
-                      <span className={styles.size}>{formatSize(f.size)}</span>
+                      <span className={selectedFile === f.path ? "text-white/80" : "text-text-secondary"}>
+                        {formatSize(f.size)}
+                      </span>
                     </div>
                   </button>
                 </li>

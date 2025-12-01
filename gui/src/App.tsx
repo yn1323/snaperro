@@ -1,4 +1,3 @@
-import styles from "./App.module.css";
 import { FileViewer } from "./components/FileViewer";
 import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
@@ -23,8 +22,8 @@ export function App() {
 
   if (loading) {
     return (
-      <div className={styles.loading}>
-        <span className={styles.spinner}>🐕</span>
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <span className="text-5xl animate-bounce">🐕</span>
         <p>読み込み中...</p>
       </div>
     );
@@ -32,16 +31,16 @@ export function App() {
 
   if (error || !status) {
     return (
-      <div className={styles.error}>
-        <span className={styles.errorIcon}>⚠️</span>
+      <div className="flex flex-col items-center justify-center h-screen gap-4">
+        <span className="text-5xl">⚠️</span>
         <p>{error || "サーバーに接続できません"}</p>
-        <p className={styles.hint}>サーバーが起動していることを確認してください</p>
+        <p className="text-text-secondary text-sm">サーバーが起動していることを確認してください</p>
       </div>
     );
   }
 
   return (
-    <div className={styles.app}>
+    <div className="flex flex-col h-screen">
       <Header
         mode={status.mode}
         pattern={status.pattern}
@@ -50,7 +49,7 @@ export function App() {
         onPatternChange={changePattern}
         onReset={resetCounter}
       />
-      <main className={styles.main}>
+      <main className="flex-1 flex overflow-hidden">
         <Sidebar
           pattern={status.pattern}
           patterns={patterns}

@@ -1,4 +1,5 @@
-import { consola } from "consola";
+import { consola } from "consola/basic";
+import pc from "picocolors";
 
 let isVerbose = false;
 
@@ -11,9 +12,6 @@ export const logger = {
    */
   setVerbose(verbose: boolean) {
     isVerbose = verbose;
-    if (verbose) {
-      consola.level = 4; // debug
-    }
   },
 
   /**
@@ -21,7 +19,7 @@ export const logger = {
    */
   info(message: string) {
     const time = new Date().toLocaleTimeString("ja-JP");
-    consola.info(`[${time}] ${message}`);
+    console.log(`${pc.cyan("INFO")}  [${time}] ${message}`);
   },
 
   /**
@@ -30,7 +28,7 @@ export const logger = {
   debug(message: string) {
     if (isVerbose) {
       const time = new Date().toLocaleTimeString("ja-JP");
-      consola.debug(`[${time}] ${message}`);
+      console.log(`${pc.gray("DEBUG")} [${time}] ${message}`);
     }
   },
 
@@ -39,7 +37,7 @@ export const logger = {
    */
   warn(message: string) {
     const time = new Date().toLocaleTimeString("ja-JP");
-    consola.warn(`[${time}] ${message}`);
+    console.log(`${pc.yellow("WARN")}  [${time}] ${message}`);
   },
 
   /**
@@ -47,9 +45,9 @@ export const logger = {
    */
   error(message: string, error?: Error) {
     const time = new Date().toLocaleTimeString("ja-JP");
-    consola.error(`[${time}] ${message}`);
+    console.log(`${pc.red("ERROR")} [${time}] ${message}`);
     if (error && isVerbose) {
-      consola.error(error.stack);
+      console.log(pc.red(error.stack || ""));
     }
   },
 
@@ -74,21 +72,23 @@ export const logger = {
       return `  ${key}: ${value}`;
     });
 
-    consola.debug("Headers:");
+    console.log(pc.gray("Headers:"));
     for (const line of masked) {
-      consola.debug(line);
+      console.log(pc.gray(line));
     }
   },
 
   /**
    * 起動時のボックス表示
    */
-  startup(port: number, mode: string, pattern: string) {
+  startup(port: number, guiUrl?: string) {
+    const lines = [`Server running at http://localhost:${port}`];
+    if (guiUrl) {
+      lines.push(`GUI: ${guiUrl}`);
+    }
     consola.box({
       title: "snaperro",
-      message: [`Server running at http://localhost:${port}`, `Mode: ${mode} | Pattern: ${pattern || "(none)"}`].join(
-        "\n",
-      ),
+      message: lines.join("\n"),
     });
   },
 };

@@ -21,7 +21,7 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
     target: "node18",
-    outDir: "dist",
+    outDir: "dist/cli",
     banner: {
       js: "#!/usr/bin/env node",
     },

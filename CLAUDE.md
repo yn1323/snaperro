@@ -14,6 +14,13 @@ pnpm format           # Biomeでフォーマット + lint修正
 pnpm lint             # Biomeでlintチェックのみ
 ```
 
+## ローカルCLI実行
+
+```bash
+pnpm build && npx . init      # ビルド後にCLI実行
+npx tsx src/cli/index.ts init # ビルドなしで直接実行
+```
+
 ## コミット前チェック
 
 ```bash

@@ -37,7 +37,7 @@ npx snaperro init
 npx snaperro start
 ```
 
-サーバーが起動すると `http://localhost:3333` でGUIにアクセスできます。
+サーバーが起動するとブラウザでGUIが自動的に開きます。
 
 ### 設定ファイル
 
@@ -84,6 +84,7 @@ API_KEY=your-api-key-here
 | `npx snaperro start` | サーバーを起動 |
 | `npx snaperro start -p 4000` | ポート指定で起動 |
 | `npx snaperro start --verbose` | 詳細ログを出力 |
+| `npx snaperro start --no-open` | ブラウザを自動で開かない |
 | `npx snaperro demo` | デモページを起動 |
 
 ### 3つのモード
@@ -185,43 +186,27 @@ your-project/
 
 ## 開発者向け
 
-### ローカル開発（npm publish せずに使う方法）
-
-このリポジトリをローカルで開発し、別プロジェクトで使用する方法：
+### ローカル開発（npm publish せずにCLIを試す方法）
 
 ```bash
-# 1. リポジトリをクローン
-git clone https://github.com/your-org/snaperro.git
-cd snaperro
-
-# 2. 依存関係をインストール
+# 1. 依存関係をインストール
 pnpm install
 
-# 3. ビルド
+# 2. ビルド
 pnpm build
 pnpm build:gui
 
-# 4. グローバルにリンク
-pnpm link --global
-
-# 5. 別プロジェクトでリンク
-cd /path/to/your-project
-npm link snaperro
-
-# 6. 使用
-npx snaperro init
-npx snaperro start
+# 3. ローカルでCLIを実行
+npx . init
+npx . start
+npx . demo
 ```
 
-#### リンク解除
+開発中（ビルドなしで直接実行）:
 
 ```bash
-# 別プロジェクトでリンク解除
-npm unlink snaperro
-
-# グローバルリンク解除
-cd /path/to/snaperro
-pnpm unlink --global
+npx tsx src/cli/index.ts init
+npx tsx src/cli/index.ts start
 ```
 
 ### 開発コマンド

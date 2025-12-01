@@ -1,7 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import open from "open";
 import { logger } from "../core/logger.js";
-import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { controlApi } from "./control-api.js";
@@ -15,14 +15,16 @@ import { createHandler } from "./handler.js";
 export interface ServerOptions {
   config: SnaperroConfig;
   verbose?: boolean;
+  open?: boolean;
 }
 
 /**
  * サーバーを起動
  */
 export async function startServer(options: ServerOptions): Promise<void> {
-  const { config, verbose = false } = options;
+  const { config, verbose = false, open: shouldOpen = true } = options;
   const port = config.port ?? 3333;
+  const guiUrl = `http://localhost:${port}/__snaperro__/gui/`;
 
   // 詳細ログ設定
   logger.setVerbose(verbose);
@@ -53,7 +55,11 @@ export async function startServer(options: ServerOptions): Promise<void> {
       port,
     },
     () => {
-      logger.startup(port, state.getMode(), state.getPattern());
+      logger.startup(port, guiUrl);
+
+      if (shouldOpen) {
+        open(guiUrl);
+      }
     },
   );
 }

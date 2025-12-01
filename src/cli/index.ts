@@ -15,6 +15,7 @@ program
   .option("-p, --port <port>", "ポート番号", "3333")
   .option("-v, --verbose", "詳細ログを表示")
   .option("-c, --config <path>", "設定ファイルのパス", "snaperro.config.ts")
+  .option("--no-open", "ブラウザを自動で開かない")
   .action(startCommand);
 
 program

@@ -7,6 +7,7 @@ interface StartOptions {
   port?: string;
   verbose?: boolean;
   config?: string;
+  open?: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ export async function startCommand(options: StartOptions): Promise<void> {
     await startServer({
       config,
       verbose: options.verbose ?? false,
+      open: options.open ?? true,
     });
   } catch (error) {
     if (error instanceof Error) {

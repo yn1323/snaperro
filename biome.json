@@ -35,9 +35,6 @@
       "complexity": {
         "noForEach": "off"
       }
-    },
-    "domains": {
-      "react": "recommended"
     }
   },
   "assist": {
@@ -49,8 +46,7 @@
   },
   "css": {
     "parser": {
-      "cssModules": true,
-      "tailwindDirectives": true
+      "cssModules": true
     },
     "linter": {
       "enabled": false

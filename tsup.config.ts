@@ -3,7 +3,7 @@ import { defineConfig } from "tsup";
 export default defineConfig([
   // ライブラリ用（shebangなし）
   {
-    entry: ["src/index.ts"],
+    entry: ["server/index.ts"],
     format: ["esm"],
     dts: true,
     clean: true,
@@ -14,7 +14,7 @@ export default defineConfig([
   },
   // CLI用（shebangあり）
   {
-    entry: ["src/cli/index.ts"],
+    entry: ["cli/index.ts"],
     format: ["esm"],
     dts: true,
     clean: false,

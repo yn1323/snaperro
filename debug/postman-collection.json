@@ -1,0 +1,818 @@
+{
+  "info": {
+    "_postman_id": "snaperro-api-collection",
+    "name": "snaperro API Collection",
+    "description": "snaperro (スナペーロ) - GUI付きモックプロキシサーバーのAPI集",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3333",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Internal Control APIs",
+      "description": "snaperro内部制御API (/__snaperro__/*)",
+      "item": [
+        {
+          "name": "Status",
+          "item": [
+            {
+              "name": "Get Server Status",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "status"]
+                },
+                "description": "サーバーステータス取得（モード、パターン、レコーディング数）"
+              }
+            },
+            {
+              "name": "Get Current Mode",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/mode",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "mode"]
+                },
+                "description": "現在のモード取得 (proxy/record/mock)"
+              }
+            },
+            {
+              "name": "Change Mode",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"mode\": \"mock\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/mode",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "mode"]
+                },
+                "description": "モード変更 (proxy/record/mock)"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Patterns",
+          "item": [
+            {
+              "name": "List All Patterns",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns"]
+                },
+                "description": "パターン一覧取得"
+              }
+            },
+            {
+              "name": "Get Current Pattern",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/current",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", "current"]
+                },
+                "description": "現在選択中のパターン取得"
+              }
+            },
+            {
+              "name": "Switch Pattern",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"pattern\": \"正常系フル\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/current",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", "current"]
+                },
+                "description": "パターン切替"
+              }
+            },
+            {
+              "name": "Create Pattern",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"新規パターン\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns"]
+                },
+                "description": "新規パターン作成"
+              }
+            },
+            {
+              "name": "Duplicate Pattern",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newName\": \"正常系フル_コピー\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/duplicate",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":name", "duplicate"],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "正常系フル",
+                      "description": "複製元のパターン名"
+                    }
+                  ]
+                },
+                "description": "既存パターンを複製"
+              }
+            },
+            {
+              "name": "Rename Pattern",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newName\": \"新しいパターン名\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/rename",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":name", "rename"],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "正常系フル",
+                      "description": "変更前のパターン名"
+                    }
+                  ]
+                },
+                "description": "パターン名変更"
+              }
+            },
+            {
+              "name": "Delete Pattern",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":name"],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "削除するパターン",
+                      "description": "削除するパターン名"
+                    }
+                  ]
+                },
+                "description": "パターン削除"
+              }
+            },
+            {
+              "name": "Download Pattern as ZIP",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/download",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":name", "download"],
+                  "variable": [
+                    {
+                      "key": "name",
+                      "value": "正常系フル",
+                      "description": "ダウンロードするパターン名"
+                    }
+                  ]
+                },
+                "description": "パターンをZIP形式でダウンロード"
+              }
+            },
+            {
+              "name": "Upload Pattern from ZIP",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "アップロードするZIPファイル"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/upload",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", "upload"]
+                },
+                "description": "ZIPファイルからパターンをアップロード"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recordings",
+          "description": "RESTful: パターンをURLに含める",
+          "item": [
+            {
+              "name": "List All Recordings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    }
+                  ]
+                },
+                "description": "指定パターン内のレコーディング一覧取得"
+              }
+            },
+            {
+              "name": "Get Recording Content",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    },
+                    {
+                      "key": "filename",
+                      "value": "api_users_001.json",
+                      "description": "レコーディングファイル名"
+                    }
+                  ]
+                },
+                "description": "レコーディング内容取得"
+              }
+            },
+            {
+              "name": "Download Recording",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename/download",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename", "download"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    },
+                    {
+                      "key": "filename",
+                      "value": "api_users_001.json",
+                      "description": "ダウンロードするファイル名"
+                    }
+                  ]
+                },
+                "description": "レコーディングファイルをダウンロード"
+              }
+            },
+            {
+              "name": "Upload Recording",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": "",
+                      "description": "アップロードするJSONファイル"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/upload",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", "upload"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    }
+                  ]
+                },
+                "description": "レコーディングJSONファイルをアップロード"
+              }
+            },
+            {
+              "name": "Edit Recording",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"endpoint\": \"/api/users/:id\",\n  \"method\": \"GET\",\n  \"request\": {\n    \"pathParams\": { \"id\": \"123\" },\n    \"queryParams\": {},\n    \"headers\": {},\n    \"body\": null\n  },\n  \"response\": {\n    \"status\": 200,\n    \"headers\": { \"Content-Type\": \"application/json\" },\n    \"body\": {\n      \"id\": 123,\n      \"name\": \"Updated User\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    },
+                    {
+                      "key": "filename",
+                      "value": "api_users_001.json",
+                      "description": "編集するファイル名"
+                    }
+                  ]
+                },
+                "description": "レコーディング内容を編集"
+              }
+            },
+            {
+              "name": "Delete Recording",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "variable": [
+                    {
+                      "key": "pattern",
+                      "value": "正常系フル",
+                      "description": "パターン名"
+                    },
+                    {
+                      "key": "filename",
+                      "value": "api_users_001.json",
+                      "description": "削除するファイル名"
+                    }
+                  ]
+                },
+                "description": "レコーディング削除"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "JSON Placeholder (Proxy)",
+      "description": "JSON Placeholder API (プロキシ経由)",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                },
+                "description": "ユーザー一覧取得"
+              }
+            },
+            {
+              "name": "Get User by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ユーザーID"
+                    }
+                  ]
+                },
+                "description": "ユーザー詳細取得"
+              }
+            },
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Test User\",\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                },
+                "description": "ユーザー作成"
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Updated User\",\n  \"username\": \"updateduser\",\n  \"email\": \"updated@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ユーザーID"
+                    }
+                  ]
+                },
+                "description": "ユーザー更新"
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "ユーザーID"
+                    }
+                  ]
+                },
+                "description": "ユーザー削除"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Posts",
+          "item": [
+            {
+              "name": "Get All Posts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/posts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts"]
+                },
+                "description": "投稿一覧取得"
+              }
+            },
+            {
+              "name": "Get Post by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/posts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "投稿ID"
+                    }
+                  ]
+                },
+                "description": "投稿詳細取得"
+              }
+            },
+            {
+              "name": "Get Posts by User",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/posts?userId=1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts"],
+                  "query": [
+                    {
+                      "key": "userId",
+                      "value": "1",
+                      "description": "ユーザーIDでフィルタ"
+                    }
+                  ]
+                },
+                "description": "ユーザーの投稿一覧取得"
+              }
+            },
+            {
+              "name": "Create Post",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Test Post\",\n  \"body\": \"This is a test post content.\",\n  \"userId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/posts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts"]
+                },
+                "description": "投稿作成"
+              }
+            },
+            {
+              "name": "Update Post",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated Post\",\n  \"body\": \"This is updated content.\",\n  \"userId\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/posts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "投稿ID"
+                    }
+                  ]
+                },
+                "description": "投稿更新"
+              }
+            },
+            {
+              "name": "Delete Post",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/posts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["posts", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "投稿ID"
+                    }
+                  ]
+                },
+                "description": "投稿削除"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Comments",
+          "item": [
+            {
+              "name": "Get All Comments",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/comments",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["comments"]
+                },
+                "description": "コメント一覧取得"
+              }
+            },
+            {
+              "name": "Get Comment by ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/comments/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["comments", ":id"],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "1",
+                      "description": "コメントID"
+                    }
+                  ]
+                },
+                "description": "コメント詳細取得"
+              }
+            },
+            {
+              "name": "Get Comments by Post",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/comments?postId=1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["comments"],
+                  "query": [
+                    {
+                      "key": "postId",
+                      "value": "1",
+                      "description": "投稿IDでフィルタ"
+                    }
+                  ]
+                },
+                "description": "投稿のコメント一覧取得"
+              }
+            },
+            {
+              "name": "Create Comment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"postId\": 1,\n  \"name\": \"Test Comment\",\n  \"email\": \"test@example.com\",\n  \"body\": \"This is a test comment.\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/comments",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["comments"]
+                },
+                "description": "コメント作成"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

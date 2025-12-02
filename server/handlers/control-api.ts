@@ -1,0 +1,465 @@
+import { Hono } from "hono";
+import { type Mode, state } from "../core/state.js";
+import { storage } from "../core/storage.js";
+import type { RecordedData } from "../types/recording.js";
+
+/**
+ * 制御API
+ * /__snaperro__/* エンドポイントでモード・パターン管理
+ */
+export const controlApi = new Hono();
+
+// ============================================================
+// サーバー状態
+// ============================================================
+
+/**
+ * 状態取得
+ * GET /__snaperro__/status
+ */
+controlApi.get("/status", async (c) => {
+  const pattern = state.getPattern();
+  const patterns = await storage.listPatterns();
+  const recordingsCount = pattern ? (await storage.getPatternFiles(pattern)).length : 0;
+
+  return c.json({
+    mode: state.getMode(),
+    currentPattern: pattern,
+    patterns,
+    recordingsCount,
+  });
+});
+
+// ============================================================
+// モード操作
+// ============================================================
+
+/**
+ * モード取得
+ * GET /__snaperro__/mode
+ */
+controlApi.get("/mode", (c) => {
+  return c.json({ mode: state.getMode() });
+});
+
+/**
+ * モード変更
+ * PUT /__snaperro__/mode
+ * Body: { mode: "proxy" | "record" | "mock" }
+ */
+controlApi.put("/mode", async (c) => {
+  const body = await c.req.json<{ mode: string }>();
+  const mode = body.mode?.toLowerCase();
+
+  const validModes = ["proxy", "record", "mock"];
+  if (!validModes.includes(mode)) {
+    return c.json({ error: "Invalid mode", validModes }, 400);
+  }
+
+  await state.setMode(mode as Mode);
+  return c.json({
+    mode: state.getMode(),
+    message: `Mode changed to ${mode}`,
+  });
+});
+
+// ============================================================
+// パターン操作
+// ============================================================
+
+/**
+ * パターン一覧取得
+ * GET /__snaperro__/patterns
+ */
+controlApi.get("/patterns", async (c) => {
+  const patternNames = await storage.listPatterns();
+  const patterns = await Promise.all(
+    patternNames.map(async (name) => {
+      const metadata = await storage.getPatternMetadata(name);
+      return metadata;
+    }),
+  );
+
+  return c.json({ patterns: patterns.filter((p) => p !== null) });
+});
+
+/**
+ * 現在のパターン取得
+ * GET /__snaperro__/patterns/current
+ */
+controlApi.get("/patterns/current", (c) => {
+  return c.json({ currentPattern: state.getPattern() });
+});
+
+/**
+ * パターン切替
+ * PUT /__snaperro__/patterns/current
+ * Body: { pattern: string }
+ */
+controlApi.put("/patterns/current", async (c) => {
+  const body = await c.req.json<{ pattern: string }>();
+  const pattern = body.pattern;
+
+  if (!pattern || typeof pattern !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: pattern" }, 400);
+  }
+
+  // パターンが存在するかチェック
+  if (!(await storage.patternExists(pattern))) {
+    return c.json({ error: "Pattern not found", pattern }, 404);
+  }
+
+  await state.setPattern(pattern);
+  return c.json({
+    currentPattern: pattern,
+    message: `Pattern changed to ${pattern}`,
+  });
+});
+
+/**
+ * パターン作成
+ * POST /__snaperro__/patterns
+ * Body: { name: string }
+ */
+controlApi.post("/patterns", async (c) => {
+  const body = await c.req.json<{ name: string }>();
+  const name = body.name;
+
+  if (!name || typeof name !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: name" }, 400);
+  }
+
+  // パターンが既に存在するかチェック
+  if (await storage.patternExists(name)) {
+    return c.json({ error: "Pattern already exists", name }, 400);
+  }
+
+  await storage.createPattern(name);
+  return c.json({ name, message: "Pattern created" }, 201);
+});
+
+/**
+ * パターン複製
+ * POST /__snaperro__/patterns/:name/duplicate
+ * Body: { newName: string }
+ */
+controlApi.post("/patterns/:name/duplicate", async (c) => {
+  const name = c.req.param("name");
+  const body = await c.req.json<{ newName: string }>();
+  const newName = body.newName;
+
+  if (!newName || typeof newName !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+  }
+
+  // ソースが存在するかチェック
+  if (!(await storage.patternExists(name))) {
+    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  }
+
+  try {
+    await storage.duplicatePattern(name, newName);
+    return c.json({
+      source: name,
+      destination: newName,
+      message: "Pattern duplicated",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to duplicate pattern";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * パターン名変更
+ * PUT /__snaperro__/patterns/:name/rename
+ * Body: { newName: string }
+ */
+controlApi.put("/patterns/:name/rename", async (c) => {
+  const name = c.req.param("name");
+  const body = await c.req.json<{ newName: string }>();
+  const newName = body.newName;
+
+  if (!newName || typeof newName !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+  }
+
+  // ソースが存在するかチェック
+  if (!(await storage.patternExists(name))) {
+    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  }
+
+  try {
+    await storage.renamePattern(name, newName);
+
+    // 現在のパターンがリネームされた場合は更新
+    if (state.getPattern() === name) {
+      await state.setPattern(newName);
+    }
+
+    return c.json({
+      oldName: name,
+      newName,
+      message: "Pattern renamed",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to rename pattern";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * パターン削除
+ * DELETE /__snaperro__/patterns/:name
+ */
+controlApi.delete("/patterns/:name", async (c) => {
+  const name = c.req.param("name");
+
+  // パターンが存在するかチェック
+  if (!(await storage.patternExists(name))) {
+    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  }
+
+  // 現在選択中のパターンは削除できない
+  if (state.getPattern() === name) {
+    return c.json({ error: "Cannot delete current pattern", name }, 400);
+  }
+
+  await storage.deletePattern(name);
+  return c.json({ name, message: "Pattern deleted" });
+});
+
+/**
+ * パターンzipダウンロード
+ * GET /__snaperro__/patterns/:name/download
+ */
+controlApi.get("/patterns/:name/download", async (c) => {
+  const name = c.req.param("name");
+
+  if (!(await storage.patternExists(name))) {
+    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  }
+
+  try {
+    const zipBuffer = await storage.zipPatternDir(name);
+    c.header("Content-Type", "application/zip");
+    c.header("Content-Disposition", `attachment; filename="${encodeURIComponent(name)}.zip"`);
+    // BufferをUint8Arrayに変換してbodyに渡す
+    return c.body(new Uint8Array(zipBuffer));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to create zip";
+    return c.json({ error: "Internal server error", message }, 500);
+  }
+});
+
+/**
+ * パターンzipアップロード
+ * POST /__snaperro__/patterns/upload
+ * Body: multipart/form-data { file: zipファイル, name?: パターン名 }
+ */
+controlApi.post("/patterns/upload", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+    const nameParam = formData.get("name");
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "Invalid request", details: "Missing file" }, 400);
+    }
+
+    // パターン名を決定（指定がなければzipファイル名から）
+    let patternName: string;
+    if (nameParam && typeof nameParam === "string") {
+      patternName = nameParam;
+    } else {
+      // .zip を除去
+      patternName = file.name.replace(/\.zip$/i, "");
+    }
+
+    // パターンが既に存在するかチェック
+    if (await storage.patternExists(patternName)) {
+      return c.json({ error: "Pattern already exists", name: patternName }, 400);
+    }
+
+    // zipを解凍して展開
+    const arrayBuffer = await file.arrayBuffer();
+    const zipBuffer = Buffer.from(arrayBuffer);
+    const recordingsCount = await storage.extractZipToPattern(zipBuffer, patternName);
+
+    return c.json(
+      {
+        name: patternName,
+        recordingsCount,
+        message: "Pattern uploaded",
+      },
+      201,
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to extract zip";
+    return c.json({ error: "Internal server error", message }, 500);
+  }
+});
+
+// ============================================================
+// 記録データ操作（RESTful: パターンをURLに含める）
+// ============================================================
+
+/**
+ * パターン存在チェック用ヘルパー
+ */
+async function checkPatternExists(pattern: string) {
+  return await storage.patternExists(pattern);
+}
+
+/**
+ * 記録ファイル一覧取得
+ * GET /__snaperro__/patterns/:pattern/recordings
+ */
+controlApi.get("/patterns/:pattern/recordings", async (c) => {
+  const pattern = c.req.param("pattern");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  const files = await storage.getPatternFiles(pattern);
+  const recordings = files.map((f) => ({
+    filename: f.path,
+    endpoint: f.endpoint,
+    method: f.method,
+    size: f.size,
+    updatedAt: f.updatedAt,
+  }));
+
+  return c.json({ pattern, recordings });
+});
+
+/**
+ * 記録ファイル内容取得
+ * GET /__snaperro__/patterns/:pattern/recordings/:filename
+ */
+controlApi.get("/patterns/:pattern/recordings/:filename", async (c) => {
+  const pattern = c.req.param("pattern");
+  const filename = c.req.param("filename");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  try {
+    const data = await storage.read(`${pattern}/${filename}`);
+    return c.json(data);
+  } catch {
+    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+  }
+});
+
+/**
+ * 記録ファイル個別ダウンロード
+ * GET /__snaperro__/patterns/:pattern/recordings/:filename/download
+ */
+controlApi.get("/patterns/:pattern/recordings/:filename/download", async (c) => {
+  const pattern = c.req.param("pattern");
+  const filename = c.req.param("filename");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  try {
+    const data = await storage.read(`${pattern}/${filename}`);
+    c.header("Content-Disposition", `attachment; filename="${filename}"`);
+    c.header("Content-Type", "application/json");
+    return c.body(JSON.stringify(data, null, 2));
+  } catch {
+    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+  }
+});
+
+/**
+ * 記録ファイルアップロード
+ * POST /__snaperro__/patterns/:pattern/recordings/upload
+ */
+controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
+  const pattern = c.req.param("pattern");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file");
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: "Invalid request", details: "Missing file" }, 400);
+    }
+
+    const content = await file.text();
+    const data = JSON.parse(content) as RecordedData;
+
+    // ファイル名を決定（新規連番）
+    const sequence = await storage.findNextSequence(pattern, data.endpoint);
+
+    // buildFilePath を使ってファイルパスを構築
+    const { buildFilePath, endpointToFileName } = await import("../core/storage.js");
+    const filePath = buildFilePath(pattern, data.endpoint, sequence);
+    const filename = `${endpointToFileName(data.endpoint)}_${String(sequence).padStart(3, "0")}.json`;
+
+    await storage.write(filePath, data);
+
+    return c.json({ filename, message: "Recording uploaded" }, 201);
+  } catch {
+    return c.json({ error: "Invalid request", details: "Invalid JSON file" }, 400);
+  }
+});
+
+/**
+ * 記録ファイル編集
+ * PUT /__snaperro__/patterns/:pattern/recordings/:filename
+ */
+controlApi.put("/patterns/:pattern/recordings/:filename", async (c) => {
+  const pattern = c.req.param("pattern");
+  const filename = c.req.param("filename");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  const filePath = `${pattern}/${filename}`;
+
+  // ファイルが存在するかチェック
+  if (!(await storage.exists(filePath))) {
+    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+  }
+
+  try {
+    const data = (await c.req.json()) as RecordedData;
+    await storage.write(filePath, data);
+    return c.json({ filename, message: "Recording updated" });
+  } catch {
+    return c.json({ error: "Invalid request", details: "Invalid JSON data" }, 400);
+  }
+});
+
+/**
+ * 記録ファイル削除
+ * DELETE /__snaperro__/patterns/:pattern/recordings/:filename
+ */
+controlApi.delete("/patterns/:pattern/recordings/:filename", async (c) => {
+  const pattern = c.req.param("pattern");
+  const filename = c.req.param("filename");
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  const filePath = `${pattern}/${filename}`;
+
+  try {
+    await storage.deleteFile(filePath);
+    return c.json({ filename, message: "Recording deleted" });
+  } catch {
+    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+  }
+});

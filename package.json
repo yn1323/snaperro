@@ -1,7 +1,7 @@
 {
   "name": "snaperro",
-  "version": "1.0.1",
-  "description": "GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化",
+  "version": "1.0.2",
+  "description": "モックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,7 +16,6 @@
   },
   "files": [
     "dist",
-    "gui/dist",
     "templates",
     "logo.png"
   ],
@@ -31,12 +30,9 @@
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
-    "build:gui": "vite build --config gui/vite.config.ts",
-    "dev:gui": "vite --config gui/vite.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
-    "type-check:gui": "tsc --noEmit -p gui/tsconfig.json",
     "format": "biome check --write",
     "lint": "biome check"
   },
@@ -48,7 +44,6 @@
     "mock-server",
     "api-mocking",
     "record-playback",
-    "gui",
     "development-tools"
   ],
   "author": "yn1323",
@@ -59,27 +54,22 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
+    "archiver": "^7.0.1",
     "commander": "^13.1.0",
     "consola": "^3.4.2",
     "hono": "^4.7.10",
-    "open": "^11.0.0",
+    "jiti": "^2.6.1",
     "picocolors": "^1.1.1",
     "picomatch": "^4.0.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "unzipper": "^0.12.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
-    "@tailwindcss/vite": "^4.1.17",
+    "@types/archiver": "^7.0.0",
     "@types/node": "^22.15.29",
     "@types/picomatch": "^3.0.2",
-    "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.5",
-    "@vitejs/plugin-react": "^4.5.2",
-    "autoprefixer": "^10.4.22",
+    "@types/unzipper": "^0.10.11",
     "dayjs": "^1.11.19",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.17",
     "tsup": "^8.5.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",

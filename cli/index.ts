@@ -1,0 +1,22 @@
+import { Command } from "commander";
+import { initCommand } from "./commands/init.js";
+import { postmanCommand } from "./commands/postman.js";
+import { startCommand } from "./commands/start.js";
+
+const program = new Command();
+
+program.name("snaperro").description("モックプロキシサーバー 🐕").version("1.0.0");
+
+program.command("init").description("プロジェクトを初期化").action(initCommand);
+
+program
+  .command("start")
+  .description("サーバーを起動")
+  .option("-p, --port <port>", "ポート番号", "3333")
+  .option("-v, --verbose", "詳細ログを表示")
+  .option("-c, --config <path>", "設定ファイルのパス", "snaperro.config.ts")
+  .action(startCommand);
+
+program.command("postman").description("Postmanコレクションを出力").action(postmanCommand);
+
+program.parse();

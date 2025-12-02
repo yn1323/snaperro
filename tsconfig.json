@@ -11,12 +11,12 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": ".",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "gui"]
+  "include": ["cli/**/*", "server/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

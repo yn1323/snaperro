@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { serverEvents } from "../core/events.js";
 import { logger } from "../core/logger.js";
 import type { MatchResult } from "../core/matcher.js";
 import { state } from "../core/state.js";
@@ -139,7 +140,17 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     const action = isNew ? "saved" : "updated";
     logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
 
-    // 9. レスポンスを返却
+    // 9. SSEイベントを発火（GUIに通知）
+    const filename = filePath.split("/").pop() ?? filePath;
+    serverEvents.notify("recordings:created", {
+      pattern,
+      filename,
+      endpoint: match.matchedRoute,
+      method,
+      isNew,
+    });
+
+    // 10. レスポンスを返却
     return c.json(responseBody, response.status as never);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

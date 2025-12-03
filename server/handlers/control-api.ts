@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
+import { serverEvents } from "../core/events.js";
 import { type Mode, state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { RecordedData } from "../types/recording.js";
@@ -31,6 +33,69 @@ controlApi.get("/status", async (c) => {
 });
 
 // ============================================================
+// SSE イベントストリーム
+// ============================================================
+
+/**
+ * SSE イベントストリーム
+ * GET /__snaperro__/events
+ *
+ * GUIがサーバーの変更をリアルタイムで受信するためのエンドポイント
+ *
+ * イベント種別:
+ * - mode:changed - モード変更
+ * - pattern:changed - パターン切替
+ * - pattern:created - パターン作成
+ * - pattern:deleted - パターン削除
+ * - pattern:renamed - パターン名変更
+ * - pattern:duplicated - パターン複製
+ * - pattern:uploaded - パターンアップロード
+ * - recordings:changed - 記録ファイル編集
+ * - recordings:created - 記録ファイル作成（Recordモード時含む）
+ * - recordings:deleted - 記録ファイル削除
+ * - recordings:uploaded - 記録ファイルアップロード
+ */
+controlApi.get("/events", (c) => {
+  return streamSSE(c, async (stream) => {
+    // 接続確認用の初期イベント
+    await stream.writeSSE({
+      event: "connected",
+      data: JSON.stringify({ timestamp: new Date().toISOString() }),
+    });
+
+    // イベントリスナーを登録
+    const unsubscribe = serverEvents.subscribe(async (eventData) => {
+      try {
+        await stream.writeSSE({
+          event: eventData.type,
+          data: JSON.stringify(eventData.payload),
+        });
+      } catch {
+        // クライアント切断時はエラーを無視
+      }
+    });
+
+    // 接続が閉じられるまで待機
+    stream.onAbort(() => {
+      unsubscribe();
+    });
+
+    // 接続を維持（30秒ごとにkeep-alive）
+    while (true) {
+      await stream.sleep(30000);
+      try {
+        await stream.writeSSE({
+          event: "ping",
+          data: JSON.stringify({ timestamp: new Date().toISOString() }),
+        });
+      } catch {
+        break;
+      }
+    }
+  });
+});
+
+// ============================================================
 // モード操作
 // ============================================================
 
@@ -57,6 +122,7 @@ controlApi.put("/mode", async (c) => {
   }
 
   await state.setMode(mode as Mode);
+  serverEvents.notify("mode:changed", { mode });
   return c.json({
     mode: state.getMode(),
     message: `Mode changed to ${mode}`,
@@ -110,6 +176,7 @@ controlApi.put("/patterns/current", async (c) => {
   }
 
   await state.setPattern(pattern);
+  serverEvents.notify("pattern:changed", { pattern });
   return c.json({
     currentPattern: pattern,
     message: `Pattern changed to ${pattern}`,
@@ -135,6 +202,7 @@ controlApi.post("/patterns", async (c) => {
   }
 
   await storage.createPattern(name);
+  serverEvents.notify("pattern:created", { name });
   return c.json({ name, message: "Pattern created" }, 201);
 });
 
@@ -159,6 +227,7 @@ controlApi.post("/patterns/:name/duplicate", async (c) => {
 
   try {
     await storage.duplicatePattern(name, newName);
+    serverEvents.notify("pattern:duplicated", { source: name, destination: newName });
     return c.json({
       source: name,
       destination: newName,
@@ -197,6 +266,7 @@ controlApi.put("/patterns/:name/rename", async (c) => {
       await state.setPattern(newName);
     }
 
+    serverEvents.notify("pattern:renamed", { oldName: name, newName });
     return c.json({
       oldName: name,
       newName,
@@ -226,6 +296,7 @@ controlApi.delete("/patterns/:name", async (c) => {
   }
 
   await storage.deletePattern(name);
+  serverEvents.notify("pattern:deleted", { name });
   return c.json({ name, message: "Pattern deleted" });
 });
 
@@ -286,6 +357,7 @@ controlApi.post("/patterns/upload", async (c) => {
     const zipBuffer = Buffer.from(arrayBuffer);
     const recordingsCount = await storage.extractZipToPattern(zipBuffer, patternName);
 
+    serverEvents.notify("pattern:uploaded", { name: patternName, recordingsCount });
     return c.json(
       {
         name: patternName,
@@ -408,6 +480,7 @@ controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
 
     await storage.write(filePath, data);
 
+    serverEvents.notify("recordings:uploaded", { pattern, filename });
     return c.json({ filename, message: "Recording uploaded" }, 201);
   } catch {
     return c.json({ error: "Invalid request", details: "Invalid JSON file" }, 400);
@@ -436,6 +509,7 @@ controlApi.put("/patterns/:pattern/recordings/:filename", async (c) => {
   try {
     const data = (await c.req.json()) as RecordedData;
     await storage.write(filePath, data);
+    serverEvents.notify("recordings:changed", { pattern, filename });
     return c.json({ filename, message: "Recording updated" });
   } catch {
     return c.json({ error: "Invalid request", details: "Invalid JSON data" }, 400);
@@ -458,6 +532,7 @@ controlApi.delete("/patterns/:pattern/recordings/:filename", async (c) => {
 
   try {
     await storage.deleteFile(filePath);
+    serverEvents.notify("recordings:deleted", { pattern, filename });
     return c.json({ filename, message: "Recording deleted" });
   } catch {
     return c.json({ error: "Not found", resource: "recording", filename }, 404);

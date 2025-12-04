@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { CreatePatternModal } from "./components/CreatePatternModal";
+import { ConfirmDialog } from "./components/dialogs/ConfirmDialog";
 import { EditorPane } from "./components/EditorPane";
 import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
@@ -19,6 +20,7 @@ export default function App() {
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
+  const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
 
   // パターン変更時にファイル選択をリセット
   const currentPattern = state.currentPattern;
@@ -178,17 +180,23 @@ export default function App() {
     [api, state.currentPattern, selectedFile],
   );
 
-  const handleFileDelete = useCallback(async () => {
-    if (!state.currentPattern || !selectedFile) return;
-    if (!window.confirm(`ファイル "${selectedFile}" を削除しますか？`)) return;
+  const handleFileDelete = useCallback(() => {
+    if (selectedFile) {
+      setDeleteFileTarget(selectedFile);
+    }
+  }, [selectedFile]);
+
+  const handleFileDeleteConfirm = useCallback(async () => {
+    if (!deleteFileTarget || !state.currentPattern) return;
     try {
-      await api.deleteFile(state.currentPattern, selectedFile);
+      await api.deleteFile(state.currentPattern, deleteFileTarget);
       setSelectedFile(null);
       setFileData(null);
     } catch (err) {
       console.error("ファイル削除エラー:", err);
     }
-  }, [api, state.currentPattern, selectedFile]);
+    setDeleteFileTarget(null);
+  }, [api, state.currentPattern, deleteFileTarget]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -263,6 +271,16 @@ export default function App() {
         isOpen={isRecordModalOpen}
         onClose={() => setIsRecordModalOpen(false)}
         onCreate={handleRecordPatternCreate}
+      />
+
+      {/* ファイル削除確認ダイアログ */}
+      <ConfirmDialog
+        isOpen={deleteFileTarget !== null}
+        title="ファイルを削除"
+        message={`ファイル「${deleteFileTarget}」を削除しますか？この操作は取り消せません。`}
+        confirmLabel="削除"
+        onClose={() => setDeleteFileTarget(null)}
+        onConfirm={handleFileDeleteConfirm}
       />
     </>
   );

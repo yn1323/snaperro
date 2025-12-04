@@ -1,0 +1,217 @@
+import { useCallback, useMemo } from "react";
+import type { FileData, FileInfo, Mode, PatternInfo } from "../types";
+
+const API_BASE = "/__snaperro__";
+
+interface UseSnaperroAPIReturn {
+  // モード操作
+  setMode: (mode: Mode) => Promise<void>;
+
+  // パターン操作
+  getPatterns: () => Promise<PatternInfo[]>;
+  setCurrentPattern: (pattern: string) => Promise<void>;
+  createPattern: (name: string) => Promise<void>;
+  duplicatePattern: (name: string, newName: string) => Promise<void>;
+  renamePattern: (name: string, newName: string) => Promise<void>;
+  deletePattern: (name: string) => Promise<void>;
+  downloadPattern: (name: string) => Promise<void>;
+  uploadPattern: (file: File, name?: string) => Promise<void>;
+
+  // ファイル操作
+  getFiles: (pattern: string) => Promise<FileInfo[]>;
+  getFile: (pattern: string, filename: string) => Promise<FileData>;
+  updateFile: (pattern: string, filename: string, data: FileData) => Promise<void>;
+  deleteFile: (pattern: string, filename: string) => Promise<void>;
+  uploadFile: (pattern: string, file: File) => Promise<void>;
+}
+
+/**
+ * APIリクエストのラッパー
+ */
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(error.error || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+/**
+ * snaperro API操作を提供するフック
+ */
+export function useSnaperroAPI(): UseSnaperroAPIReturn {
+  // ============================================================
+  // モード操作
+  // ============================================================
+  const setMode = useCallback(async (mode: Mode): Promise<void> => {
+    await apiFetch(`${API_BASE}/mode`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+    });
+  }, []);
+
+  // ============================================================
+  // パターン操作
+  // ============================================================
+  const getPatterns = useCallback(async (): Promise<PatternInfo[]> => {
+    const result = await apiFetch<{ patterns: PatternInfo[] }>(`${API_BASE}/patterns`);
+    return result.patterns;
+  }, []);
+
+  const setCurrentPattern = useCallback(async (pattern: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/current`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pattern }),
+    });
+  }, []);
+
+  const createPattern = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+  }, []);
+
+  const duplicatePattern = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}/duplicate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newName }),
+    });
+  }, []);
+
+  const renamePattern = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}/rename`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newName }),
+    });
+  }, []);
+
+  const deletePattern = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+  }, []);
+
+  const downloadPattern = useCallback(async (name: string): Promise<void> => {
+    const url = `${API_BASE}/patterns/${encodeURIComponent(name)}/download`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Download failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${name}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+  }, []);
+
+  const uploadPattern = useCallback(async (file: File, name?: string): Promise<void> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (name) {
+      formData.append("name", name);
+    }
+
+    const response = await fetch(`${API_BASE}/patterns/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+  }, []);
+
+  // ============================================================
+  // ファイル操作
+  // ============================================================
+  const getFiles = useCallback(async (pattern: string): Promise<FileInfo[]> => {
+    const result = await apiFetch<{ pattern: string; files: FileInfo[] }>(
+      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files`,
+    );
+    return result.files;
+  }, []);
+
+  const getFile = useCallback(async (pattern: string, filename: string): Promise<FileData> => {
+    return apiFetch<FileData>(
+      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`,
+    );
+  }, []);
+
+  const updateFile = useCallback(async (pattern: string, filename: string, data: FileData): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  }, []);
+
+  const deleteFile = useCallback(async (pattern: string, filename: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`, {
+      method: "DELETE",
+    });
+  }, []);
+
+  const uploadFile = useCallback(async (pattern: string, file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+  }, []);
+
+  return useMemo(
+    () => ({
+      setMode,
+      getPatterns,
+      setCurrentPattern,
+      createPattern,
+      duplicatePattern,
+      renamePattern,
+      deletePattern,
+      downloadPattern,
+      uploadPattern,
+      getFiles,
+      getFile,
+      updateFile,
+      deleteFile,
+      uploadFile,
+    }),
+    [
+      setMode,
+      getPatterns,
+      setCurrentPattern,
+      createPattern,
+      duplicatePattern,
+      renamePattern,
+      deletePattern,
+      downloadPattern,
+      uploadPattern,
+      getFiles,
+      getFile,
+      updateFile,
+      deleteFile,
+      uploadFile,
+    ],
+  );
+}

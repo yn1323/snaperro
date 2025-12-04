@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { eventBus } from "./event-bus.js";
+import { storage } from "./storage.js";
 
 const STATE_FILE = ".snaperro/state.json";
 
@@ -54,7 +55,17 @@ class StateManager {
   async setPattern(pattern: string | null): Promise<void> {
     this.pattern = pattern;
     await this.save();
-    eventBus.emitSSE("pattern_changed", { pattern });
+
+    // ファイルリストも一緒に送信
+    const files = pattern ? await storage.getPatternFiles(pattern) : [];
+    eventBus.emitSSE("pattern_changed", {
+      pattern,
+      files: files.map((f) => ({
+        filename: f.path,
+        endpoint: f.endpoint,
+        method: f.method,
+      })),
+    });
   }
 
   /**

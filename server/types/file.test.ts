@@ -39,21 +39,6 @@ describe("FileRequestSchema", () => {
       queryParams: {},
       headers: {},
       body: null,
-<<<<<<<< HEAD:server/types/file.test.ts
-========
-    };
-
-    const result = RecordedRequestSchema.safeParse(validRequest);
-    expect(result.success).toBe(true);
-  });
-
-  it("パスパラメータとクエリパラメータを受け入れる", () => {
-    const validRequest = {
-      pathParams: { id: "123" },
-      queryParams: { page: "1", tags: ["a", "b"] },
-      headers: {},
-      body: null,
->>>>>>>> 1f9fb09cd2e8e9250b71119bb1732cf4e6f48d80:server/types/recording.test.ts
     };
 
     const result = FileRequestSchema.safeParse(validRequest);
@@ -160,11 +145,7 @@ describe("FileDataSchema", () => {
     expect(result.success).toBe(true);
   });
 
-<<<<<<<< HEAD:server/types/file.test.ts
   it("パスパラメータ付きの記録データを受け入れる", () => {
-========
-  it("パスパラメータ付きの録画データを受け入れる", () => {
->>>>>>>> 1f9fb09cd2e8e9250b71119bb1732cf4e6f48d80:server/types/recording.test.ts
     const validData = {
       endpoint: "/api/users/:id",
       method: "GET",
@@ -181,11 +162,7 @@ describe("FileDataSchema", () => {
       },
     };
 
-<<<<<<<< HEAD:server/types/file.test.ts
     const result = FileDataSchema.safeParse(validData);
-========
-    const result = RecordedDataSchema.safeParse(validData);
->>>>>>>> 1f9fb09cd2e8e9250b71119bb1732cf4e6f48d80:server/types/recording.test.ts
     expect(result.success).toBe(true);
   });
 

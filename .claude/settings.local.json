@@ -14,7 +14,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(curl:*)",
-      "Bash(npx snaperro:*)"
+      "Bash(npx snaperro:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

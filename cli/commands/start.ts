@@ -1,5 +1,6 @@
 import path from "node:path";
 import { consola } from "consola";
+import open from "open";
 import { loadConfig } from "../../server/core/config.js";
 import { startServer } from "../../server/handlers/index.js";
 
@@ -26,10 +27,13 @@ export async function startCommand(options: StartOptions): Promise<void> {
       config.port = Number.parseInt(options.port, 10);
     }
 
-    await startServer({
+    const serverInfo = await startServer({
       config,
       verbose: options.verbose ?? false,
     });
+
+    // ブラウザを自動で開く
+    await open(serverInfo.guiUrl);
   } catch (error) {
     if (error instanceof Error) {
       consola.error(error.message);

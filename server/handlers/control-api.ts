@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
+import { eventBus } from "../core/event-bus.js";
 import { type Mode, state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { FileData } from "../types/file.js";
@@ -462,4 +464,62 @@ controlApi.delete("/patterns/:pattern/files/:filename", async (c) => {
   } catch {
     return c.json({ error: "Not found", resource: "file", filename }, 404);
   }
+});
+
+// ============================================================
+// SSE (Server-Sent Events)
+// ============================================================
+
+/**
+ * SSEイベントストリーム
+ * GET /__snaperro__/events
+ *
+ * GUIがリアルタイムで状態変更を検知するためのエンドポイント
+ */
+controlApi.get("/events", async (c) => {
+  return streamSSE(c, async (stream) => {
+    // 1. 初期状態を送信
+    const currentPattern = state.getPattern();
+    const patternNames = await storage.listPatterns();
+    const files = currentPattern ? await storage.getPatternFiles(currentPattern) : [];
+
+    await stream.writeSSE({
+      event: "connected",
+      data: JSON.stringify({
+        mode: state.getMode(),
+        currentPattern,
+        patterns: patternNames,
+        files: files.map((f) => ({
+          filename: f.path,
+          endpoint: f.endpoint,
+          method: f.method,
+        })),
+      }),
+      id: "0",
+    });
+
+    // 2. イベント購読
+    let eventId = 1;
+    const unsubscribe = eventBus.subscribe(async (event) => {
+      try {
+        await stream.writeSSE({
+          event: event.type,
+          data: JSON.stringify(event.data),
+          id: String(eventId++),
+        });
+      } catch {
+        // クライアント切断時のエラーは無視
+      }
+    });
+
+    // 3. クライアント切断時に購読解除
+    stream.onAbort(() => {
+      unsubscribe();
+    });
+
+    // 4. 接続維持のためのループ（30秒ごとにkeep-alive）
+    while (true) {
+      await stream.sleep(30000);
+    }
+  });
 });

@@ -172,6 +172,44 @@ your-project/
             └── api_users_001.json
 ```
 
+### SSE (Server-Sent Events)
+
+GUIやクライアントがリアルタイムで状態変更を検知するためのSSEエンドポイントを提供しています。
+
+#### エンドポイント
+
+```
+GET /__snaperro__/events
+```
+
+#### 確認方法
+
+```bash
+# curl
+curl -N http://localhost:3333/__snaperro__/events
+
+# ブラウザコンソール
+const es = new EventSource('http://localhost:3333/__snaperro__/events');
+es.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));
+es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
+```
+
+#### イベント種別
+
+| イベント | 説明 |
+|---------|------|
+| `connected` | 接続完了（初期状態を含む） |
+| `mode_changed` | モード変更 |
+| `pattern_changed` | パターン切替 |
+| `file_created` | ファイル作成（記録時） |
+| `file_updated` | ファイル更新 |
+| `file_deleted` | ファイル削除 |
+| `pattern_created` | パターン作成 |
+| `pattern_deleted` | パターン削除 |
+| `pattern_renamed` | パターン名変更 |
+
+詳細は [doc/2025-12-04_SSE仕様.md](doc/2025-12-04_SSE仕様.md) を参照してください。
+
 ---
 
 ## 開発者向け

@@ -3,6 +3,7 @@ import path from "node:path";
 import archiver from "archiver";
 import unzipper from "unzipper";
 import type { FileData } from "../types/file.js";
+import { eventBus } from "./event-bus.js";
 
 let BASE_DIR = ".snaperro/files";
 
@@ -265,6 +266,7 @@ export const storage = {
   async createPattern(name: string): Promise<void> {
     const dir = path.join(BASE_DIR, name);
     await fs.mkdir(dir, { recursive: true });
+    eventBus.emitSSE("pattern_created", { name });
   },
 
   /**
@@ -310,6 +312,14 @@ export const storage = {
   async deleteFile(filePath: string): Promise<void> {
     const fullPath = path.join(BASE_DIR, filePath);
     await fs.unlink(fullPath);
+    // filePath形式: "pattern/filename.json"
+    const parts = filePath.split("/");
+    if (parts.length >= 2) {
+      eventBus.emitSSE("file_deleted", {
+        pattern: parts[0],
+        filename: parts[parts.length - 1],
+      });
+    }
   },
 
   /**
@@ -397,6 +407,7 @@ export const storage = {
     }
 
     await fs.rename(oldDir, newDir);
+    eventBus.emitSSE("pattern_renamed", { oldName, newName });
   },
 
   /**
@@ -405,6 +416,7 @@ export const storage = {
   async deletePattern(name: string): Promise<void> {
     const dir = path.join(BASE_DIR, name);
     await fs.rm(dir, { recursive: true, force: true });
+    eventBus.emitSSE("pattern_deleted", { name });
   },
 
   /**

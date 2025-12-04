@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { eventBus } from "./event-bus.js";
 
 const STATE_FILE = ".snaperro/state.json";
 
@@ -37,6 +38,7 @@ class StateManager {
   async setMode(mode: Mode): Promise<void> {
     this.mode = mode;
     await this.save();
+    eventBus.emitSSE("mode_changed", { mode });
   }
 
   /**
@@ -52,6 +54,7 @@ class StateManager {
   async setPattern(pattern: string | null): Promise<void> {
     this.pattern = pattern;
     await this.save();
+    eventBus.emitSSE("pattern_changed", { pattern });
   }
 
   /**

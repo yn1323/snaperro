@@ -76,6 +76,24 @@
           ]
         },
         {
+          "name": "SSE (Server-Sent Events)",
+          "item": [
+            {
+              "name": "Events Stream",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/__snaperro__/events",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["__snaperro__", "events"]
+                },
+                "description": "SSEイベントストリーム - リアルタイムで状態変更を受信\n\n⚠️ **注意**: PostmanはSSEをネイティブでサポートしていません。\n\n### 確認方法\n\n**curl:**\n```bash\ncurl -N http://localhost:3333/__snaperro__/events\n```\n\n**ブラウザコンソール:**\n```javascript\nconst es = new EventSource('http://localhost:3333/__snaperro__/events');\nes.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));\n```\n\n### イベント種別\n- connected: 接続完了（初期状態）\n- mode_changed: モード変更\n- pattern_changed: パターン切替\n- file_created: ファイル作成（記録時）\n- file_updated: ファイル更新\n- file_deleted: ファイル削除\n- pattern_created/deleted/renamed: パターン操作"
+              }
+            }
+          ]
+        },
+        {
           "name": "Patterns",
           "item": [
             {
@@ -116,7 +134,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"pattern\": \"正常系フル\"\n}",
+                  "raw": "{\n  \"pattern\": \"demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -170,7 +188,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"newName\": \"正常系フル_コピー\"\n}",
+                  "raw": "{\n  \"newName\": \"demo-copy\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -184,7 +202,7 @@
                   "variable": [
                     {
                       "key": "name",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "複製元のパターン名"
                     }
                   ]
@@ -218,7 +236,7 @@
                   "variable": [
                     {
                       "key": "name",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "変更前のパターン名"
                     }
                   ]
@@ -238,8 +256,8 @@
                   "variable": [
                     {
                       "key": "name",
-                      "value": "削除するパターン",
-                      "description": "削除するパターン名"
+                      "value": "demo-empty",
+                      "description": "demo-empty名"
                     }
                   ]
                 },
@@ -258,7 +276,7 @@
                   "variable": [
                     {
                       "key": "name",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "ダウンロードするパターン名"
                     }
                   ]
@@ -308,7 +326,7 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     }
                   ]
@@ -328,12 +346,12 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     },
                     {
                       "key": "filename",
-                      "value": "api_users_001.json",
+                      "value": "users_001.json",
                       "description": "ファイル名"
                     }
                   ]
@@ -353,12 +371,12 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     },
                     {
                       "key": "filename",
-                      "value": "api_users_001.json",
+                      "value": "users_001.json",
                       "description": "ダウンロードするファイル名"
                     }
                   ]
@@ -389,7 +407,7 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     }
                   ]
@@ -409,7 +427,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"endpoint\": \"/api/users/:id\",\n  \"method\": \"GET\",\n  \"request\": {\n    \"pathParams\": { \"id\": \"123\" },\n    \"queryParams\": {},\n    \"headers\": {},\n    \"body\": null\n  },\n  \"response\": {\n    \"status\": 200,\n    \"headers\": { \"Content-Type\": \"application/json\" },\n    \"body\": {\n      \"id\": 123,\n      \"name\": \"Updated User\"\n    }\n  }\n}",
+                  "raw": "{\n  \"endpoint\": \"/users/:id\",\n  \"method\": \"GET\",\n  \"request\": {\n    \"pathParams\": { \"id\": \"1\" },\n    \"queryParams\": {},\n    \"headers\": {},\n    \"body\": null\n  },\n  \"response\": {\n    \"status\": 200,\n    \"headers\": { \"Content-Type\": \"application/json\" },\n    \"body\": {\n      \"id\": 1,\n      \"name\": \"Leanne Graham\",\n      \"username\": \"Bret\",\n      \"email\": \"leanne@example.com\"\n    }\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -423,12 +441,12 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     },
                     {
                       "key": "filename",
-                      "value": "api_users_001.json",
+                      "value": "users_001.json",
                       "description": "編集するファイル名"
                     }
                   ]
@@ -448,12 +466,12 @@
                   "variable": [
                     {
                       "key": "pattern",
-                      "value": "正常系フル",
+                      "value": "demo",
                       "description": "パターン名"
                     },
                     {
                       "key": "filename",
-                      "value": "api_users_001.json",
+                      "value": "users_001.json",
                       "description": "削除するファイル名"
                     }
                   ]

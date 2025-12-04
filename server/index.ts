@@ -11,12 +11,12 @@ export {
   SnaperroConfigSchema,
 } from "./types/config.js";
 export type {
-  RecordedData,
-  RecordedRequest,
-  RecordedResponse,
-} from "./types/recording.js";
+  FileData,
+  FileRequest,
+  FileResponse,
+} from "./types/file.js";
 export {
-  RecordedDataSchema,
-  RecordedRequestSchema,
-  RecordedResponseSchema,
-} from "./types/recording.js";
+  FileDataSchema,
+  FileRequestSchema,
+  FileResponseSchema,
+} from "./types/file.js";

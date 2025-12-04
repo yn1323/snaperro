@@ -6,7 +6,7 @@ const CONFIG_TEMPLATE = `import { defineConfig } from 'snaperro'
 
 export default defineConfig({
   port: 3333,
-  recordingsDir: '.snaperro/recordings',
+  filesDir: '.snaperro/files',
 
   apis: {
     // JSON Placeholder API（サンプル）
@@ -208,10 +208,10 @@ const SAMPLE_DATA: Record<string, Record<string, unknown>> = {
 /**
  * サンプルファイルを書き込む
  */
-async function writeSampleFiles(recordingsDir: string): Promise<void> {
+async function writeSampleFiles(filesDir: string): Promise<void> {
   for (const [pattern, files] of Object.entries(SAMPLE_DATA)) {
     for (const [filePath, data] of Object.entries(files)) {
-      const fullPath = path.join(recordingsDir, pattern, filePath);
+      const fullPath = path.join(filesDir, pattern, filePath);
       await fs.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.writeFile(fullPath, JSON.stringify(data, null, 2), "utf-8");
     }
@@ -220,7 +220,7 @@ async function writeSampleFiles(recordingsDir: string): Promise<void> {
 
 /**
  * init コマンド
- * - .snaperro/recordings ディレクトリを作成
+ * - .snaperro/files ディレクトリを作成
  * - snaperro.config.ts を作成（存在しない場合）
  * - .gitignore に .snaperro/ を追加
  */
@@ -229,13 +229,13 @@ export async function initCommand(): Promise<void> {
 
   consola.start("snaperro を初期化しています...");
 
-  // 1. .snaperro/recordings ディレクトリを作成
-  const recordingsDir = path.join(cwd, ".snaperro", "recordings");
-  await fs.mkdir(recordingsDir, { recursive: true });
-  consola.success(".snaperro/recordings ディレクトリを作成しました");
+  // 1. .snaperro/files ディレクトリを作成
+  const filesDir = path.join(cwd, ".snaperro", "files");
+  await fs.mkdir(filesDir, { recursive: true });
+  consola.success(".snaperro/files ディレクトリを作成しました");
 
   // 2. サンプルデータを配置
-  await writeSampleFiles(recordingsDir);
+  await writeSampleFiles(filesDir);
   consola.success("サンプルパターン（demo, demo-empty, demo-error）を配置しました");
 
   // 3. snaperro.config.ts を作成（存在しない場合）

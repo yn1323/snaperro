@@ -1,7 +1,9 @@
 import { Hono } from "hono";
+import { streamSSE } from "hono/streaming";
+import { eventBus } from "../core/event-bus.js";
 import { type Mode, state } from "../core/state.js";
 import { storage } from "../core/storage.js";
-import type { RecordedData } from "../types/recording.js";
+import type { FileData } from "../types/file.js";
 
 /**
  * 制御API
@@ -20,13 +22,13 @@ export const controlApi = new Hono();
 controlApi.get("/status", async (c) => {
   const pattern = state.getPattern();
   const patterns = await storage.listPatterns();
-  const recordingsCount = pattern ? (await storage.getPatternFiles(pattern)).length : 0;
+  const filesCount = pattern ? (await storage.getPatternFiles(pattern)).length : 0;
 
   return c.json({
     mode: state.getMode(),
     currentPattern: pattern,
     patterns,
-    recordingsCount,
+    filesCount,
   });
 });
 
@@ -220,9 +222,9 @@ controlApi.delete("/patterns/:name", async (c) => {
     return c.json({ error: "Not found", resource: "pattern", name }, 404);
   }
 
-  // 現在選択中のパターンは削除できない
+  // 現在選択中のパターンを削除する場合は未選択状態にする
   if (state.getPattern() === name) {
-    return c.json({ error: "Cannot delete current pattern", name }, 400);
+    await state.setPattern(null);
   }
 
   await storage.deletePattern(name);
@@ -284,12 +286,12 @@ controlApi.post("/patterns/upload", async (c) => {
     // zipを解凍して展開
     const arrayBuffer = await file.arrayBuffer();
     const zipBuffer = Buffer.from(arrayBuffer);
-    const recordingsCount = await storage.extractZipToPattern(zipBuffer, patternName);
+    const filesCount = await storage.extractZipToPattern(zipBuffer, patternName);
 
     return c.json(
       {
         name: patternName,
-        recordingsCount,
+        filesCount,
         message: "Pattern uploaded",
       },
       201,
@@ -313,17 +315,17 @@ async function checkPatternExists(pattern: string) {
 
 /**
  * 記録ファイル一覧取得
- * GET /__snaperro__/patterns/:pattern/recordings
+ * GET /__snaperro__/patterns/:pattern/files
  */
-controlApi.get("/patterns/:pattern/recordings", async (c) => {
+controlApi.get("/patterns/:pattern/files", async (c) => {
   const pattern = c.req.param("pattern");
 
   if (!(await checkPatternExists(pattern))) {
     return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
   }
 
-  const files = await storage.getPatternFiles(pattern);
-  const recordings = files.map((f) => ({
+  const patternFiles = await storage.getPatternFiles(pattern);
+  const files = patternFiles.map((f) => ({
     filename: f.path,
     endpoint: f.endpoint,
     method: f.method,
@@ -331,14 +333,14 @@ controlApi.get("/patterns/:pattern/recordings", async (c) => {
     updatedAt: f.updatedAt,
   }));
 
-  return c.json({ pattern, recordings });
+  return c.json({ pattern, files });
 });
 
 /**
  * 記録ファイル内容取得
- * GET /__snaperro__/patterns/:pattern/recordings/:filename
+ * GET /__snaperro__/patterns/:pattern/files/:filename
  */
-controlApi.get("/patterns/:pattern/recordings/:filename", async (c) => {
+controlApi.get("/patterns/:pattern/files/:filename", async (c) => {
   const pattern = c.req.param("pattern");
   const filename = c.req.param("filename");
 
@@ -350,15 +352,15 @@ controlApi.get("/patterns/:pattern/recordings/:filename", async (c) => {
     const data = await storage.read(`${pattern}/${filename}`);
     return c.json(data);
   } catch {
-    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+    return c.json({ error: "Not found", resource: "file", filename }, 404);
   }
 });
 
 /**
  * 記録ファイル個別ダウンロード
- * GET /__snaperro__/patterns/:pattern/recordings/:filename/download
+ * GET /__snaperro__/patterns/:pattern/files/:filename/download
  */
-controlApi.get("/patterns/:pattern/recordings/:filename/download", async (c) => {
+controlApi.get("/patterns/:pattern/files/:filename/download", async (c) => {
   const pattern = c.req.param("pattern");
   const filename = c.req.param("filename");
 
@@ -372,15 +374,15 @@ controlApi.get("/patterns/:pattern/recordings/:filename/download", async (c) => 
     c.header("Content-Type", "application/json");
     return c.body(JSON.stringify(data, null, 2));
   } catch {
-    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+    return c.json({ error: "Not found", resource: "file", filename }, 404);
   }
 });
 
 /**
  * 記録ファイルアップロード
- * POST /__snaperro__/patterns/:pattern/recordings/upload
+ * POST /__snaperro__/patterns/:pattern/files/upload
  */
-controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
+controlApi.post("/patterns/:pattern/files/upload", async (c) => {
   const pattern = c.req.param("pattern");
 
   if (!(await checkPatternExists(pattern))) {
@@ -396,7 +398,7 @@ controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
     }
 
     const content = await file.text();
-    const data = JSON.parse(content) as RecordedData;
+    const data = JSON.parse(content) as FileData;
 
     // ファイル名を決定（新規連番）
     const sequence = await storage.findNextSequence(pattern, data.endpoint);
@@ -408,7 +410,15 @@ controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
 
     await storage.write(filePath, data);
 
-    return c.json({ filename, message: "Recording uploaded" }, 201);
+    // SSEイベント発行
+    eventBus.emitSSE("file_created", {
+      pattern,
+      filename,
+      endpoint: data.endpoint,
+      method: data.method,
+    });
+
+    return c.json({ filename, message: "File uploaded" }, 201);
   } catch {
     return c.json({ error: "Invalid request", details: "Invalid JSON file" }, 400);
   }
@@ -416,9 +426,9 @@ controlApi.post("/patterns/:pattern/recordings/upload", async (c) => {
 
 /**
  * 記録ファイル編集
- * PUT /__snaperro__/patterns/:pattern/recordings/:filename
+ * PUT /__snaperro__/patterns/:pattern/files/:filename
  */
-controlApi.put("/patterns/:pattern/recordings/:filename", async (c) => {
+controlApi.put("/patterns/:pattern/files/:filename", async (c) => {
   const pattern = c.req.param("pattern");
   const filename = c.req.param("filename");
 
@@ -430,13 +440,13 @@ controlApi.put("/patterns/:pattern/recordings/:filename", async (c) => {
 
   // ファイルが存在するかチェック
   if (!(await storage.exists(filePath))) {
-    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+    return c.json({ error: "Not found", resource: "file", filename }, 404);
   }
 
   try {
-    const data = (await c.req.json()) as RecordedData;
+    const data = (await c.req.json()) as FileData;
     await storage.write(filePath, data);
-    return c.json({ filename, message: "Recording updated" });
+    return c.json({ filename, message: "File updated" });
   } catch {
     return c.json({ error: "Invalid request", details: "Invalid JSON data" }, 400);
   }
@@ -444,9 +454,9 @@ controlApi.put("/patterns/:pattern/recordings/:filename", async (c) => {
 
 /**
  * 記録ファイル削除
- * DELETE /__snaperro__/patterns/:pattern/recordings/:filename
+ * DELETE /__snaperro__/patterns/:pattern/files/:filename
  */
-controlApi.delete("/patterns/:pattern/recordings/:filename", async (c) => {
+controlApi.delete("/patterns/:pattern/files/:filename", async (c) => {
   const pattern = c.req.param("pattern");
   const filename = c.req.param("filename");
 
@@ -458,8 +468,66 @@ controlApi.delete("/patterns/:pattern/recordings/:filename", async (c) => {
 
   try {
     await storage.deleteFile(filePath);
-    return c.json({ filename, message: "Recording deleted" });
+    return c.json({ filename, message: "File deleted" });
   } catch {
-    return c.json({ error: "Not found", resource: "recording", filename }, 404);
+    return c.json({ error: "Not found", resource: "file", filename }, 404);
   }
+});
+
+// ============================================================
+// SSE (Server-Sent Events)
+// ============================================================
+
+/**
+ * SSEイベントストリーム
+ * GET /__snaperro__/events
+ *
+ * GUIがリアルタイムで状態変更を検知するためのエンドポイント
+ */
+controlApi.get("/events", async (c) => {
+  return streamSSE(c, async (stream) => {
+    // 1. 初期状態を送信
+    const currentPattern = state.getPattern();
+    const patternNames = await storage.listPatterns();
+    const files = currentPattern ? await storage.getPatternFiles(currentPattern) : [];
+
+    await stream.writeSSE({
+      event: "connected",
+      data: JSON.stringify({
+        mode: state.getMode(),
+        currentPattern,
+        patterns: patternNames,
+        files: files.map((f) => ({
+          filename: f.path,
+          endpoint: f.endpoint,
+          method: f.method,
+        })),
+      }),
+      id: "0",
+    });
+
+    // 2. イベント購読
+    let eventId = 1;
+    const unsubscribe = eventBus.subscribe(async (event) => {
+      try {
+        await stream.writeSSE({
+          event: event.type,
+          data: JSON.stringify(event.data),
+          id: String(eventId++),
+        });
+      } catch {
+        // クライアント切断時のエラーは無視
+      }
+    });
+
+    // 3. クライアント切断時に購読解除
+    stream.onAbort(() => {
+      unsubscribe();
+    });
+
+    // 4. 接続維持のためのループ（30秒ごとにkeep-alive）
+    while (true) {
+      await stream.sleep(30000);
+    }
+  });
 });

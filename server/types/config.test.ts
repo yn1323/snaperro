@@ -129,7 +129,7 @@ describe("defineConfig", () => {
   it("有効な設定をそのまま返す", () => {
     const config = {
       port: 4000,
-      recordingsDir: ".snaperro/recordings",
+      filesDir: ".snaperro/files",
       apis: {
         testApi: {
           name: "テストAPI",

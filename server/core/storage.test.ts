@@ -1,14 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { RecordedData } from "../types/recording.js";
+import type { FileData } from "../types/file.js";
 import { buildFilePath, endpointToFileName, storage } from "./storage.js";
 
-const TEST_BASE_DIR = ".snaperro/recordings";
+const TEST_BASE_DIR = ".snaperro/files";
 const TEST_PATTERN = "__test_pattern__";
 
-// テスト用の録画データ
-const testRecordedData: RecordedData = {
+// テスト用の記録データ
+const testFileData: FileData = {
   endpoint: "/api/users",
   method: "GET",
   request: {
@@ -96,18 +96,18 @@ describe("storage", () => {
     it("データを書き込んで読み込める", async () => {
       const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
 
-      await storage.write(filePath, testRecordedData);
+      await storage.write(filePath, testFileData);
       const result = await storage.read(filePath);
 
-      expect(result).toEqual(testRecordedData);
+      expect(result).toEqual(testFileData);
     });
 
     it("パスパラメータを含むエンドポイントでもファイルを作成できる", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users/:id",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           pathParams: { id: "123" },
         },
       };
@@ -124,7 +124,7 @@ describe("storage", () => {
   describe("exists", () => {
     it("存在するファイルはtrueを返す", async () => {
       const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
-      await storage.write(filePath, testRecordedData);
+      await storage.write(filePath, testFileData);
 
       const result = await storage.exists(filePath);
       expect(result).toBe(true);
@@ -144,17 +144,17 @@ describe("storage", () => {
     });
 
     it("既存ファイルの次の連番を返す", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testRecordedData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 2), testRecordedData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 2), testFileData);
 
       const seq = await storage.findNextSequence(TEST_PATTERN, "/api/users");
       expect(seq).toBe(3);
     });
 
     it("異なるエンドポイントは別々にカウントする", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testRecordedData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 1), testRecordedData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 2), testRecordedData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 1), testFileData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 2), testFileData);
 
       expect(await storage.findNextSequence(TEST_PATTERN, "/api/users")).toBe(2);
       expect(await storage.findNextSequence(TEST_PATTERN, "/api/orders")).toBe(3);
@@ -168,12 +168,12 @@ describe("storage", () => {
 
   describe("findMatchingFile", () => {
     it("パラメータが一致するファイルを見つける", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users/:id",
         method: "GET",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           pathParams: { id: "123" },
           queryParams: { include: "profile" },
         },
@@ -189,15 +189,15 @@ describe("storage", () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result?.recordedData.request.pathParams.id).toBe("123");
+      expect(result?.fileData.request.pathParams.id).toBe("123");
     });
 
     it("パスパラメータが異なるとマッチしない", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users/:id",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           pathParams: { id: "123" },
           queryParams: {},
         },
@@ -216,8 +216,8 @@ describe("storage", () => {
     });
 
     it("メソッドが異なるとマッチしない", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users",
         method: "GET",
       };
@@ -229,11 +229,11 @@ describe("storage", () => {
     });
 
     it("クエリパラメータが異なるとマッチしない", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           queryParams: { status: "active" },
         },
       };
@@ -253,12 +253,12 @@ describe("storage", () => {
 
   describe("findOrCreateFile", () => {
     it("既存ファイルがあれば isNew: false を返す", async () => {
-      const data: RecordedData = {
-        ...testRecordedData,
+      const data: FileData = {
+        ...testFileData,
         endpoint: "/api/users/:id",
         method: "GET",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           pathParams: { id: "123" },
           queryParams: {},
         },
@@ -281,11 +281,11 @@ describe("storage", () => {
     });
 
     it("新規ファイルは次の連番になる", async () => {
-      const data1: RecordedData = {
-        ...testRecordedData,
+      const data1: FileData = {
+        ...testFileData,
         endpoint: "/api/users/:id",
         request: {
-          ...testRecordedData.request,
+          ...testFileData.request,
           pathParams: { id: "1" },
           queryParams: {},
         },
@@ -316,12 +316,12 @@ describe("storage", () => {
 
   describe("getPatternFiles", () => {
     it("パターン内のファイル一覧を取得できる", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testRecordedData);
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
       await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 1), {
-        ...testRecordedData,
+        ...testFileData,
         endpoint: "/api/orders",
         method: "POST",
-        response: { ...testRecordedData.response, status: 201 },
+        response: { ...testFileData.response, status: 201 },
       });
 
       const files = await storage.getPatternFiles(TEST_PATTERN);
@@ -343,7 +343,7 @@ describe("storage", () => {
   describe("deleteFile", () => {
     it("ファイルを削除できる", async () => {
       const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
-      await storage.write(filePath, testRecordedData);
+      await storage.write(filePath, testFileData);
       expect(await storage.exists(filePath)).toBe(true);
 
       await storage.deleteFile(filePath);

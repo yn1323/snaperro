@@ -1,9 +1,11 @@
+import path from "node:path";
 import type { Context } from "hono";
+import { eventBus } from "../core/event-bus.js";
 import { logger } from "../core/logger.js";
 import type { MatchResult } from "../core/matcher.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
-import type { HttpMethod, RecordedData } from "../types/recording.js";
+import type { FileData, HttpMethod } from "../types/file.js";
 
 /**
  * クエリパラメータを解析
@@ -28,12 +30,12 @@ function parseQueryParams(url: URL): Record<string, string | string[]> {
 export async function handleRecord(c: Context, match: MatchResult): Promise<Response> {
   const method = c.req.method;
   const url = new URL(c.req.url);
-  const path = url.pathname;
+  const requestPath = url.pathname;
   const pattern = state.getPattern();
   const targetUrl = `${match.apiConfig.target}${url.pathname}${url.search}`;
 
   if (!pattern) {
-    logger.warn(`${method} ${path} → no pattern selected`);
+    logger.warn(`${method} ${requestPath} → no pattern selected`);
     return c.json(
       {
         error: "No pattern selected",
@@ -43,7 +45,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     );
   }
 
-  logger.info(`${method} ${path} → record`);
+  logger.info(`${method} ${requestPath} → record`);
 
   try {
     // リクエストボディを取得
@@ -106,8 +108,8 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       responseHeaders[key] = value;
     }
 
-    // 6. 録画データを作成
-    const recordedData: RecordedData = {
+    // 6. 記録データを作成
+    const fileData: FileData = {
       endpoint: match.matchedRoute,
       method: method as HttpMethod,
       request: {
@@ -133,9 +135,17 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     );
 
     // 8. ファイルに保存
-    await storage.write(filePath, recordedData);
+    await storage.write(filePath, fileData);
 
-    const fileSize = JSON.stringify(recordedData).length;
+    // 9. SSEイベント発行
+    eventBus.emitSSE(isNew ? "file_created" : "file_updated", {
+      pattern,
+      filename: path.basename(filePath),
+      endpoint: match.matchedRoute,
+      method,
+    });
+
+    const fileSize = JSON.stringify(fileData).length;
     const action = isNew ? "saved" : "updated";
     logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
 

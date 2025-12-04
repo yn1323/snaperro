@@ -26,8 +26,8 @@ export type ApiConfig = z.infer<typeof ApiConfigSchema>;
 export const SnaperroConfigSchema = z.object({
   /** サーバーポート（デフォルト: 3333） */
   port: z.number().int().min(1).max(65535).optional().default(3333),
-  /** 記録データの保存先ディレクトリ（デフォルト: .snaperro/recordings） */
-  recordingsDir: z.string().optional().default(".snaperro/recordings"),
+  /** 記録データの保存先ディレクトリ（デフォルト: .snaperro/files） */
+  filesDir: z.string().optional().default(".snaperro/files"),
   /** API設定 */
   apis: z.record(z.string(), ApiConfigSchema),
 });

@@ -4,6 +4,7 @@ interface TopBarProps {
   mode: Mode;
   connected: boolean;
   onModeChange: (mode: Mode) => void;
+  onRecordRequest: () => void;
 }
 
 const modes: { value: Mode; label: string; color: string; activeColor: string }[] = [
@@ -16,11 +17,21 @@ const modes: { value: Mode; label: string; color: string; activeColor: string }[
  * トップバー
  * モード切替ボタンと接続状態を表示
  */
-export function TopBar({ mode, connected, onModeChange }: TopBarProps) {
+export function TopBar({ mode, connected, onModeChange, onRecordRequest }: TopBarProps) {
+  const handleModeClick = (targetMode: Mode) => {
+    if (targetMode === "record" && mode !== "record") {
+      // Recordモードへの切替時は特別なフローを実行
+      onRecordRequest();
+    } else {
+      onModeChange(targetMode);
+    }
+  };
+
   return (
     <div className="h-12 bg-gray-800 text-white flex items-center px-4 gap-4 shrink-0">
       {/* ロゴ */}
       <div className="flex items-center gap-2">
+        <span className="text-xl">🐕</span>
         <span className="text-xl font-bold">snaperro</span>
       </div>
 
@@ -31,8 +42,8 @@ export function TopBar({ mode, connected, onModeChange }: TopBarProps) {
             <button
               key={value}
               type="button"
-              onClick={() => onModeChange(value)}
-              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+              onClick={() => handleModeClick(value)}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
                 mode === value ? activeColor : color
               } text-white`}
             >

@@ -222,9 +222,9 @@ controlApi.delete("/patterns/:name", async (c) => {
     return c.json({ error: "Not found", resource: "pattern", name }, 404);
   }
 
-  // 現在選択中のパターンは削除できない
+  // 現在選択中のパターンを削除する場合は未選択状態にする
   if (state.getPattern() === name) {
-    return c.json({ error: "Cannot delete current pattern", name }, 400);
+    await state.setPattern(null);
   }
 
   await storage.deletePattern(name);
@@ -409,6 +409,14 @@ controlApi.post("/patterns/:pattern/files/upload", async (c) => {
     const filename = `${endpointToFileName(data.endpoint)}_${String(sequence).padStart(3, "0")}.json`;
 
     await storage.write(filePath, data);
+
+    // SSEイベント発行
+    eventBus.emitSSE("file_created", {
+      pattern,
+      filename,
+      endpoint: data.endpoint,
+      method: data.method,
+    });
 
     return c.json({ filename, message: "File uploaded" }, 201);
   } catch {

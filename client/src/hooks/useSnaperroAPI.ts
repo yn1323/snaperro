@@ -23,6 +23,7 @@ interface UseSnaperroAPIReturn {
   updateFile: (pattern: string, filename: string, data: FileData) => Promise<void>;
   deleteFile: (pattern: string, filename: string) => Promise<void>;
   uploadFile: (pattern: string, file: File) => Promise<void>;
+  downloadFile: (pattern: string, filename: string) => Promise<void>;
 }
 
 /**
@@ -180,6 +181,25 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     }
   }, []);
 
+  const downloadFile = useCallback(async (pattern: string, filename: string): Promise<void> => {
+    const url = `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}/download`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Download failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = filename.endsWith(".json") ? filename : `${filename}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+  }, []);
+
   return useMemo(
     () => ({
       setMode,
@@ -196,6 +216,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       updateFile,
       deleteFile,
       uploadFile,
+      downloadFile,
     }),
     [
       setMode,
@@ -212,6 +233,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       updateFile,
       deleteFile,
       uploadFile,
+      downloadFile,
     ],
   );
 }

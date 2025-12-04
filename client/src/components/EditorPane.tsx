@@ -100,7 +100,7 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
             type="button"
             onClick={handleFormat}
             disabled={!!parseError}
-            className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
           >
             整形
           </button>
@@ -108,14 +108,14 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
             type="button"
             onClick={handleSave}
             disabled={!!parseError || !hasChanges}
-            className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+            className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
           >
             保存
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 cursor-pointer"
           >
             削除
           </button>

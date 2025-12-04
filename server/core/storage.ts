@@ -392,6 +392,8 @@ export const storage = {
       const destPath = path.join(destDir, entry);
       await fs.copyFile(srcPath, destPath);
     }
+
+    eventBus.emitSSE("pattern_created", { name: destination });
   },
 
   /**
@@ -483,6 +485,7 @@ export const storage = {
         fileCount++;
       }
 
+      eventBus.emitSSE("pattern_created", { name: patternName });
       return fileCount;
     } finally {
       // 一時ファイルを削除

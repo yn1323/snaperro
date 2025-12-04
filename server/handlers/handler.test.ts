@@ -7,7 +7,7 @@ import { createHandler } from "./handler.js";
 // テスト用設定（:param形式のルートパターン）
 const testConfig: SnaperroConfig = {
   port: 3333,
-  recordingsDir: ".snaperro/recordings",
+  filesDir: ".snaperro/files",
   apis: {
     userService: {
       name: "ユーザーサービス",

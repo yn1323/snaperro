@@ -8,9 +8,9 @@ export const HttpMethodSchema = z.enum(["GET", "POST", "PUT", "PATCH", "DELETE",
 export type HttpMethod = z.infer<typeof HttpMethodSchema>;
 
 /**
- * 録画されたリクエスト情報
+ * 記録されたリクエスト情報
  */
-export const RecordedRequestSchema = z.object({
+export const FileRequestSchema = z.object({
   /** パスパラメータ */
   pathParams: z.record(z.string(), z.string()),
   /** クエリパラメータ */
@@ -21,12 +21,12 @@ export const RecordedRequestSchema = z.object({
   body: z.unknown().nullable(),
 });
 
-export type RecordedRequest = z.infer<typeof RecordedRequestSchema>;
+export type FileRequest = z.infer<typeof FileRequestSchema>;
 
 /**
- * 録画されたレスポンス情報
+ * 記録されたレスポンス情報
  */
-export const RecordedResponseSchema = z.object({
+export const FileResponseSchema = z.object({
   /** HTTPステータスコード */
   status: z.number().int().min(100).max(599),
   /** レスポンスヘッダー */
@@ -35,20 +35,20 @@ export const RecordedResponseSchema = z.object({
   body: z.unknown(),
 });
 
-export type RecordedResponse = z.infer<typeof RecordedResponseSchema>;
+export type FileResponse = z.infer<typeof FileResponseSchema>;
 
 /**
- * 録画データ全体
+ * 記録データ全体
  */
-export const RecordedDataSchema = z.object({
+export const FileDataSchema = z.object({
   /** エンドポイントのパスパターン（例: "/api/users/:id"） */
   endpoint: z.string(),
   /** HTTPメソッド */
   method: HttpMethodSchema,
   /** リクエスト情報 */
-  request: RecordedRequestSchema,
+  request: FileRequestSchema,
   /** レスポンス情報 */
-  response: RecordedResponseSchema,
+  response: FileResponseSchema,
 });
 
-export type RecordedData = z.infer<typeof RecordedDataSchema>;
+export type FileData = z.infer<typeof FileDataSchema>;

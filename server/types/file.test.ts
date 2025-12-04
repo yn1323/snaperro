@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { RecordedDataSchema, RecordedRequestSchema, RecordedResponseSchema } from "./recording.js";
+import { FileDataSchema, FileRequestSchema, FileResponseSchema } from "./file.js";
 
-describe("RecordedRequestSchema", () => {
+describe("FileRequestSchema", () => {
   it("有効なGETリクエストを受け入れる", () => {
     const validRequest = {
       pathParams: {},
@@ -12,7 +12,7 @@ describe("RecordedRequestSchema", () => {
       body: null,
     };
 
-    const result = RecordedRequestSchema.safeParse(validRequest);
+    const result = FileRequestSchema.safeParse(validRequest);
     expect(result.success).toBe(true);
   });
 
@@ -29,7 +29,7 @@ describe("RecordedRequestSchema", () => {
       },
     };
 
-    const result = RecordedRequestSchema.safeParse(validRequest);
+    const result = FileRequestSchema.safeParse(validRequest);
     expect(result.success).toBe(true);
   });
 
@@ -41,7 +41,7 @@ describe("RecordedRequestSchema", () => {
       body: null,
     };
 
-    const result = RecordedRequestSchema.safeParse(validRequest);
+    const result = FileRequestSchema.safeParse(validRequest);
     expect(result.success).toBe(true);
   });
 
@@ -53,12 +53,12 @@ describe("RecordedRequestSchema", () => {
       body: null,
     };
 
-    const result = RecordedRequestSchema.safeParse(validRequest);
+    const result = FileRequestSchema.safeParse(validRequest);
     expect(result.success).toBe(true);
   });
 });
 
-describe("RecordedResponseSchema", () => {
+describe("FileResponseSchema", () => {
   it("有効なレスポンスを受け入れる", () => {
     const validResponse = {
       status: 200,
@@ -71,7 +71,7 @@ describe("RecordedResponseSchema", () => {
       },
     };
 
-    const result = RecordedResponseSchema.safeParse(validResponse);
+    const result = FileResponseSchema.safeParse(validResponse);
     expect(result.success).toBe(true);
   });
 
@@ -84,7 +84,7 @@ describe("RecordedResponseSchema", () => {
       },
     };
 
-    const result = RecordedResponseSchema.safeParse(validResponse);
+    const result = FileResponseSchema.safeParse(validResponse);
     expect(result.success).toBe(true);
   });
 
@@ -95,7 +95,7 @@ describe("RecordedResponseSchema", () => {
       body: null,
     };
 
-    const result = RecordedResponseSchema.safeParse(invalidResponse);
+    const result = FileResponseSchema.safeParse(invalidResponse);
     expect(result.success).toBe(false);
   });
 
@@ -109,13 +109,13 @@ describe("RecordedResponseSchema", () => {
       ],
     };
 
-    const result = RecordedResponseSchema.safeParse(validResponse);
+    const result = FileResponseSchema.safeParse(validResponse);
     expect(result.success).toBe(true);
   });
 });
 
-describe("RecordedDataSchema", () => {
-  it("有効な録画データを受け入れる", () => {
+describe("FileDataSchema", () => {
+  it("有効な記録データを受け入れる", () => {
     const validData = {
       endpoint: "/api/users",
       method: "POST",
@@ -141,11 +141,11 @@ describe("RecordedDataSchema", () => {
       },
     };
 
-    const result = RecordedDataSchema.safeParse(validData);
+    const result = FileDataSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
-  it("パスパラメータ付きの録画データを受け入れる", () => {
+  it("パスパラメータ付きの記録データを受け入れる", () => {
     const validData = {
       endpoint: "/api/users/:id",
       method: "GET",
@@ -162,7 +162,7 @@ describe("RecordedDataSchema", () => {
       },
     };
 
-    const result = RecordedDataSchema.safeParse(validData);
+    const result = FileDataSchema.safeParse(validData);
     expect(result.success).toBe(true);
   });
 
@@ -183,7 +183,7 @@ describe("RecordedDataSchema", () => {
       },
     };
 
-    const result = RecordedDataSchema.safeParse(invalidData);
+    const result = FileDataSchema.safeParse(invalidData);
     expect(result.success).toBe(false);
   });
 
@@ -203,7 +203,7 @@ describe("RecordedDataSchema", () => {
       },
     };
 
-    const result = RecordedDataSchema.safeParse(invalidData);
+    const result = FileDataSchema.safeParse(invalidData);
     expect(result.success).toBe(false);
   });
 });

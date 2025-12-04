@@ -2,7 +2,7 @@ import { defineConfig } from "snaperro";
 
 export default defineConfig({
   port: 3333,
-  recordingsDir: ".snaperro/recordings",
+  filesDir: ".snaperro/files",
 
   apis: {
     // JSON Placeholder API（サンプル）

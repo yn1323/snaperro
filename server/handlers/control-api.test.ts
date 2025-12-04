@@ -12,7 +12,7 @@ const app = new Hono();
 app.route("/__snaperro__", controlApi);
 
 const TEST_PATTERN = "__test_control_api__";
-const BASE_DIR = ".snaperro/recordings";
+const BASE_DIR = ".snaperro/files";
 
 describe("control-api", () => {
   beforeEach(async () => {
@@ -45,14 +45,14 @@ describe("control-api", () => {
         mode: string;
         currentPattern: string;
         patterns: string[];
-        recordingsCount: number;
+        filesCount: number;
       };
 
       expect(res.status).toBe(200);
       expect(body.mode).toBe("mock");
       expect(body.currentPattern).toBe(TEST_PATTERN);
       expect(Array.isArray(body.patterns)).toBe(true);
-      expect(typeof body.recordingsCount).toBe("number");
+      expect(typeof body.filesCount).toBe("number");
     });
 
     it("初期状態を返す", async () => {
@@ -61,13 +61,13 @@ describe("control-api", () => {
         mode: string;
         currentPattern: string | null;
         patterns: string[];
-        recordingsCount: number;
+        filesCount: number;
       };
 
       expect(res.status).toBe(200);
       expect(body.mode).toBe("proxy");
       expect(body.currentPattern).toBeNull();
-      expect(body.recordingsCount).toBe(0);
+      expect(body.filesCount).toBe(0);
     });
   });
 
@@ -142,7 +142,7 @@ describe("control-api", () => {
 
       const testPattern = body.patterns.find((p) => p.name === TEST_PATTERN);
       expect(testPattern).toBeDefined();
-      expect(testPattern?.recordingsCount).toBe(0);
+      expect(testPattern?.filesCount).toBe(0);
       expect(testPattern?.createdAt).toBeDefined();
       expect(testPattern?.updatedAt).toBeDefined();
     });
@@ -413,11 +413,11 @@ describe("control-api", () => {
         method: "POST",
         body: formData,
       });
-      const body = (await uploadRes.json()) as { name: string; recordingsCount: number; message: string };
+      const body = (await uploadRes.json()) as { name: string; filesCount: number; message: string };
 
       expect(uploadRes.status).toBe(201);
       expect(body.name).toBe(newPatternName);
-      expect(body.recordingsCount).toBe(1);
+      expect(body.filesCount).toBe(1);
       expect(body.message).toBe("Pattern uploaded");
 
       // クリーンアップ
@@ -460,9 +460,9 @@ describe("control-api", () => {
   // 記録データ操作（RESTful: パターンをURLに含める）
   // ============================================================
 
-  describe("GET /patterns/:pattern/recordings", () => {
+  describe("GET /patterns/:pattern/files", () => {
     it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/recordings");
+      const res = await app.request("/__snaperro__/patterns/nonexistent/files");
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
@@ -471,18 +471,18 @@ describe("control-api", () => {
     });
 
     it("記録ファイル一覧を取得できる", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/recordings`);
-      const body = (await res.json()) as { pattern: string; recordings: unknown[] };
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files`);
+      const body = (await res.json()) as { pattern: string; files: unknown[] };
 
       expect(res.status).toBe(200);
       expect(body.pattern).toBe(TEST_PATTERN);
-      expect(Array.isArray(body.recordings)).toBe(true);
+      expect(Array.isArray(body.files)).toBe(true);
     });
   });
 
-  describe("GET /patterns/:pattern/recordings/:filename", () => {
+  describe("GET /patterns/:pattern/files/:filename", () => {
     it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/recordings/test.json");
+      const res = await app.request("/__snaperro__/patterns/nonexistent/files/test.json");
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
@@ -491,18 +491,18 @@ describe("control-api", () => {
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/recordings/nonexistent.json`);
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files/nonexistent.json`);
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
       expect(body.error).toBe("Not found");
-      expect(body.resource).toBe("recording");
+      expect(body.resource).toBe("file");
     });
   });
 
-  describe("DELETE /patterns/:pattern/recordings/:filename", () => {
+  describe("DELETE /patterns/:pattern/files/:filename", () => {
     it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/recordings/test.json", {
+      const res = await app.request("/__snaperro__/patterns/nonexistent/files/test.json", {
         method: "DELETE",
       });
 
@@ -513,14 +513,14 @@ describe("control-api", () => {
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/recordings/nonexistent.json`, {
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files/nonexistent.json`, {
         method: "DELETE",
       });
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
       expect(body.error).toBe("Not found");
-      expect(body.resource).toBe("recording");
+      expect(body.resource).toBe("file");
     });
   });
 });

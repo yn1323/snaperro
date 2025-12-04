@@ -2,22 +2,22 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import archiver from "archiver";
 import unzipper from "unzipper";
-import type { RecordedData } from "../types/recording.js";
+import type { FileData } from "../types/file.js";
 
-let BASE_DIR = ".snaperro/recordings";
+let BASE_DIR = ".snaperro/files";
 
 /**
  * ベースディレクトリを設定
  * サーバー起動時にconfigから呼び出す
  */
-export function setRecordingsDir(dir: string): void {
+export function setFilesDir(dir: string): void {
   BASE_DIR = dir;
 }
 
 /**
  * 現在のベースディレクトリを取得
  */
-export function getRecordingsDir(): string {
+export function getFilesDir(): string {
   return BASE_DIR;
 }
 
@@ -83,7 +83,7 @@ export interface FileInfo {
  */
 export interface PatternMetadata {
   name: string;
-  recordingsCount: number;
+  filesCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -93,7 +93,7 @@ export interface PatternMetadata {
  */
 export interface MatchingFileResult {
   filePath: string;
-  recordedData: RecordedData;
+  fileData: FileData;
 }
 
 /**
@@ -108,21 +108,21 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
  */
 export const storage = {
   /**
-   * 録画データをファイルに書き込み
+   * 記録データをファイルに書き込み
    */
-  async write(filePath: string, data: RecordedData): Promise<void> {
+  async write(filePath: string, data: FileData): Promise<void> {
     const fullPath = path.join(BASE_DIR, filePath);
     await fs.mkdir(path.dirname(fullPath), { recursive: true });
     await fs.writeFile(fullPath, JSON.stringify(data, null, 2), "utf-8");
   },
 
   /**
-   * 録画データをファイルから読み込み
+   * 記録データをファイルから読み込み
    */
-  async read(filePath: string): Promise<RecordedData> {
+  async read(filePath: string): Promise<FileData> {
     const fullPath = path.join(BASE_DIR, filePath);
     const content = await fs.readFile(fullPath, "utf-8");
-    return JSON.parse(content) as RecordedData;
+    return JSON.parse(content) as FileData;
   },
 
   /**
@@ -214,7 +214,7 @@ export const storage = {
           continue;
         }
 
-        return { filePath, recordedData: data };
+        return { filePath, fileData: data };
       }
 
       return null;
@@ -282,7 +282,7 @@ export const storage = {
         const filePath = path.join(patternDir, entry);
         try {
           const content = await fs.readFile(filePath, "utf-8");
-          const data = JSON.parse(content) as RecordedData;
+          const data = JSON.parse(content) as FileData;
           const stat = await fs.stat(filePath);
 
           files.push({
@@ -351,7 +351,7 @@ export const storage = {
 
       return {
         name,
-        recordingsCount: files.length,
+        filesCount: files.length,
         createdAt: stat.birthtime.toISOString(),
         updatedAt: latestUpdated,
       };

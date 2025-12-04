@@ -61,8 +61,8 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
     );
   }
 
-  logger.info(`${method} ${path} → mock → ${result.filePath} (${result.recordedData.response.status})`);
+  logger.info(`${method} ${path} → mock → ${result.filePath} (${result.fileData.response.status})`);
 
   // レスポンスを返却
-  return c.json(result.recordedData.response.body as object, result.recordedData.response.status as never);
+  return c.json(result.fileData.response.body as object, result.fileData.response.status as never);
 }

@@ -104,7 +104,7 @@ API_KEY=your-api-key-here
 ```
 .snaperro/
 ├── state.json              ← サーバー状態（モード、パターン）
-└── recordings/
+└── files/
     ├── 正常系フル/           ← パターン「正常系フル」
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
@@ -164,7 +164,7 @@ your-project/
 ├── .env.example           # 環境変数テンプレ（Git管理する）
 └── .snaperro/             # 録画データ（Git管理しない）
     ├── state.json         # サーバー状態
-    └── recordings/
+    └── files/
         ├── 正常系フル/
         │   ├── api_users_001.json
         │   └── api_users_{id}_001.json
@@ -236,7 +236,7 @@ snaperro/
 │   │   └── logger.ts
 │   └── types/                # 型定義
 │       ├── config.ts
-│       └── recording.ts
+│       └── file.ts
 ├── templates/                # initで生成するテンプレート
 └── doc/                      # ドキュメント
 ```

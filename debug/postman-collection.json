@@ -30,7 +30,7 @@
                   "host": ["{{baseUrl}}"],
                   "path": ["__snaperro__", "status"]
                 },
-                "description": "サーバーステータス取得（モード、パターン、レコーディング数）"
+                "description": "サーバーステータス取得（モード、パターン、ファイル数）"
               }
             },
             {
@@ -293,18 +293,18 @@
           ]
         },
         {
-          "name": "Recordings",
+          "name": "Files",
           "description": "RESTful: パターンをURLに含める",
           "item": [
             {
-              "name": "List All Recordings",
+              "name": "List All Files",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -313,18 +313,18 @@
                     }
                   ]
                 },
-                "description": "指定パターン内のレコーディング一覧取得"
+                "description": "指定パターン内のファイル一覧取得"
               }
             },
             {
-              "name": "Get Recording Content",
+              "name": "Get File Content",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -334,22 +334,22 @@
                     {
                       "key": "filename",
                       "value": "api_users_001.json",
-                      "description": "レコーディングファイル名"
+                      "description": "ファイル名"
                     }
                   ]
                 },
-                "description": "レコーディング内容取得"
+                "description": "ファイル内容取得"
               }
             },
             {
-              "name": "Download Recording",
+              "name": "Download File",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename/download",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename/download",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename", "download"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename", "download"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -363,11 +363,11 @@
                     }
                   ]
                 },
-                "description": "レコーディングファイルをダウンロード"
+                "description": "ファイルをダウンロード"
               }
             },
             {
-              "name": "Upload Recording",
+              "name": "Upload File",
               "request": {
                 "method": "POST",
                 "header": [],
@@ -383,9 +383,9 @@
                   ]
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/upload",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/upload",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", "upload"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files", "upload"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -394,11 +394,11 @@
                     }
                   ]
                 },
-                "description": "レコーディングJSONファイルをアップロード"
+                "description": "JSONファイルをアップロード"
               }
             },
             {
-              "name": "Edit Recording",
+              "name": "Edit File",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -417,9 +417,9 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -433,18 +433,18 @@
                     }
                   ]
                 },
-                "description": "レコーディング内容を編集"
+                "description": "ファイル内容を編集"
               }
             },
             {
-              "name": "Delete Recording",
+              "name": "Delete File",
               "request": {
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/recordings/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "recordings", ":filename"],
+                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
                   "variable": [
                     {
                       "key": "pattern",
@@ -458,7 +458,7 @@
                     }
                   ]
                 },
-                "description": "レコーディング削除"
+                "description": "ファイル削除"
               }
             }
           ]

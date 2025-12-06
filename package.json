@@ -39,6 +39,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "type-check": "tsc --noEmit",
+    "type-check:client": "tsc --noEmit -p client/tsconfig.json",
+    "type-check:demo": "tsc --noEmit -p demo/tsconfig.json",
     "format": "biome check --write",
     "lint": "biome check"
   },

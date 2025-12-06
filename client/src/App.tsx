@@ -232,6 +232,7 @@ export default function App() {
       <Layout
         topBar={
           <TopBar
+            version={state.version}
             mode={state.mode}
             connected={connected}
             onModeChange={handleModeChange}

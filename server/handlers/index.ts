@@ -5,6 +5,7 @@ import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "../core/logger.js";
 import { findAvailablePort } from "../core/port.js";
+import { initializeProxyAgent } from "../core/proxy-agent.js";
 import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { controlApi } from "./control-api.js";
@@ -44,6 +45,9 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
 
       // Verbose logging setup
       logger.setVerbose(verbose);
+
+      // Initialize upstream proxy agent
+      initializeProxyAgent(config);
 
       // Find available port (max 10 attempts)
       const port = await findAvailablePort(requestedPort);

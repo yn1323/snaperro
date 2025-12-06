@@ -155,6 +155,31 @@ API_KEY=your-api-key-here
 | `routes` | string[] | Yes | Matching route patterns |
 | `headers` | object | No | Headers to add |
 
+#### Upstream Proxy
+
+If you're behind a corporate proxy, configure upstream proxy settings:
+
+**Via config file:**
+
+```typescript
+export default defineConfig({
+  upstreamProxy: {
+    url: "http://proxy.company.com:8080",
+  },
+  // ...
+})
+```
+
+**Via environment variable:**
+
+```bash
+export HTTPS_PROXY=http://proxy.company.com:8080
+# or with authentication
+export HTTPS_PROXY=http://username:password@proxy.company.com:8080
+```
+
+Config file takes priority over environment variables.
+
 ### CLI Commands
 
 | Command | Description |

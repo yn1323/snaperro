@@ -3,6 +3,7 @@ import { streamSSE } from "hono/streaming";
 import { eventBus } from "../core/event-bus.js";
 import { type Mode, state } from "../core/state.js";
 import { storage } from "../core/storage.js";
+import { VERSION } from "../core/version.js";
 import type { FileData } from "../types/file.js";
 
 /**
@@ -25,6 +26,7 @@ controlApi.get("/status", async (c) => {
   const filesCount = pattern ? (await storage.getPatternFiles(pattern)).length : 0;
 
   return c.json({
+    version: VERSION,
     mode: state.getMode(),
     currentPattern: pattern,
     patterns,
@@ -494,6 +496,7 @@ controlApi.get("/events", async (c) => {
     await stream.writeSSE({
       event: "connected",
       data: JSON.stringify({
+        version: VERSION,
         mode: state.getMode(),
         currentPattern,
         patterns: patternNames,

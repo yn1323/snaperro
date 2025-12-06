@@ -36,6 +36,7 @@ export interface PatternInfo {
  * アプリケーション状態（SSEで管理）
  */
 export interface SnaperroState {
+  version: string;
   mode: Mode;
   currentPattern: string | null;
   patterns: string[];
@@ -93,6 +94,7 @@ export type SSEEventType =
  * 接続完了イベントデータ
  */
 export interface ConnectedEventData {
+  version: string;
   mode: Mode;
   currentPattern: string | null;
   patterns: string[];

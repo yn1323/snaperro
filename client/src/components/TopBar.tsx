@@ -1,6 +1,7 @@
 import type { Mode } from "../types";
 
 interface TopBarProps {
+  version: string;
   mode: Mode;
   connected: boolean;
   onModeChange: (mode: Mode) => void;
@@ -17,7 +18,7 @@ const modes: { value: Mode; label: string; color: string; activeColor: string }[
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ mode, connected, onModeChange, onRecordRequest }: TopBarProps) {
+export function TopBar({ version, mode, connected, onModeChange, onRecordRequest }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
     if (targetMode === "record" && mode !== "record") {
       // Execute special flow when switching to Record mode
@@ -33,6 +34,7 @@ export function TopBar({ mode, connected, onModeChange, onRecordRequest }: TopBa
       <div className="flex items-center gap-2">
         <span className="text-xl">🐕</span>
         <span className="text-xl font-bold">snaperro</span>
+        {version && <span className="text-xs text-gray-400">v{version}</span>}
       </div>
 
       {/* Mode selector */}

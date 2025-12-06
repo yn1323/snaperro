@@ -52,7 +52,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     // Get request body
     let requestBody: unknown;
     if (method !== "GET" && method !== "HEAD") {
-      const text = await c.req.raw.clone().text();
+      const text = await c.req.text();
       if (text) {
         try {
           requestBody = JSON.parse(text);
@@ -140,6 +140,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       match.matchedRoute,
       match.pathParams,
       queryParams,
+      requestBody ?? null,
     );
 
     // 8. Save to file

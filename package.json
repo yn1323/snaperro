@@ -1,6 +1,6 @@
 {
   "name": "snaperro",
-  "version": "1.1.2",
+  "version": "1.1.5",
   "description": "🐕 Record real API responses, replay them anytime. Visual control included.",
   "type": "module",
   "main": "./dist/index.js",
@@ -65,6 +65,7 @@
     "archiver": "^7.0.1",
     "commander": "^13.1.0",
     "consola": "^3.4.2",
+    "dotenv": "^17.2.3",
     "hono": "^4.7.10",
     "jiti": "^2.6.1",
     "open": "^11.0.0",

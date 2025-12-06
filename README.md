@@ -180,6 +180,12 @@ export HTTPS_PROXY=http://username:password@proxy.company.com:8080
 
 Config file takes priority over environment variables.
 
+**Important:** When using an upstream proxy, add `localhost` to `NO_PROXY` to ensure local requests bypass the proxy:
+
+```bash
+export NO_PROXY=localhost,127.0.0.1
+```
+
 ### CLI Commands
 
 | Command | Description |
@@ -203,6 +209,7 @@ Config file takes priority over environment variables.
 |--------|-------------|
 | `-p, --port <port>` | Specify port number |
 | `-c, --config <path>` | Specify config file path |
+| `-e, --env <path>` | Specify env file path (default: `.env` in config directory) |
 | `-v, --verbose` | Show detailed logs |
 
 ### 3 Modes

@@ -14,12 +14,16 @@ export default defineConfig({
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
       routes: [
+        // All methods (GET, POST, PUT, DELETE, etc.)
         "/users",
         "/users/:id",
         "/posts",
         "/posts/:id",
         "/posts/:id/comments",
         "/comments",
+        // Or specify method explicitly:
+        // "GET /users",
+        // "POST /users",
       ],
     },
 
@@ -65,6 +69,7 @@ function createFileData(
   queryParams: Record<string, string>,
   status: number,
   body: unknown,
+  requestBody?: unknown,
 ): FileData {
   return {
     endpoint,
@@ -73,7 +78,7 @@ function createFileData(
       pathParams,
       queryParams,
       headers: {},
-      body: null,
+      body: requestBody ?? null,
     },
     response: {
       status,
@@ -265,6 +270,52 @@ const SAMPLE_DEMO: Record<string, FileData> = {
   "posts_{id}_comments_001.json": createFileData("/posts/:id/comments", "GET", { id: "1" }, {}, 200, COMMENTS_DATA[1]),
   "posts_{id}_comments_002.json": createFileData("/posts/:id/comments", "GET", { id: "2" }, {}, 200, COMMENTS_DATA[2]),
   "posts_{id}_comments_003.json": createFileData("/posts/:id/comments", "GET", { id: "3" }, {}, 200, COMMENTS_DATA[3]),
+
+  // === POST: Create user ===
+  "users_002.json": createFileData(
+    "/users",
+    "POST",
+    {},
+    {},
+    201,
+    {
+      id: 11,
+      name: "New User",
+      username: "newuser",
+      email: "newuser@example.com",
+      phone: "123-456-7890",
+      website: "newuser.com",
+    },
+    {
+      name: "New User",
+      username: "newuser",
+      email: "newuser@example.com",
+      phone: "123-456-7890",
+      website: "newuser.com",
+    },
+  ),
+
+  // === POST: Create post ===
+  "posts_005.json": createFileData(
+    "/posts",
+    "POST",
+    {},
+    {},
+    201,
+    { userId: 1, id: 101, title: "New Post Title", body: "This is a new post content..." },
+    { userId: 1, title: "New Post Title", body: "This is a new post content..." },
+  ),
+
+  // === POST: Create comment ===
+  "comments_005.json": createFileData(
+    "/comments",
+    "POST",
+    {},
+    {},
+    201,
+    { postId: 1, id: 501, name: "New comment", email: "commenter@example.com", body: "This is a new comment" },
+    { postId: 1, name: "New comment", email: "commenter@example.com", body: "This is a new comment" },
+  ),
 };
 
 // ============================================

@@ -3,7 +3,7 @@ import { buildUrl, type Scenario } from "../scenarios";
 
 type ScenarioCardProps = {
   scenario: Scenario;
-  onExecute: (url: string) => void;
+  onExecute: (url: string, method: string, requestBody?: unknown) => void;
   isLoading: boolean;
 };
 
@@ -29,7 +29,7 @@ export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardPro
 
   const handleExecute = () => {
     const url = buildUrl(scenario, paramValue);
-    onExecute(url);
+    onExecute(url, scenario.method, scenario.requestBody);
   };
 
   const accentColor = categoryColors[scenario.category];
@@ -43,6 +43,11 @@ export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardPro
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
+            {scenario.method !== "GET" && (
+              <span className="shrink-0 px-1 py-0.5 rounded text-[10px] font-bold bg-[var(--accent-cyan)] text-[var(--bg-primary)]">
+                {scenario.method}
+              </span>
+            )}
             <span className="font-mono text-sm font-medium truncate">{scenario.title}</span>
             {scenario.category !== "basic" && (
               <span

@@ -249,6 +249,82 @@ describe("storage", () => {
       const result = await storage.findMatchingFile(TEST_PATTERN, "GET", "/api/unknown", {}, {});
       expect(result).toBeNull();
     });
+
+    it("リクエストボディが一致するファイルを見つける", async () => {
+      const data: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "POST",
+        request: {
+          ...testFileData.request,
+          body: { name: "test", email: "test@example.com" },
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+
+      const result = await storage.findMatchingFile(
+        TEST_PATTERN,
+        "POST",
+        "/api/users",
+        {},
+        {},
+        { name: "test", email: "test@example.com" },
+      );
+
+      expect(result).not.toBeNull();
+    });
+
+    it("リクエストボディが異なるとマッチしない", async () => {
+      const data: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "POST",
+        request: {
+          ...testFileData.request,
+          body: { name: "user1" },
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+
+      const result = await storage.findMatchingFile(TEST_PATTERN, "POST", "/api/users", {}, {}, { name: "user2" });
+
+      expect(result).toBeNull();
+    });
+
+    it("bodyがnullの場合も正しくマッチする", async () => {
+      const data: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "GET",
+        request: {
+          ...testFileData.request,
+          body: null,
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+
+      const result = await storage.findMatchingFile(TEST_PATTERN, "GET", "/api/users", {}, {}, null);
+
+      expect(result).not.toBeNull();
+    });
+
+    it("requestBodyが未指定の場合はボディチェックをスキップする", async () => {
+      const data: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "POST",
+        request: {
+          ...testFileData.request,
+          body: { name: "test" },
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+
+      // requestBodyを渡さない場合はマッチする（Mockモード互換）
+      const result = await storage.findMatchingFile(TEST_PATTERN, "POST", "/api/users", {}, {});
+
+      expect(result).not.toBeNull();
+    });
   });
 
   describe("findOrCreateFile", () => {
@@ -302,6 +378,56 @@ describe("storage", () => {
 
       expect(result.isNew).toBe(true);
       expect(result.filePath).toContain("_002.json");
+    });
+
+    it("ボディが異なる場合は新規ファイルを作成する", async () => {
+      const data1: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "POST",
+        request: {
+          ...testFileData.request,
+          body: { name: "user1" },
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data1);
+
+      const result = await storage.findOrCreateFile(
+        TEST_PATTERN,
+        "POST",
+        "/api/users",
+        {},
+        {},
+        { name: "user2" }, // 異なるボディ
+      );
+
+      expect(result.isNew).toBe(true);
+      expect(result.filePath).toContain("_002.json");
+    });
+
+    it("ボディが同じ場合は既存ファイルを上書きする", async () => {
+      const data1: FileData = {
+        ...testFileData,
+        endpoint: "/api/users",
+        method: "POST",
+        request: {
+          ...testFileData.request,
+          body: { name: "user1" },
+        },
+      };
+      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data1);
+
+      const result = await storage.findOrCreateFile(
+        TEST_PATTERN,
+        "POST",
+        "/api/users",
+        {},
+        {},
+        { name: "user1" }, // 同じボディ
+      );
+
+      expect(result.isNew).toBe(false);
+      expect(result.filePath).toContain("_001.json");
     });
   });
 

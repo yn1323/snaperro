@@ -180,6 +180,12 @@ export HTTPS_PROXY=http://username:password@proxy.company.com:8080
 
 設定ファイルが環境変数より優先されます。
 
+**重要:** 上流プロキシを使用する場合、ローカルリクエストがプロキシをバイパスするように `localhost` を `NO_PROXY` に追加してください:
+
+```bash
+export NO_PROXY=localhost,127.0.0.1
+```
+
 ### CLI コマンド
 
 | コマンド | 説明 |
@@ -203,6 +209,7 @@ export HTTPS_PROXY=http://username:password@proxy.company.com:8080
 |-----------|------|
 | `-p, --port <port>` | ポート番号を指定 |
 | `-c, --config <path>` | 設定ファイルのパスを指定 |
+| `-e, --env <path>` | 環境変数ファイルのパスを指定（デフォルト: 設定ファイルと同じディレクトリの`.env`） |
 | `-v, --verbose` | 詳細ログを表示 |
 
 ### 3つのモード

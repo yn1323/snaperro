@@ -9,6 +9,7 @@ export type Scenario = {
   paramType?: "path" | "query";
   paramName?: string;
   paramOptions?: { value: string; label: string }[];
+  requestBody?: unknown;
 };
 
 export const scenarios: Scenario[] = [
@@ -39,6 +40,36 @@ export const scenarios: Scenario[] = [
     endpoint: "/comments",
     method: "GET",
     category: "basic",
+  },
+  {
+    id: "create-user",
+    title: "Create User",
+    icon: "user",
+    description: "POST /users",
+    endpoint: "/users",
+    method: "POST",
+    category: "basic",
+    requestBody: {
+      name: "New User",
+      username: "newuser",
+      email: "newuser@example.com",
+      phone: "123-456-7890",
+      website: "newuser.com",
+    },
+  },
+  {
+    id: "create-post",
+    title: "Create Post",
+    icon: "post",
+    description: "POST /posts",
+    endpoint: "/posts",
+    method: "POST",
+    category: "basic",
+    requestBody: {
+      userId: 1,
+      title: "New Post Title",
+      body: "This is a new post content...",
+    },
   },
 
   // Path parameter scenarios

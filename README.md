@@ -4,39 +4,97 @@
   <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/logo.png" alt="snaperro Logo" width="200" />
 </p>
 
-モックプロキシサーバー。複数のAPIからのレスポンスを記録・再生し、開発・テストを効率化します。
+A mock proxy server that records and replays responses from multiple APIs to streamline development and testing.
 
-## 名前の由来
+## Name Origin
 
-- **snap**: スナップショット、素早くキャプチャする
-- **perro**: スペイン語で「犬」
-- 「忠実にデータを取ってくる犬」というイメージ
+- **snap**: snapshot, quickly capture
+- **perro**: Spanish for "dog"
+- The image of "a faithful dog that fetches data"
 
-## 特徴
+## Features
 
-- **3つのモード**: Proxy（透過）/ Record（録画）/ Mock（再生）
-- **パラメータマッチング**: パスパラメータ・クエリパラメータで正確にマッチング
-- **状態の永続化**: モード・パターンをサーバー再起動後も保持
-- **TypeScript設定**: 型安全な設定ファイル
+- **3 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback)
+- **Parameter Matching**: Accurate matching by path parameters and query parameters
+- **State Persistence**: Mode and pattern settings persist across server restarts
+- **TypeScript Configuration**: Type-safe configuration files
+
+## Why snaperro?
+
+Are you facing these problems during development?
+
+- Depending on multiple APIs, making environment setup difficult
+- Local development stops due to external API outages
+- Preparing test data is tedious
+- "I want to reproduce this state" but manually operating each time is a hassle
+
+snaperro is a mock proxy server that saves API responses as "snapshots" and can replay them anytime.
 
 ---
 
-## ユーザー向け
+## For Users
 
-### クイックスタート
+### Quick Start
 
 ```bash
-# インストール
+# Install
 npm install -D snaperro
 
-# 初期化（.snaperro/, snaperro.config.ts を生成）
+# Initialize (generates .snaperro/, snaperro.config.ts)
 npx snaperro init
 
-# サーバー起動
+# Start server
 npx snaperro start
 ```
 
-### 設定ファイル
+### Demo
+
+We provide a demo environment where you can experience snaperro in action.
+
+```bash
+npx snaperro demo
+```
+
+Your browser will open `http://localhost:3333/__snaperro__/demo`.
+
+#### Features You Can Try
+
+| Feature | Description |
+|---------|-------------|
+| Mode Switching | Experience the differences between Proxy/Record/Mock modes |
+| Path Parameter | Save and return different responses for each ID with `/users/:id` |
+| Query String | Save and return different responses for each query with `/posts?userId=1` |
+| Nested Resource | Fetch nested resources with `/posts/:id/comments` |
+
+For detailed management (patterns/files/JSON editing), use the GUI (`/__snaperro__/client`).
+
+### Web GUI
+
+Intuitively operate snaperro from your browser.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/gui-screenshot.png" alt="snaperro GUI" width="800" />
+</p>
+
+#### Access
+
+```
+http://localhost:3333/__snaperro__/client
+```
+
+The browser opens automatically when the server starts.
+
+#### Features
+
+| Feature | Description |
+|---------|-------------|
+| Mode Switch | Switch between Proxy/Record/Mock with one click |
+| Pattern Management | Create, delete, duplicate, and rename patterns |
+| File Management | List and delete recorded JSON files |
+| JSON Editor | View and edit responses |
+| Real-time Updates | Instantly reflect state changes via SSE |
+
+### Configuration File
 
 #### snaperro.config.ts
 
@@ -48,7 +106,7 @@ export default defineConfig({
 
   apis: {
     userService: {
-      name: "ユーザーサービス",
+      name: "User Service",
       target: "https://api.example.com",
       headers: {
         "X-Api-Key": process.env.API_KEY!,
@@ -61,7 +119,7 @@ export default defineConfig({
     },
 
     orderService: {
-      name: "注文サービス",
+      name: "Order Service",
       target: "https://order-api.example.com",
       routes: [
         "/api/orders",
@@ -76,227 +134,293 @@ export default defineConfig({
 #### .env
 
 ```bash
-# API キー等の機密情報
+# Sensitive information such as API keys
 API_KEY=your-api-key-here
 ```
 
-### CLI コマンド
+#### Configuration Options
 
-| コマンド | 説明 |
-|---------|------|
-| `npx snaperro init` | プロジェクトを初期化 |
-| `npx snaperro start` | サーバーを起動 |
-| `npx snaperro start -p 4000` | ポート指定で起動 |
-| `npx snaperro postman` | Postmanコレクションを出力 |
+| Option | Type | Description |
+|--------|------|-------------|
+| `port` | number | Server port (default: 3333) |
+| `filesDir` | string | File storage directory (default: `.snaperro/files`) |
+| `apis` | object | API definitions object |
 
-### 3つのモード
+#### API Definition
 
-| モード | 本物のAPI | JSON保存 | 返すもの |
-|-------|----------|---------|---------|
-| **Proxy** | アクセスする | しない | 本物のレスポンス |
-| **Record** | アクセスする | する | 本物のレスポンス |
-| **Mock** | アクセスしない | しない | 保存済みJSON |
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `name` | string | Yes | API display name |
+| `target` | string | Yes | Proxy target URL |
+| `routes` | string[] | Yes | Matching route patterns |
+| `headers` | object | No | Headers to add |
 
-### パターンとは
+### CLI Commands
 
-「パターン」はモックデータのセットを管理するフォルダです。
+| Command | Description |
+|---------|-------------|
+| `npx snaperro init` | Initialize project |
+| `npx snaperro start` | Start server |
+| `npx snaperro start -p 4000` | Start with specified port |
+| `npx snaperro demo` | Start demo environment |
+| `npx snaperro postman` | Export Postman collection |
+
+#### init Process
+
+1. Create `.snaperro/` directory
+2. Create `.snaperro/files/` directory
+3. Create `snaperro.config.ts` template (if it doesn't exist)
+4. Add `.snaperro/` to `.gitignore`
+
+#### start Options
+
+| Option | Description |
+|--------|-------------|
+| `-p, --port <port>` | Specify port number |
+| `-c, --config <path>` | Specify config file path |
+| `-v, --verbose` | Show detailed logs |
+
+### 3 Modes
+
+| Mode | Real API | Save JSON | Returns |
+|------|----------|-----------|---------|
+| **Proxy** | Access | No | Real response |
+| **Record** | Access | Yes | Real response |
+| **Mock** | No access | No | Saved JSON |
+
+#### Proxy Mode
+
+Connects to the actual API with headers (API Key, etc.) defined in the configuration file.
+
+```
+Request → snaperro → Real API → Response
+```
+
+#### Record Mode
+
+Connects to the actual API while recording responses to JSON files.
+
+```
+Request → snaperro → Real API → Response
+                ↓
+           Save to JSON file
+```
+
+- Same endpoint, same parameters → Overwrite
+- Same endpoint, different parameters → Create new file
+
+#### Mock Mode
+
+Returns responses from saved JSON files. Does not access the actual API.
+
+```
+Request → snaperro → Search JSON files → Response
+```
+
+### What is a Pattern?
+
+A "pattern" is a folder that manages a set of mock data.
 
 ```
 .snaperro/
-├── state.json              ← サーバー状態（モード、パターン）
+├── state.json              ← Server state (mode, pattern)
 └── files/
-    ├── 正常系フル/           ← パターン「正常系フル」
+    ├── normal-full/           ← Pattern "normal-full"
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
     │   └── api_orders_001.json
-    ├── 空データ/             ← パターン「空データ」
+    ├── empty-data/             ← Pattern "empty-data"
     │   └── api_users_001.json
-    └── エラー系/             ← パターン「エラー系」
+    └── error-cases/             ← Pattern "error-cases"
         └── api_users_001.json
 ```
 
-パターンを切り替えると、異なるモックデータを使い分けられます。
-サーバーを再起動しても、前回のモードとパターンが復元されます。
+By switching patterns, you can use different mock data sets.
+The previous mode and pattern are restored even after server restart.
 
-### ルート定義とマッチング
+### Route Definition and Matching
 
-#### パスパラメータ
+#### Path Parameters
 
-`:param` 形式でパスパラメータを定義します。
+Define path parameters with `:param` format.
 
 ```typescript
 routes: [
-  "/api/users",           // 完全一致
-  "/api/users/:id",       // :id がパラメータ
-  "/api/users/:id/orders/:orderId",  // 複数パラメータ
+  "/api/users",           // Exact match
+  "/api/users/:id",       // :id is a parameter
+  "/api/users/:id/orders/:orderId",  // Multiple parameters
 ]
 ```
 
-#### マッチング例
+#### Matching Examples
 
 ```typescript
 routes: ["/api/users/:id"]
 ```
 
-| リクエスト | マッチ | pathParams |
-|-----------|--------|------------|
+| Request | Match | pathParams |
+|---------|-------|------------|
 | `/api/users/123` | Yes | `{ id: "123" }` |
 | `/api/users/abc` | Yes | `{ id: "abc" }` |
 | `/api/users` | No | - |
 | `/api/users/123/profile` | No | - |
 
-#### Record時の動作
+#### Record Mode Behavior
 
-- 同一パラメータのリクエスト → 既存ファイルを上書き
-- 新規パラメータのリクエスト → 新規ファイルを作成
+- Same parameter request → Overwrite existing file
+- New parameter request → Create new file
 
-#### Mock時の動作
+#### Mock Mode Behavior
 
-- パスパラメータ・クエリパラメータが完全一致するファイルを返す
-- マッチするファイルがない場合は 404 エラー
+- Return file with exact match of path parameters and query parameters
+- Return 404 error if no matching file
 
-### ファイル構成
+### File Structure
 
 ```
 your-project/
-├── snaperro.config.ts     # 設定ファイル（Git管理する）
-├── .env                   # 機密情報（Git管理しない）
-├── .env.example           # 環境変数テンプレ（Git管理する）
-└── .snaperro/             # 録画データ（Git管理しない）
-    ├── state.json         # サーバー状態
+├── snaperro.config.ts     # Config file (Git managed)
+├── .env                   # Sensitive info (Not Git managed)
+├── .env.example           # Env template (Git managed)
+└── .snaperro/             # Recorded data (Not Git managed)
+    ├── state.json         # Server state
     └── files/
-        ├── 正常系フル/
+        ├── normal-full/
         │   ├── api_users_001.json
         │   └── api_users_{id}_001.json
-        └── エラー系/
+        └── error-cases/
             └── api_users_001.json
 ```
 
 ### SSE (Server-Sent Events)
 
-GUIやクライアントがリアルタイムで状態変更を検知するためのSSEエンドポイントを提供しています。
+An SSE endpoint is provided for GUI and clients to detect state changes in real-time.
 
-#### エンドポイント
+#### Endpoint
 
 ```
 GET /__snaperro__/events
 ```
 
-#### 確認方法
+#### Verification
 
 ```bash
 # curl
 curl -N http://localhost:3333/__snaperro__/events
 
-# ブラウザコンソール
+# Browser console
 const es = new EventSource('http://localhost:3333/__snaperro__/events');
 es.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));
 es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 ```
 
-#### イベント種別
+#### Event Types
 
-| イベント | 説明 |
-|---------|------|
-| `connected` | 接続完了（初期状態を含む） |
-| `mode_changed` | モード変更 |
-| `pattern_changed` | パターン切替 |
-| `file_created` | ファイル作成（記録時） |
-| `file_updated` | ファイル更新 |
-| `file_deleted` | ファイル削除 |
-| `pattern_created` | パターン作成 |
-| `pattern_deleted` | パターン削除 |
-| `pattern_renamed` | パターン名変更 |
-
-詳細は [doc/2025-12-04_SSE仕様.md](doc/2025-12-04_SSE仕様.md) を参照してください。
+| Event | Description |
+|-------|-------------|
+| `connected` | Connection complete (includes initial state) |
+| `mode_changed` | Mode changed |
+| `pattern_changed` | Pattern switched |
+| `file_created` | File created (during recording) |
+| `file_updated` | File updated |
+| `file_deleted` | File deleted |
+| `pattern_created` | Pattern created |
+| `pattern_deleted` | Pattern deleted |
+| `pattern_renamed` | Pattern renamed |
 
 ---
 
-## 開発者向け
+## For Developers
 
-### ローカル開発（npm publish せずにCLIを試す方法）
+### Local Development (Testing CLI without npm publish)
 
 ```bash
-# 1. 依存関係をインストール
+# 1. Install dependencies
 pnpm install
 
-# 2. ビルド
+# 2. Build
 pnpm build
 
-# 3. ローカルでCLIを実行
+# 3. Run CLI locally
 npx . init
 npx . start
 ```
 
-開発中（ビルドなしで直接実行）:
+During development (run directly without build):
 
 ```bash
 npx tsx src/cli/index.ts init
 npx tsx src/cli/index.ts start
 ```
 
-### 開発コマンド
+### Development Commands
 
-**○○したいとき:**
+**When you want to:**
 
-| やりたいこと | コマンド |
-|-------------|---------|
-| 開発中にコード変更を監視したい | `pnpm dev` |
-| 本番用にビルドしたい | `pnpm build` |
-| テストを実行したい | `pnpm test` |
-| テストを監視モードで実行したい | `pnpm test:watch` |
-| コードを整形したい | `pnpm format` |
-| 型エラーを確認したい | `pnpm type-check` |
+| Goal | Command |
+|------|---------|
+| Watch code changes during development | `pnpm dev` |
+| Build for production | `pnpm build` |
+| Run tests | `pnpm test` |
+| Run tests in watch mode | `pnpm test:watch` |
+| Format code | `pnpm format` |
+| Check type errors | `pnpm type-check` |
+| Develop GUI | `pnpm dev:client` |
+| Build GUI | `pnpm build:client` |
+| Develop demo | `pnpm dev:demo` |
+| Build demo | `pnpm build:demo` |
 
-### プロジェクト構成
+### Project Structure
 
 ```
 snaperro/
-├── src/
-│   ├── index.ts              # エクスポート（defineConfig等）
-│   ├── cli/                  # CLIコマンド
-│   │   ├── index.ts
-│   │   ├── commands/
-│   │   │   ├── init.ts
-│   │   │   ├── postman.ts
-│   │   │   └── start.ts
-│   ├── server/               # Honoサーバー
-│   │   ├── index.ts
+├── cli/                      # CLI commands
+│   ├── index.ts
+│   └── commands/
+│       ├── init.ts
+│       ├── postman.ts
+│       └── start.ts
+├── server/                   # Hono server
+│   ├── handlers/
+│   │   ├── handler.ts
 │   │   ├── proxy.ts
 │   │   ├── recorder.ts
 │   │   ├── mocker.ts
 │   │   └── control-api.ts
-│   ├── core/                 # コアロジック
+│   ├── core/
 │   │   ├── config.ts
 │   │   ├── state.ts
 │   │   ├── storage.ts
-│   │   ├── matcher.ts
-│   │   └── logger.ts
-│   └── types/                # 型定義
-│       ├── config.ts
-│       └── file.ts
-├── templates/                # initで生成するテンプレート
-└── doc/                      # ドキュメント
+│   │   └── matcher.ts
+│   └── types/
+├── client/                   # React GUI
+│   └── src/
+├── demo/                     # Demo application
+│   └── src/
+└── doc/                      # Documentation
 ```
 
 ---
 
-## 技術スタック
+## Tech Stack
 
-| 項目 | 選定 |
-|------|------|
-| サーバー | Hono |
+| Category | Choice |
+|----------|--------|
+| Server | Hono |
 | CLI | Commander |
-| ログ | Consola |
-| パスマッチング | Picomatch |
+| GUI | React + Tailwind CSS |
+| Schema | Zod |
+| Logging | Consola |
+| Path Matching | Picomatch |
+| Build | tsup, Vite |
 | Linter/Formatter | Biome |
-| テスト | Vitest |
+| Test | Vitest |
 
-## 動作要件
+## Requirements
 
-- Node.js 18以上
-- tsx がインストールされていること（peerDependencies）
+- Node.js 18 or higher
+- tsx must be installed (peerDependencies)
 
-## ライセンス
+## License
 
 MIT

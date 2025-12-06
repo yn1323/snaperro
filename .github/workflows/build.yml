@@ -14,4 +14,4 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm build
-      - run: pnpm build:gui
+      - run: pnpm build:client

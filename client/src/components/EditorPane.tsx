@@ -10,15 +10,15 @@ interface EditorPaneProps {
 }
 
 /**
- * 右ペイン - JSONエディタ
- * 残り幅を使用
+ * Right pane - JSON editor
+ * Uses remaining width
  */
 export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: EditorPaneProps) {
   const [editedContent, setEditedContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
 
-  // ファイルデータが変更されたらエディタを更新
+  // Update editor when file data changes
   useEffect(() => {
     if (fileData) {
       const formatted = JSON.stringify(fileData, null, 2);
@@ -36,7 +36,7 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
     setEditedContent(value);
     setHasChanges(true);
 
-    // JSONバリデーション
+    // JSON validation
     try {
       JSON.parse(value);
       setParseError(null);
@@ -63,37 +63,37 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
       onSave(data);
       setHasChanges(false);
     } catch {
-      // parseErrorがnullの時点でパース成功しているはず
+      // Parse should have succeeded if parseError is null
     }
   };
 
-  // ファイル未選択
+  // No file selected
   if (!filename) {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-sm">ファイルを選択してください</div>
+        <div className="text-gray-500 text-sm">Select a file</div>
       </div>
     );
   }
 
-  // 読み込み中
+  // Loading
   if (isLoading) {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-sm">読み込み中...</div>
+        <div className="text-gray-500 text-sm">Loading...</div>
       </div>
     );
   }
 
   return (
     <div className="flex-1 bg-white flex flex-col min-w-0">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="p-2 border-b border-gray-300 bg-gray-50 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-semibold text-sm text-gray-700 truncate" title={filename}>
             {filename}
           </span>
-          {hasChanges && <span className="text-xs text-orange-500 shrink-0">*未保存</span>}
+          {hasChanges && <span className="text-xs text-orange-500 shrink-0">*Unsaved</span>}
         </div>
         <div className="flex gap-2 shrink-0">
           <button
@@ -102,7 +102,7 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
             disabled={!!parseError}
             className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
           >
-            整形
+            Format
           </button>
           <button
             type="button"
@@ -110,26 +110,26 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
             disabled={!!parseError || !hasChanges}
             className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
           >
-            保存
+            Save
           </button>
           <button
             type="button"
             onClick={onDelete}
             className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 cursor-pointer"
           >
-            削除
+            Delete
           </button>
         </div>
       </div>
 
-      {/* パースエラー表示 */}
+      {/* Parse error display */}
       {parseError && (
         <div className="px-3 py-2 bg-red-100 text-red-700 text-xs border-b border-red-200 shrink-0">
           JSON Error: {parseError}
         </div>
       )}
 
-      {/* エディタ */}
+      {/* Editor */}
       <textarea
         value={editedContent}
         onChange={(e) => handleContentChange(e.target.value)}

@@ -20,15 +20,15 @@ const methodColors: Record<string, string> = {
 };
 
 /**
- * 中央ペイン - ファイル一覧
- * 幅: 250px
+ * Center pane - File list
+ * Width: 250px
  */
 export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }: FilePaneProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
-  // パターン変更時にアコーディオンをリセット
-  // biome-ignore lint/correctness/useExhaustiveDependencies: filesが変わったらリセット
+  // Reset accordion when pattern changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Reset when files change
   useEffect(() => {
     setExpandedGroups(new Set());
   }, [files]);
@@ -41,7 +41,7 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
     }
   };
 
-  // ファイルをエンドポイント別にグルーピング
+  // Group files by endpoint
   const groupedFiles = useMemo(() => {
     const groups: Map<string, FileInfo[]> = new Map();
 
@@ -58,7 +58,7 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
       .sort((a, b) => a.endpoint.localeCompare(b.endpoint));
   }, [files]);
 
-  // 検索フィルタ
+  // Search filter
   const filteredGroups = useMemo(() => {
     if (!searchQuery.trim()) return groupedFiles;
 
@@ -87,32 +87,30 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
 
   return (
     <div className="w-[250px] bg-white border-r border-gray-300 flex flex-col shrink-0">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="p-2 border-b border-gray-300 bg-gray-50">
-        <span className="font-semibold text-sm text-gray-700">ファイル ({files.length})</span>
+        <span className="font-semibold text-sm text-gray-700">Files ({files.length})</span>
       </div>
 
-      {/* 検索 */}
+      {/* Search */}
       <div className="p-2 border-b border-gray-200">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="検索..."
+          placeholder="Search..."
           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
         />
       </div>
 
-      {/* ファイルリスト */}
+      {/* File list */}
       <div className="flex-1 overflow-y-auto">
         {filteredGroups.length === 0 ? (
-          <div className="p-4 text-sm text-gray-500 text-center">
-            {files.length === 0 ? "ファイルがありません" : "該当なし"}
-          </div>
+          <div className="p-4 text-sm text-gray-500 text-center">{files.length === 0 ? "No files" : "No results"}</div>
         ) : (
           filteredGroups.map((group) => (
             <div key={group.endpoint}>
-              {/* グループヘッダー */}
+              {/* Group header */}
               <button
                 type="button"
                 onClick={() => toggleGroup(group.endpoint)}
@@ -125,7 +123,7 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
                 <span className="text-xs text-gray-500">({group.files.length})</span>
               </button>
 
-              {/* グループ内ファイル */}
+              {/* Files in group */}
               {expandedGroups.has(group.endpoint) &&
                 group.files.map((file) => (
                   <button
@@ -151,7 +149,7 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
                           onDownload(file.filename);
                         }}
                         className="ml-auto p-1 text-gray-400 hover:text-blue-500 cursor-pointer"
-                        title="ダウンロード"
+                        title="Download"
                       >
                         ⬇
                       </button>
@@ -166,10 +164,10 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
         )}
       </div>
 
-      {/* アップロードボタン */}
+      {/* Upload button */}
       <div className="p-2 border-t border-gray-300">
         <label className="block text-xs bg-blue-500 text-white px-2 py-1.5 rounded hover:bg-blue-600 text-center cursor-pointer font-medium">
-          + アップロード
+          + Upload
           <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
         </label>
       </div>

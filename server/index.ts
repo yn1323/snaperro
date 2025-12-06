@@ -1,10 +1,10 @@
-// 型定義のエクスポート
+// Type exports
 
 export type { ServerOptions } from "./handlers/index.js";
-// サーバー機能のエクスポート
+// Server functionality exports
 export { startServer } from "./handlers/index.js";
 export type { ApiConfig, SnaperroConfig } from "./types/config.js";
-// スキーマのエクスポート
+// Schema exports
 export {
   ApiConfigSchema,
   defineConfig,

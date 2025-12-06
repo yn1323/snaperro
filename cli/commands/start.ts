@@ -11,18 +11,18 @@ interface StartOptions {
 }
 
 /**
- * start コマンド
- * サーバーを起動
+ * start command
+ * Start the server
  */
 export async function startCommand(options: StartOptions): Promise<void> {
   const configPath = path.resolve(process.cwd(), options.config ?? "snaperro.config.ts");
 
-  consola.start("設定ファイルを読み込んでいます...");
+  consola.start("Loading config file...");
 
   try {
     const config = await loadConfig(configPath);
 
-    // コマンドラインオプションで上書き
+    // Override with command line options
     if (options.port) {
       config.port = Number.parseInt(options.port, 10);
     }
@@ -32,13 +32,13 @@ export async function startCommand(options: StartOptions): Promise<void> {
       verbose: options.verbose ?? false,
     });
 
-    // ブラウザを自動で開く
+    // Open browser automatically
     await open(serverInfo.guiUrl);
   } catch (error) {
     if (error instanceof Error) {
       consola.error(error.message);
     } else {
-      consola.error("サーバーの起動に失敗しました");
+      consola.error("Failed to start server");
     }
     process.exit(1);
   }

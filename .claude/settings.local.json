@@ -15,7 +15,11 @@
       "Bash(findstr:*)",
       "Bash(curl:*)",
       "Bash(npx snaperro:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Skill(frontend-design:frontend-design)",
+      "Bash(find:*)",
+      "Bash(pnpm build:demo:*)",
+      "Bash(npx . demo)"
     ],
     "deny": [],
     "ask": []

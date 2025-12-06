@@ -8,12 +8,12 @@
   "schedule": ["every weekend"],
   "packageRules": [
     {
-      "addLabels": ["react"],
-      "matchPackageNames": ["/react/"]
+      "matchPackagePatterns": ["*"],
+      "minimumReleaseAge": "14 days"
     },
     {
-      "addLabels": ["playwright"],
-      "matchPackageNames": ["/playwright/"]
+      "addLabels": ["react"],
+      "matchPackageNames": ["/react/"]
     }
   ]
 }

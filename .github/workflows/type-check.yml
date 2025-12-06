@@ -14,4 +14,5 @@ jobs:
           cache: "pnpm"
       - run: pnpm install
       - run: pnpm type-check
-      - run: pnpm type-check:gui
+      - run: pnpm type-check:client
+      - run: pnpm type-check:demo

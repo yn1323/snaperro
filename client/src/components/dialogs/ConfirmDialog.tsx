@@ -10,17 +10,17 @@ interface ConfirmDialogProps {
 }
 
 /**
- * 汎用確認ダイアログ
+ * Generic confirmation dialog
  */
 export function ConfirmDialog({
   isOpen,
   title,
   message,
-  confirmLabel = "削除",
+  confirmLabel = "Delete",
   onClose,
   onConfirm,
 }: ConfirmDialogProps) {
-  // Escキーでダイアログを閉じる
+  // Close dialog with Esc key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -60,7 +60,7 @@ export function ConfirmDialog({
             onClick={onClose}
             className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
           >
-            キャンセル
+            Cancel
           </button>
           <button
             type="button"

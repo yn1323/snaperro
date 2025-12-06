@@ -3,8 +3,8 @@ import { logger } from "../core/logger.js";
 import type { ApiConfig } from "../types/config.js";
 
 /**
- * Proxyモード処理
- * 実際のAPIにリクエストを転送し、レスポンスをそのまま返す
+ * Proxy mode handler
+ * Forward requests to actual API and return responses as-is
  */
 export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Response> {
   const method = c.req.method;
@@ -18,22 +18,25 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
   const startTime = Date.now();
 
   try {
-    // リクエストボディを取得
+    // Get request body
     let body: string | null = null;
     if (method !== "GET" && method !== "HEAD") {
       body = await c.req.raw.clone().text();
     }
 
-    // ヘッダーをコピー（Host等を除外）
+    // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = new Headers();
+    const skipRequestHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
     for (const [key, value] of c.req.raw.headers.entries()) {
-      const lowerKey = key.toLowerCase();
-      if (lowerKey !== "host" && lowerKey !== "connection") {
+      if (!skipRequestHeaders.includes(key.toLowerCase())) {
         headers.set(key, value);
       }
     }
 
-    // 設定のヘッダーを付与
+    // Limit Accept-Encoding (Node.js doesn't support zstd/br)
+    headers.set("accept-encoding", "gzip, deflate");
+
+    // Add headers from config
     if (apiConfig.headers) {
       for (const [key, value] of Object.entries(apiConfig.headers)) {
         headers.set(key, value);
@@ -51,11 +54,24 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     const elapsed = Date.now() - startTime;
     logger.info(`  → ${response.status} (${elapsed}ms)`);
 
-    // レスポンスをそのまま返す
-    return new Response(response.body, {
+    // Copy headers (excluding problematic headers)
+    // Content-Encoding: Already decompressed by response.text() but gzip remains causing browser re-decompression error
+    // Transfer-Encoding: Issues with chunked etc. remaining
+    // Content-Length: Excluded because body size may have changed
+    const responseHeaders = new Headers();
+    const skipResponseHeaders = ["content-encoding", "transfer-encoding", "content-length"];
+    for (const [key, value] of response.headers.entries()) {
+      if (!skipResponseHeaders.includes(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
+    }
+
+    // Explicitly read body (avoid issue of empty body when passing ReadableStream directly)
+    const bodyText = await response.text();
+    return new Response(bodyText, {
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers: responseHeaders,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -48,19 +48,21 @@ export function parseRoutePattern(pattern: string): ParsedPattern {
 
   // パスから :param を抽出してパラメータ名を収集
   const paramNames: string[] = [];
-  const regexPattern = path
-    .split("/")
-    .map((segment) => {
-      if (segment.startsWith(":")) {
-        const paramName = segment.slice(1);
-        paramNames.push(paramName);
-        return "([^/]+)";
-      }
-      // 正規表現の特殊文字をエスケープ
-      return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    })
-    .join("\\/");
+  const segments = path.split("/");
+  const regexParts: string[] = [];
 
+  for (const segment of segments) {
+    if (segment.startsWith(":")) {
+      const paramName = segment.slice(1);
+      paramNames.push(paramName);
+      regexParts.push("([^/]+)");
+    } else {
+      // 正規表現の特殊文字をエスケープ
+      regexParts.push(segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    }
+  }
+
+  const regexPattern = regexParts.join("\\/");
   const regex = new RegExp(`^${regexPattern}$`);
 
   return { method, path, paramNames, regex };

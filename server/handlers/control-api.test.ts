@@ -332,16 +332,14 @@ describe("control-api", () => {
       expect(body.message).toBe("Pattern deleted");
     });
 
-    it("現在選択中のパターンは削除できない", async () => {
+    it("現在選択中のパターンも削除できる", async () => {
       await state.setPattern(TEST_PATTERN);
 
       const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}`, {
         method: "DELETE",
       });
-      const body = (await res.json()) as { error: string };
 
-      expect(res.status).toBe(400);
-      expect(body.error).toBe("Cannot delete current pattern");
+      expect(res.status).toBe(200);
     });
 
     it("存在しないパターンはエラーを返す", async () => {

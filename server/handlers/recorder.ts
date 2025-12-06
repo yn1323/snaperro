@@ -8,7 +8,7 @@ import { storage } from "../core/storage.js";
 import type { FileData, HttpMethod } from "../types/file.js";
 
 /**
- * クエリパラメータを解析
+ * Parse query parameters
  */
 function parseQueryParams(url: URL): Record<string, string | string[]> {
   const params: Record<string, string | string[]> = {};
@@ -24,8 +24,8 @@ function parseQueryParams(url: URL): Record<string, string | string[]> {
 }
 
 /**
- * Recordモード処理
- * 実際のAPIにリクエストを転送し、レスポンスを保存して返す
+ * Record mode handler
+ * Forward requests to actual API, save responses, and return them
  */
 export async function handleRecord(c: Context, match: MatchResult): Promise<Response> {
   const method = c.req.method;
@@ -48,7 +48,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
   logger.info(`${method} ${requestPath} → record`);
 
   try {
-    // リクエストボディを取得
+    // Get request body
     let requestBody: unknown;
     if (method !== "GET" && method !== "HEAD") {
       const text = await c.req.raw.clone().text();
@@ -61,54 +61,59 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       }
     }
 
-    // ヘッダーをコピー
+    // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = new Headers();
+    const skipHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
     for (const [key, value] of c.req.raw.headers.entries()) {
-      const lowerKey = key.toLowerCase();
-      if (lowerKey !== "host" && lowerKey !== "connection") {
+      if (!skipHeaders.includes(key.toLowerCase())) {
         headers.set(key, value);
       }
     }
 
-    // 設定のヘッダーを付与
+    // Limit Accept-Encoding (Node.js doesn't support zstd/br)
+    headers.set("accept-encoding", "gzip, deflate");
+
+    // Add headers from config
     if (match.apiConfig.headers) {
       for (const [key, value] of Object.entries(match.apiConfig.headers)) {
         headers.set(key, value);
       }
     }
 
-    // 1. 実APIにリクエスト
+    // 1. Request to actual API
     const response = await fetch(targetUrl, {
       method,
       headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,
     });
 
-    // 2. レスポンスボディを取得
+    // 2. Get response body (304/204 have no body)
     const responseText = await response.text();
-    let responseBody: unknown;
-    try {
-      responseBody = JSON.parse(responseText);
-    } catch {
-      responseBody = responseText;
+    let responseBody: unknown = null;
+    if (response.status !== 304 && response.status !== 204 && responseText) {
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        responseBody = responseText;
+      }
     }
 
-    // 3. クエリパラメータを解析
+    // 3. Parse query parameters
     const queryParams = parseQueryParams(url);
 
-    // 4. リクエストヘッダーを記録用に変換
+    // 4. Convert request headers for recording
     const requestHeaders: Record<string, string> = {};
     for (const [key, value] of c.req.raw.headers.entries()) {
       requestHeaders[key] = value;
     }
 
-    // 5. レスポンスヘッダーを記録用に変換
+    // 5. Convert response headers for recording
     const responseHeaders: Record<string, string> = {};
     for (const [key, value] of response.headers.entries()) {
       responseHeaders[key] = value;
     }
 
-    // 6. 記録データを作成
+    // 6. Create recorded data
     const fileData: FileData = {
       endpoint: match.matchedRoute,
       method: method as HttpMethod,
@@ -125,7 +130,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       },
     };
 
-    // 7. ファイルパスを決定（既存なら上書き、新規なら新ファイル）
+    // 7. Determine file path (overwrite if exists, new file if not)
     const { filePath, isNew } = await storage.findOrCreateFile(
       pattern,
       method,
@@ -134,10 +139,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       queryParams,
     );
 
-    // 8. ファイルに保存
+    // 8. Save to file
     await storage.write(filePath, fileData);
 
-    // 9. SSEイベント発行
+    // 9. Emit SSE event
     eventBus.emitSSE(isNew ? "file_created" : "file_updated", {
       pattern,
       filename: path.basename(filePath),
@@ -149,7 +154,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     const action = isNew ? "saved" : "updated";
     logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
 
-    // 9. レスポンスを返却
+    // 10. Return response (304/204 have no body)
+    if (response.status === 304 || response.status === 204) {
+      return c.body(null, response.status as never);
+    }
     return c.json(responseBody, response.status as never);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

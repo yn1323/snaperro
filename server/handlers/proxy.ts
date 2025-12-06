@@ -24,14 +24,17 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       body = await c.req.raw.clone().text();
     }
 
-    // ヘッダーをコピー（Host等を除外）
+    // ヘッダーをコピー（キャッシュ関連ヘッダーを除外して常に新しいレスポンスを取得）
     const headers = new Headers();
+    const skipRequestHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
     for (const [key, value] of c.req.raw.headers.entries()) {
-      const lowerKey = key.toLowerCase();
-      if (lowerKey !== "host" && lowerKey !== "connection") {
+      if (!skipRequestHeaders.includes(key.toLowerCase())) {
         headers.set(key, value);
       }
     }
+
+    // Accept-Encodingを制限（Node.jsはzstd/brをサポートしない）
+    headers.set("accept-encoding", "gzip, deflate");
 
     // 設定のヘッダーを付与
     if (apiConfig.headers) {
@@ -56,9 +59,9 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     // Transfer-Encoding: chunkedなどが残ると問題
     // Content-Length: ボディサイズが変わっている可能性があるため除外
     const responseHeaders = new Headers();
-    const skipHeaders = ["content-encoding", "transfer-encoding", "content-length"];
+    const skipResponseHeaders = ["content-encoding", "transfer-encoding", "content-length"];
     for (const [key, value] of response.headers.entries()) {
-      if (!skipHeaders.includes(key.toLowerCase())) {
+      if (!skipResponseHeaders.includes(key.toLowerCase())) {
         responseHeaders.set(key, value);
       }
     }

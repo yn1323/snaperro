@@ -61,14 +61,17 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       }
     }
 
-    // ヘッダーをコピー
+    // ヘッダーをコピー（キャッシュ関連ヘッダーを除外して常に新しいレスポンスを取得）
     const headers = new Headers();
+    const skipHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
     for (const [key, value] of c.req.raw.headers.entries()) {
-      const lowerKey = key.toLowerCase();
-      if (lowerKey !== "host" && lowerKey !== "connection") {
+      if (!skipHeaders.includes(key.toLowerCase())) {
         headers.set(key, value);
       }
     }
+
+    // Accept-Encodingを制限（Node.jsはzstd/brをサポートしない）
+    headers.set("accept-encoding", "gzip, deflate");
 
     // 設定のヘッダーを付与
     if (match.apiConfig.headers) {
@@ -151,7 +154,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     const action = isNew ? "saved" : "updated";
     logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
 
-    // 9. レスポンスを返却
+    // 9. レスポンスを返却（304/204はボディなし）
+    if (response.status === 304 || response.status === 204) {
+      return c.body(null, response.status as never);
+    }
     return c.json(responseBody, response.status as never);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

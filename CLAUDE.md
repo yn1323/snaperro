@@ -49,3 +49,8 @@ pnpm type-check && pnpm format
 ### IMPORTANT（重要事項）
 - IMPORTANT: 作業開始前に計画することを好む
 - IMPORTANT: utf-8を利用すること
+- IMPORTANT: 言語について
+   - アプリケーションのメッセージ、UI、コメント: 英語
+   - doc: 日本語
+   - コンソール出力: 英語
+   - README: 英語

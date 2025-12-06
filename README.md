@@ -19,6 +19,17 @@
 - **状態の永続化**: モード・パターンをサーバー再起動後も保持
 - **TypeScript設定**: 型安全な設定ファイル
 
+## なぜ snaperro？
+
+開発中、こんな問題に直面していませんか？
+
+- 複数のAPIに依存していて、環境構築が大変
+- 外部APIの障害でローカル開発が止まる
+- テストデータを用意するのが面倒
+- 「この状態を再現したい」けど、毎回手動で操作するのが手間
+
+snaperroは、APIレスポンスを「スナップショット」として保存し、いつでも再生できるモックプロキシサーバーです。
+
 ---
 
 ## ユーザー向け
@@ -56,6 +67,32 @@ npx snaperro demo
 | Nested Resource | `/posts/:id/comments` でネストしたリソースの取得 |
 
 詳細な管理（パターン/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
+
+### Web GUI
+
+ブラウザから直感的にsnaperroを操作できます。
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/gui-screenshot.png" alt="snaperro GUI" width="800" />
+</p>
+
+#### アクセス
+
+```
+http://localhost:3333/__snaperro__/client
+```
+
+サーバー起動時に自動でブラウザが開きます。
+
+#### 機能
+
+| 機能 | 説明 |
+|-----|------|
+| モード切替 | Proxy/Record/Mockをワンクリックで切替 |
+| パターン管理 | パターンの作成・削除・複製・リネーム |
+| ファイル管理 | 記録されたJSONファイルの一覧・削除 |
+| JSONエディタ | レスポンスの確認・編集 |
+| リアルタイム更新 | SSEで状態変更を即座に反映 |
 
 ### 設定ファイル
 
@@ -101,6 +138,23 @@ export default defineConfig({
 API_KEY=your-api-key-here
 ```
 
+#### 設定項目
+
+| 項目 | 型 | 説明 |
+|-----|-----|------|
+| `port` | number | サーバーポート（デフォルト: 3333） |
+| `filesDir` | string | ファイル保存ディレクトリ（デフォルト: `.snaperro/files`） |
+| `apis` | object | API定義のオブジェクト |
+
+#### API定義
+
+| 項目 | 型 | 必須 | 説明 |
+|-----|-----|-----|------|
+| `name` | string | ○ | API表示名 |
+| `target` | string | ○ | プロキシ先URL |
+| `routes` | string[] | ○ | マッチするルートパターン |
+| `headers` | object | - | 付与するヘッダー |
+
 ### CLI コマンド
 
 | コマンド | 説明 |
@@ -111,6 +165,21 @@ API_KEY=your-api-key-here
 | `npx snaperro demo` | デモ環境を起動 |
 | `npx snaperro postman` | Postmanコレクションを出力 |
 
+#### init の処理内容
+
+1. `.snaperro/` ディレクトリを作成
+2. `.snaperro/files/` ディレクトリを作成
+3. `snaperro.config.ts` のテンプレートを作成（存在しない場合）
+4. `.gitignore` に `.snaperro/` を追加
+
+#### start のオプション
+
+| オプション | 説明 |
+|-----------|------|
+| `-p, --port <port>` | ポート番号を指定 |
+| `-c, --config <path>` | 設定ファイルのパスを指定 |
+| `-v, --verbose` | 詳細ログを表示 |
+
 ### 3つのモード
 
 | モード | 本物のAPI | JSON保存 | 返すもの |
@@ -118,6 +187,35 @@ API_KEY=your-api-key-here
 | **Proxy** | アクセスする | しない | 本物のレスポンス |
 | **Record** | アクセスする | する | 本物のレスポンス |
 | **Mock** | アクセスしない | しない | 保存済みJSON |
+
+#### Proxyモード
+
+設定ファイルで定義されたヘッダー（API Key等）を付与して、実際のAPIにそのまま接続します。
+
+```
+リクエスト → snaperro → 実際のAPI → レスポンス
+```
+
+#### Recordモード
+
+実際のAPIに接続しつつ、レスポンスをJSONファイルに記録します。
+
+```
+リクエスト → snaperro → 実際のAPI → レスポンス
+                ↓
+           JSONファイルに保存
+```
+
+- 同じエンドポイント、同じパラメータ → 上書き
+- 同じエンドポイント、異なるパラメータ → 別ファイルを生成
+
+#### Mockモード
+
+保存済みのJSONファイルからレスポンスを返却します。実際のAPIにはアクセスしません。
+
+```
+リクエスト → snaperro → JSONファイルを検索 → レスポンス
+```
 
 ### パターンとは
 
@@ -230,8 +328,6 @@ es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 | `pattern_deleted` | パターン削除 |
 | `pattern_renamed` | パターン名変更 |
 
-詳細は [doc/2025-12-04_SSE仕様.md](doc/2025-12-04_SSE仕様.md) を参照してください。
-
 ---
 
 ## 開発者向け
@@ -269,6 +365,8 @@ npx tsx src/cli/index.ts start
 | テストを監視モードで実行したい | `pnpm test:watch` |
 | コードを整形したい | `pnpm format` |
 | 型エラーを確認したい | `pnpm type-check` |
+| GUIを開発したい | `pnpm dev:client` |
+| GUIをビルドしたい | `pnpm build:client` |
 | デモを開発したい | `pnpm dev:demo` |
 | デモをビルドしたい | `pnpm build:demo` |
 
@@ -276,30 +374,29 @@ npx tsx src/cli/index.ts start
 
 ```
 snaperro/
-├── src/
-│   ├── index.ts              # エクスポート（defineConfig等）
-│   ├── cli/                  # CLIコマンド
-│   │   ├── index.ts
-│   │   ├── commands/
-│   │   │   ├── init.ts
-│   │   │   ├── postman.ts
-│   │   │   └── start.ts
-│   ├── server/               # Honoサーバー
-│   │   ├── index.ts
+├── cli/                      # CLIコマンド
+│   ├── index.ts
+│   └── commands/
+│       ├── init.ts
+│       ├── postman.ts
+│       └── start.ts
+├── server/                   # Honoサーバー
+│   ├── handlers/
+│   │   ├── handler.ts
 │   │   ├── proxy.ts
 │   │   ├── recorder.ts
 │   │   ├── mocker.ts
 │   │   └── control-api.ts
-│   ├── core/                 # コアロジック
+│   ├── core/
 │   │   ├── config.ts
 │   │   ├── state.ts
 │   │   ├── storage.ts
-│   │   ├── matcher.ts
-│   │   └── logger.ts
-│   └── types/                # 型定義
-│       ├── config.ts
-│       └── file.ts
-├── templates/                # initで生成するテンプレート
+│   │   └── matcher.ts
+│   └── types/
+├── client/                   # React GUI
+│   └── src/
+├── demo/                     # デモアプリケーション
+│   └── src/
 └── doc/                      # ドキュメント
 ```
 
@@ -311,8 +408,11 @@ snaperro/
 |------|------|
 | サーバー | Hono |
 | CLI | Commander |
+| GUI | React + Tailwind CSS |
+| スキーマ | Zod |
 | ログ | Consola |
 | パスマッチング | Picomatch |
+| ビルド | tsup, Vite |
 | Linter/Formatter | Biome |
 | テスト | Vitest |
 

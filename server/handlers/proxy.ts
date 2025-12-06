@@ -22,7 +22,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     // Get request body
     let body: string | null = null;
     if (method !== "GET" && method !== "HEAD") {
-      body = await c.req.raw.clone().text();
+      body = await c.req.text();
     }
 
     // Copy headers (excluding cache-related headers to always get fresh responses)

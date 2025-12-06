@@ -16,6 +16,7 @@ program
   .option("-p, --port <port>", "Port number", "3333")
   .option("-v, --verbose", "Show verbose logs")
   .option("-c, --config <path>", "Config file path", "snaperro.config.ts")
+  .option("-e, --env <path>", "Env file path")
   .action(startCommand);
 
 program.command("postman").description("Output Postman collection").action(postmanCommand);

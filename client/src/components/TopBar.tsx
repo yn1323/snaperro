@@ -4,8 +4,8 @@ interface TopBarProps {
   version: string;
   mode: Mode;
   connected: boolean;
+  currentPattern: string | null;
   onModeChange: (mode: Mode) => void;
-  onRecordRequest: () => void;
 }
 
 const modes: { value: Mode; label: string; color: string; activeColor: string }[] = [
@@ -18,14 +18,12 @@ const modes: { value: Mode; label: string; color: string; activeColor: string }[
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ version, mode, connected, onModeChange, onRecordRequest }: TopBarProps) {
+export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    if (targetMode === "record" && mode !== "record") {
-      // Execute special flow when switching to Record mode
-      onRecordRequest();
-    } else {
-      onModeChange(targetMode);
+    if (targetMode === "record" && !currentPattern) {
+      alert("No pattern selected. Please select a pattern first.");
     }
+    onModeChange(targetMode);
   };
 
   return (

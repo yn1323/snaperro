@@ -118,14 +118,18 @@ export default function App() {
   }, []);
 
   // シナリオ実行
-  const handleExecute = useCallback(async (url: string) => {
+  const handleExecute = useCallback(async (url: string, method: string, requestBody?: unknown) => {
     setIsLoading(true);
     setError(null);
-    setCurrentRequest({ url, method: "GET" });
+    setCurrentRequest({ url, method });
     setResponse(null);
 
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        method,
+        headers: requestBody ? { "Content-Type": "application/json" } : undefined,
+        body: requestBody ? JSON.stringify(requestBody) : undefined,
+      });
 
       // JSONパースを試みる（304/204はボディなし）
       let body: unknown = null;

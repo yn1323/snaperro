@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { CreatePatternModal } from "./components/CreatePatternModal";
 import { ConfirmDialog } from "./components/dialogs/ConfirmDialog";
 import { EditorPane } from "./components/EditorPane";
 import { FilePane } from "./components/FilePane";
@@ -24,7 +23,6 @@ export default function App() {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
-  const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
 
   // Reset file selection when pattern changes
@@ -153,25 +151,6 @@ export default function App() {
     [api],
   );
 
-  // Record mode switch request (open modal)
-  const handleRecordRequest = useCallback(() => {
-    setIsRecordModalOpen(true);
-  }, []);
-
-  // Create pattern for Record mode (select pattern after creation and switch to Record mode)
-  const handleRecordPatternCreate = useCallback(
-    async (name: string) => {
-      try {
-        await api.createPattern(name);
-        await api.setCurrentPattern(name);
-        await api.setMode("record");
-      } catch (err) {
-        console.error("Record pattern create error:", err);
-      }
-    },
-    [api],
-  );
-
   const handleFileSave = useCallback(
     async (data: FileData) => {
       if (!state.currentPattern || !selectedFile) return;
@@ -235,8 +214,8 @@ export default function App() {
             version={state.version}
             mode={state.mode}
             connected={connected}
+            currentPattern={state.currentPattern}
             onModeChange={handleModeChange}
-            onRecordRequest={handleRecordRequest}
           />
         }
         patternPane={
@@ -270,13 +249,6 @@ export default function App() {
             onDelete={handleFileDelete}
           />
         }
-      />
-
-      {/* Pattern creation modal for Record mode */}
-      <CreatePatternModal
-        isOpen={isRecordModalOpen}
-        onClose={() => setIsRecordModalOpen(false)}
-        onCreate={handleRecordPatternCreate}
       />
 
       {/* File delete confirmation dialog */}

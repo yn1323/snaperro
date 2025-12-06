@@ -3,7 +3,7 @@ import { ScenarioCard } from "./ScenarioCard";
 
 type ScenarioGridProps = {
   scenarios: Scenario[];
-  onExecute: (url: string) => void;
+  onExecute: (url: string, method: string, requestBody?: unknown) => void;
   isLoading: boolean;
 };
 

@@ -188,6 +188,7 @@ export const storage = {
     endpoint: string,
     pathParams: Record<string, string>,
     queryParams: Record<string, string | string[]>,
+    requestBody?: unknown,
   ): Promise<MatchingFileResult | null> {
     const fileName = endpointToFileName(endpoint);
     const patternDir = path.join(BASE_DIR, pattern);
@@ -215,6 +216,13 @@ export const storage = {
           continue;
         }
 
+        // リクエストボディの完全一致チェック（指定された場合のみ）
+        if (requestBody !== undefined) {
+          if (!isDeepEqual(data.request.body, requestBody)) {
+            continue;
+          }
+        }
+
         return { filePath, fileData: data };
       }
 
@@ -234,9 +242,10 @@ export const storage = {
     endpoint: string,
     pathParams: Record<string, string>,
     queryParams: Record<string, string | string[]>,
+    requestBody?: unknown,
   ): Promise<{ filePath: string; isNew: boolean }> {
     // 既存ファイルを検索
-    const existing = await storage.findMatchingFile(pattern, method, endpoint, pathParams, queryParams);
+    const existing = await storage.findMatchingFile(pattern, method, endpoint, pathParams, queryParams, requestBody);
 
     if (existing) {
       return { filePath: existing.filePath, isNew: false };

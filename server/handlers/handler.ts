@@ -8,8 +8,8 @@ import { handleProxy } from "./proxy.js";
 import { handleRecord } from "./recorder.js";
 
 /**
- * メインリクエストハンドラー
- * モードに応じて適切なハンドラーに振り分け
+ * Main request handler
+ * Route to appropriate handler based on mode
  */
 export function createHandler(config: SnaperroConfig) {
   return async (c: Context): Promise<Response> => {
@@ -17,7 +17,7 @@ export function createHandler(config: SnaperroConfig) {
     const url = new URL(c.req.url);
     const path = url.pathname;
 
-    // API設定からマッチするものを検索
+    // Find matching API from config
     const match = findMatchingApi(method, path, config.apis);
 
     if (!match) {
@@ -34,7 +34,7 @@ export function createHandler(config: SnaperroConfig) {
 
     const mode = state.getMode();
 
-    // モードに応じて処理を振り分け
+    // Route based on mode
     switch (mode) {
       case "proxy":
         return handleProxy(c, match.apiConfig);

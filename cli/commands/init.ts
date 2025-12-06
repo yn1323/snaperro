@@ -9,7 +9,7 @@ export default defineConfig({
   filesDir: '.snaperro/files',
 
   apis: {
-    // JSON Placeholder API（サンプル）
+    // JSON Placeholder API (sample)
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
@@ -23,9 +23,9 @@ export default defineConfig({
       ],
     },
 
-    // 例: カスタムAPI
+    // Example: Custom API
     // userService: {
-    //   name: "ユーザーサービス",
+    //   name: "User Service",
     //   target: "https://user-api.example.com",
     //   headers: {
     //     "X-Api-Key": process.env.USER_API_KEY!,
@@ -39,7 +39,7 @@ export default defineConfig({
 const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/\n";
 
 // ============================================
-// ヘルパー関数
+// Helper functions
 // ============================================
 
 type FileData = {
@@ -84,7 +84,7 @@ function createFileData(
 }
 
 // ============================================
-// 基礎データ（JSONPlaceholder準拠）
+// Base data (JSONPlaceholder compliant)
 // ============================================
 
 const USERS_DATA: Record<number, object> = {
@@ -151,7 +151,7 @@ const POSTS_DATA: Record<number, object> = {
   },
 };
 
-// User別の投稿
+// Posts by user
 const POSTS_BY_USER: Record<number, object[]> = {
   1: [
     { userId: 1, id: 1, title: "sunt aut facere repellat provident", body: "quia et suscipit..." },
@@ -226,7 +226,7 @@ const COMMENTS_DATA: Record<number, object[]> = {
 };
 
 // ============================================
-// サンプルデータ: demo（正常系）
+// Sample data: demo (success cases)
 // ============================================
 
 const SAMPLE_DEMO: Record<string, FileData> = {
@@ -268,55 +268,55 @@ const SAMPLE_DEMO: Record<string, FileData> = {
 };
 
 // ============================================
-// サンプルデータ: demo-empty（空データ）
+// Sample data: demo-empty (empty data)
 // ============================================
 
 const SAMPLE_DEMO_EMPTY: Record<string, FileData> = {
-  // === Basic（空配列） ===
+  // === Basic (empty array) ===
   "users_001.json": createFileData("/users", "GET", {}, {}, 200, []),
   "posts_001.json": createFileData("/posts", "GET", {}, {}, 200, []),
   "comments_001.json": createFileData("/comments", "GET", {}, {}, 200, []),
 
-  // === Path Parameter: /users/:id（404） ===
+  // === Path Parameter: /users/:id (404) ===
   "users_{id}_001.json": createFileData("/users/:id", "GET", { id: "1" }, {}, 404, { error: "Not Found" }),
 
-  // === Path Parameter: /posts/:id（404） ===
+  // === Path Parameter: /posts/:id (404) ===
   "posts_{id}_001.json": createFileData("/posts/:id", "GET", { id: "1" }, {}, 404, { error: "Not Found" }),
 
-  // === Query String（空配列） ===
+  // === Query String (empty array) ===
   "posts_002.json": createFileData("/posts", "GET", {}, { userId: "1" }, 200, []),
   "comments_002.json": createFileData("/comments", "GET", {}, { postId: "1" }, 200, []),
 
-  // === Nested Resource（空配列） ===
+  // === Nested Resource (empty array) ===
   "posts_{id}_comments_001.json": createFileData("/posts/:id/comments", "GET", { id: "1" }, {}, 200, []),
 };
 
 // ============================================
-// サンプルデータ: demo-error（エラー系）
+// Sample data: demo-error (error cases)
 // ============================================
 
 const SAMPLE_DEMO_ERROR: Record<string, FileData> = {
-  // === Basic（500エラー） ===
+  // === Basic (500 error) ===
   "users_001.json": createFileData("/users", "GET", {}, {}, 500, { error: "Internal Server Error" }),
   "posts_001.json": createFileData("/posts", "GET", {}, {}, 500, { error: "Internal Server Error" }),
   "comments_001.json": createFileData("/comments", "GET", {}, {}, 500, { error: "Internal Server Error" }),
 
-  // === Path Parameter（404） ===
+  // === Path Parameter (404) ===
   "users_{id}_001.json": createFileData("/users/:id", "GET", { id: "1" }, {}, 404, { error: "User not found" }),
   "posts_{id}_001.json": createFileData("/posts/:id", "GET", { id: "1" }, {}, 404, { error: "Post not found" }),
 
-  // === Query String（500エラー） ===
+  // === Query String (500 error) ===
   "posts_002.json": createFileData("/posts", "GET", {}, { userId: "1" }, 500, { error: "Internal Server Error" }),
   "comments_002.json": createFileData("/comments", "GET", {}, { postId: "1" }, 500, { error: "Internal Server Error" }),
 
-  // === Nested Resource（500エラー） ===
+  // === Nested Resource (500 error) ===
   "posts_{id}_comments_001.json": createFileData("/posts/:id/comments", "GET", { id: "1" }, {}, 500, {
     error: "Internal Server Error",
   }),
 };
 
 // ============================================
-// サンプルデータ集約
+// Sample data aggregation
 // ============================================
 
 const SAMPLE_DATA: Record<string, Record<string, FileData>> = {
@@ -326,7 +326,7 @@ const SAMPLE_DATA: Record<string, Record<string, FileData>> = {
 };
 
 /**
- * サンプルファイルを書き込む
+ * Write sample files
  */
 async function writeSampleFiles(filesDir: string): Promise<void> {
   for (const [pattern, files] of Object.entries(SAMPLE_DATA)) {
@@ -339,62 +339,62 @@ async function writeSampleFiles(filesDir: string): Promise<void> {
 }
 
 /**
- * init コマンド
- * - .snaperro/files ディレクトリを作成
- * - snaperro.config.ts を作成（存在しない場合）
- * - .gitignore に .snaperro/ を追加
+ * init command
+ * - Create .snaperro/files directory
+ * - Create snaperro.config.ts (if not exists)
+ * - Add .snaperro/ to .gitignore
  */
 export async function initCommand(): Promise<void> {
   const cwd = process.cwd();
 
-  consola.start("snaperro を初期化しています...");
+  consola.start("Initializing snaperro...");
 
-  // 1. .snaperro/files ディレクトリを作成
+  // 1. Create .snaperro/files directory
   const filesDir = path.join(cwd, ".snaperro", "files");
   await fs.mkdir(filesDir, { recursive: true });
-  consola.success(".snaperro/files ディレクトリを作成しました");
+  consola.success("Created .snaperro/files directory");
 
-  // 2. サンプルデータを配置
+  // 2. Place sample data
   await writeSampleFiles(filesDir);
-  consola.success("サンプルパターン（demo, demo-empty, demo-error）を配置しました");
+  consola.success("Placed sample patterns (demo, demo-empty, demo-error)");
 
-  // 3. snaperro.config.ts を作成（存在しない場合）
+  // 3. Create snaperro.config.ts (if not exists)
   const configPath = path.join(cwd, "snaperro.config.ts");
   try {
     await fs.access(configPath);
-    consola.info("snaperro.config.ts は既に存在します");
+    consola.info("snaperro.config.ts already exists");
   } catch {
     await fs.writeFile(configPath, CONFIG_TEMPLATE, "utf-8");
-    consola.success("snaperro.config.ts を作成しました");
+    consola.success("Created snaperro.config.ts");
   }
 
-  // 4. .gitignore に追加
+  // 4. Add to .gitignore
   const gitignorePath = path.join(cwd, ".gitignore");
   try {
     const content = await fs.readFile(gitignorePath, "utf-8");
     if (!content.includes(".snaperro/")) {
       await fs.appendFile(gitignorePath, GITIGNORE_ENTRY);
-      consola.success(".gitignore に .snaperro/ を追加しました");
+      consola.success("Added .snaperro/ to .gitignore");
     } else {
-      consola.info(".gitignore には既に .snaperro/ が含まれています");
+      consola.info(".gitignore already contains .snaperro/");
     }
   } catch {
-    // .gitignore が存在しない場合は作成
+    // Create .gitignore if it doesn't exist
     await fs.writeFile(gitignorePath, `${GITIGNORE_ENTRY.trim()}\n`, "utf-8");
-    consola.success(".gitignore を作成しました");
+    consola.success("Created .gitignore");
   }
 
   consola.box({
-    title: "snaperro 初期化完了 🐕",
+    title: "snaperro initialization complete 🐕",
     message: [
-      "サンプルパターン:",
-      "  - demo（正常系）",
-      "  - demo-empty（空データ）",
-      "  - demo-error（エラー系）",
+      "Sample patterns:",
+      "  - demo (success cases)",
+      "  - demo-empty (empty data)",
+      "  - demo-error (error cases)",
       "",
-      "次のステップ:",
-      "1. npx snaperro start でサーバーを起動",
-      "2. GUIでパターンを切り替えて動作を確認",
+      "Next steps:",
+      "1. Start server with: npx snaperro start",
+      "2. Switch patterns in GUI to verify operation",
     ].join("\n"),
   });
 }

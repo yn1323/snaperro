@@ -17,8 +17,8 @@ interface PatternPaneProps {
 }
 
 /**
- * 左ペイン - パターン一覧
- * 幅: 150px固定
+ * Left pane - Pattern list
+ * Width: 150px fixed
  */
 export function PatternPane({
   patterns,
@@ -57,15 +57,15 @@ export function PatternPane({
 
   return (
     <div className="w-[150px] bg-gray-100 border-r border-gray-300 flex flex-col shrink-0">
-      {/* ヘッダー */}
+      {/* Header */}
       <div className="p-2 border-b border-gray-300 bg-gray-200">
-        <span className="font-semibold text-sm text-gray-700">パターン</span>
+        <span className="font-semibold text-sm text-gray-700">Patterns</span>
       </div>
 
-      {/* パターンリスト */}
+      {/* Pattern list */}
       <div className="flex-1 overflow-y-auto">
         {patterns.length === 0 ? (
-          <div className="p-3 text-xs text-gray-500 text-center">パターンがありません</div>
+          <div className="p-3 text-xs text-gray-500 text-center">No patterns</div>
         ) : (
           patterns.map((pattern) => (
             <div
@@ -100,25 +100,25 @@ export function PatternPane({
         )}
       </div>
 
-      {/* アクションボタン */}
+      {/* Action buttons */}
       <div className="p-2 border-t border-gray-300 flex flex-col gap-1">
         <button
           type="button"
           onClick={() => setIsModalOpen(true)}
           className="text-xs bg-blue-500 text-white px-2 py-1.5 rounded hover:bg-blue-600 font-medium cursor-pointer"
         >
-          + 新規作成
+          + New
         </button>
         <label className="text-xs bg-gray-500 text-white px-2 py-1.5 rounded hover:bg-gray-600 text-center cursor-pointer font-medium">
-          ZIP取込
+          Import ZIP
           <input type="file" accept=".zip" onChange={handleFileUpload} className="hidden" />
         </label>
       </div>
 
-      {/* パターン作成モーダル */}
+      {/* Pattern creation modal */}
       <CreatePatternModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />
 
-      {/* リネームダイアログ */}
+      {/* Rename dialog */}
       <RenameDialog
         isOpen={renameTarget !== null}
         currentName={renameTarget || ""}
@@ -126,12 +126,12 @@ export function PatternPane({
         onSubmit={handleRename}
       />
 
-      {/* 削除確認ダイアログ */}
+      {/* Delete confirmation dialog */}
       <ConfirmDialog
         isOpen={deleteTarget !== null}
-        title="パターンを削除"
-        message={`パターン「${deleteTarget}」を削除しますか？この操作は取り消せません。`}
-        confirmLabel="削除"
+        title="Delete Pattern"
+        message={`Delete pattern "${deleteTarget}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
       />

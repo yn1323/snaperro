@@ -7,6 +7,7 @@ import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
 import { PatternPane } from "./components/PatternPane";
 import { TopBar } from "./components/TopBar";
+import { useFavicon } from "./hooks/useFavicon";
 import { useSnaperroAPI } from "./hooks/useSnaperroAPI";
 import { useSnaperroSSE } from "./hooks/useSnaperroSSE";
 import type { FileData, Mode } from "./types";
@@ -15,24 +16,28 @@ export default function App() {
   const { state, connected } = useSnaperroSSE();
   const api = useSnaperroAPI();
 
-  // ローカル状態
+  // Dynamic favicon based on connection and mode
+  const favicon = !connected ? "⚠️" : state.mode === "record" ? "🔴" : state.mode === "proxy" ? "🌐" : "🐕";
+  useFavicon(favicon);
+
+  // Local state
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [isRecordModalOpen, setIsRecordModalOpen] = useState(false);
   const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
 
-  // パターン変更時にファイル選択をリセット
+  // Reset file selection when pattern changes
   const currentPattern = state.currentPattern;
   useEffect(() => {
-    // currentPatternが変更されたらファイル選択をクリア
+    // Clear file selection when currentPattern changes
     if (currentPattern !== undefined) {
       setSelectedFile(null);
       setFileData(null);
     }
   }, [currentPattern]);
 
-  // ファイル選択時にコンテンツを読み込み
+  // Load content when file is selected
   useEffect(() => {
     const pattern = state.currentPattern;
     if (!pattern || !selectedFile) {
@@ -46,7 +51,7 @@ export default function App() {
         const data = await api.getFile(pattern, selectedFile);
         setFileData(data);
       } catch (err) {
-        console.error("ファイル読み込みエラー:", err);
+        console.error("File load error:", err);
         setFileData(null);
       } finally {
         setIsLoadingFile(false);
@@ -57,7 +62,7 @@ export default function App() {
   }, [state.currentPattern, selectedFile, api]);
 
   // ============================================================
-  // イベントハンドラ
+  // Event handlers
   // ============================================================
 
   const handleModeChange = useCallback(
@@ -65,7 +70,7 @@ export default function App() {
       try {
         await api.setMode(mode);
       } catch (err) {
-        console.error("モード変更エラー:", err);
+        console.error("Mode change error:", err);
       }
     },
     [api],
@@ -76,7 +81,7 @@ export default function App() {
       try {
         await api.setCurrentPattern(pattern);
       } catch (err) {
-        console.error("パターン選択エラー:", err);
+        console.error("Pattern select error:", err);
       }
     },
     [api],
@@ -87,7 +92,7 @@ export default function App() {
       try {
         await api.createPattern(name);
       } catch (err) {
-        console.error("パターン作成エラー:", err);
+        console.error("Pattern create error:", err);
       }
     },
     [api],
@@ -98,7 +103,7 @@ export default function App() {
       try {
         await api.uploadPattern(file);
       } catch (err) {
-        console.error("パターンアップロードエラー:", err);
+        console.error("Pattern upload error:", err);
       }
     },
     [api],
@@ -109,7 +114,7 @@ export default function App() {
       try {
         await api.renamePattern(oldName, newName);
       } catch (err) {
-        console.error("パターンリネームエラー:", err);
+        console.error("Pattern rename error:", err);
       }
     },
     [api],
@@ -120,7 +125,7 @@ export default function App() {
       try {
         await api.duplicatePattern(name, `${name}_copy`);
       } catch (err) {
-        console.error("パターン複製エラー:", err);
+        console.error("Pattern duplicate error:", err);
       }
     },
     [api],
@@ -131,7 +136,7 @@ export default function App() {
       try {
         await api.downloadPattern(name);
       } catch (err) {
-        console.error("パターンダウンロードエラー:", err);
+        console.error("Pattern download error:", err);
       }
     },
     [api],
@@ -142,18 +147,18 @@ export default function App() {
       try {
         await api.deletePattern(name);
       } catch (err) {
-        console.error("パターン削除エラー:", err);
+        console.error("Pattern delete error:", err);
       }
     },
     [api],
   );
 
-  // Recordモード切替リクエスト（モーダルを開く）
+  // Record mode switch request (open modal)
   const handleRecordRequest = useCallback(() => {
     setIsRecordModalOpen(true);
   }, []);
 
-  // Recordモード用パターン作成（作成後にパターン選択してRecordモードに切替）
+  // Create pattern for Record mode (select pattern after creation and switch to Record mode)
   const handleRecordPatternCreate = useCallback(
     async (name: string) => {
       try {
@@ -161,7 +166,7 @@ export default function App() {
         await api.setCurrentPattern(name);
         await api.setMode("record");
       } catch (err) {
-        console.error("Record用パターン作成エラー:", err);
+        console.error("Record pattern create error:", err);
       }
     },
     [api],
@@ -174,7 +179,7 @@ export default function App() {
         await api.updateFile(state.currentPattern, selectedFile, data);
         setFileData(data);
       } catch (err) {
-        console.error("ファイル保存エラー:", err);
+        console.error("File save error:", err);
       }
     },
     [api, state.currentPattern, selectedFile],
@@ -204,7 +209,7 @@ export default function App() {
       try {
         await api.uploadFile(state.currentPattern, file);
       } catch (err) {
-        console.error("ファイルアップロードエラー:", err);
+        console.error("File upload error:", err);
       }
     },
     [api, state.currentPattern],
@@ -216,7 +221,7 @@ export default function App() {
       try {
         await api.downloadFile(state.currentPattern, filename);
       } catch (err) {
-        console.error("ファイルダウンロードエラー:", err);
+        console.error("File download error:", err);
       }
     },
     [api, state.currentPattern],
@@ -266,19 +271,19 @@ export default function App() {
         }
       />
 
-      {/* Record用パターン作成モーダル */}
+      {/* Pattern creation modal for Record mode */}
       <CreatePatternModal
         isOpen={isRecordModalOpen}
         onClose={() => setIsRecordModalOpen(false)}
         onCreate={handleRecordPatternCreate}
       />
 
-      {/* ファイル削除確認ダイアログ */}
+      {/* File delete confirmation dialog */}
       <ConfirmDialog
         isOpen={deleteFileTarget !== null}
-        title="ファイルを削除"
-        message={`ファイル「${deleteFileTarget}」を削除しますか？この操作は取り消せません。`}
-        confirmLabel="削除"
+        title="Delete File"
+        message={`Delete file "${deleteFileTarget}"? This action cannot be undone.`}
+        confirmLabel="Delete"
         onClose={() => setDeleteFileTarget(null)}
         onConfirm={handleFileDeleteConfirm}
       />

@@ -7,18 +7,18 @@ interface CreatePatternModalProps {
 }
 
 /**
- * パターン新規作成モーダル
- * form submitを使用してIME変換確定と送信を区別
+ * New pattern creation modal
+ * Uses form submit to distinguish between IME conversion confirmation and submission
  */
 export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternModalProps) {
   const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // モーダルが開いたらinputにフォーカス
+  // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
       setName("");
-      // 少し遅延させてフォーカス（アニメーション対応）
+      // Delay focus slightly for animation
       const timer = setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
@@ -26,7 +26,7 @@ export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternM
     }
   }, [isOpen]);
 
-  // Escキーでモーダルを閉じる
+  // Close modal with Esc key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -52,7 +52,7 @@ export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternM
       <div className="bg-white rounded-lg shadow-xl w-80" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div className="p-4 border-b border-gray-200">
           <h2 id="modal-title" className="font-semibold text-gray-800">
-            新規パターン作成
+            Create New Pattern
           </h2>
         </div>
         <form onSubmit={handleSubmit}>
@@ -63,7 +63,7 @@ export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternM
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              placeholder="パターン名を入力"
+              placeholder="Enter pattern name"
             />
           </div>
           <div className="p-4 border-t border-gray-200 flex gap-2 justify-end">
@@ -72,14 +72,14 @@ export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternM
               onClick={onClose}
               className="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded hover:bg-gray-200 cursor-pointer"
             >
-              キャンセル
+              Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim()}
               className="px-4 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
             >
-              作成
+              Create
             </button>
           </div>
         </form>

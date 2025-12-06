@@ -52,7 +52,7 @@ function createErrorInfo(
         type,
         title: "Connection Failed",
         message: "Could not connect to snaperro server.",
-        action: "Make sure the server is running: npx snaperro demo",
+        action: "Make sure the server is running: npx snaperro start",
         details: baseDetails,
       };
     case "no-pattern":

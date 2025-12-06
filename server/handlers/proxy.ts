@@ -3,8 +3,8 @@ import { logger } from "../core/logger.js";
 import type { ApiConfig } from "../types/config.js";
 
 /**
- * Proxyモード処理
- * 実際のAPIにリクエストを転送し、レスポンスをそのまま返す
+ * Proxy mode handler
+ * Forward requests to actual API and return responses as-is
  */
 export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Response> {
   const method = c.req.method;
@@ -18,13 +18,13 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
   const startTime = Date.now();
 
   try {
-    // リクエストボディを取得
+    // Get request body
     let body: string | null = null;
     if (method !== "GET" && method !== "HEAD") {
       body = await c.req.raw.clone().text();
     }
 
-    // ヘッダーをコピー（キャッシュ関連ヘッダーを除外して常に新しいレスポンスを取得）
+    // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = new Headers();
     const skipRequestHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
     for (const [key, value] of c.req.raw.headers.entries()) {
@@ -33,10 +33,10 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       }
     }
 
-    // Accept-Encodingを制限（Node.jsはzstd/brをサポートしない）
+    // Limit Accept-Encoding (Node.js doesn't support zstd/br)
     headers.set("accept-encoding", "gzip, deflate");
 
-    // 設定のヘッダーを付与
+    // Add headers from config
     if (apiConfig.headers) {
       for (const [key, value] of Object.entries(apiConfig.headers)) {
         headers.set(key, value);
@@ -54,10 +54,10 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     const elapsed = Date.now() - startTime;
     logger.info(`  → ${response.status} (${elapsed}ms)`);
 
-    // ヘッダーをコピー（問題のあるヘッダーを除外）
-    // Content-Encoding: response.text()で解凍済みなのにgzipが残るとブラウザが再解凍を試みてエラー
-    // Transfer-Encoding: chunkedなどが残ると問題
-    // Content-Length: ボディサイズが変わっている可能性があるため除外
+    // Copy headers (excluding problematic headers)
+    // Content-Encoding: Already decompressed by response.text() but gzip remains causing browser re-decompression error
+    // Transfer-Encoding: Issues with chunked etc. remaining
+    // Content-Length: Excluded because body size may have changed
     const responseHeaders = new Headers();
     const skipResponseHeaders = ["content-encoding", "transfer-encoding", "content-length"];
     for (const [key, value] of response.headers.entries()) {
@@ -66,7 +66,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       }
     }
 
-    // ボディを明示的に読み取る（ReadableStreamを直接渡すと消費済みで空になる問題を回避）
+    // Explicitly read body (avoid issue of empty body when passing ReadableStream directly)
     const bodyText = await response.text();
     return new Response(bodyText, {
       status: response.status,

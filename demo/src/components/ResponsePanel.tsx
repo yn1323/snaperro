@@ -28,15 +28,15 @@ const statusColor = (status: number): string => {
   return "#f87171"; // red
 };
 
-// JSONシンタックスハイライト
+// JSON syntax highlighting
 function highlightJson(json: string): string {
   return (
     json
-      // 文字列キー（プロパティ名）
+      // String keys (property names)
       .replace(/"([^"]+)"(?=\s*:)/g, '<span class="json-key">"$1"</span>')
-      // 文字列値
+      // String values
       .replace(/:\s*"([^"]*)"/g, ': <span class="json-string">"$1"</span>')
-      // 数値
+      // Numbers
       .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
       // boolean/null
       .replace(/:\s*(true|false|null)/g, ': <span class="json-boolean">$1</span>')
@@ -46,25 +46,27 @@ function highlightJson(json: string): string {
 export function ResponsePanel({ request, response, mode, isLoading, error }: ResponsePanelProps) {
   const config = modeConfig[mode];
 
-  // 初期状態（まだリクエストしていない）
+  // Initial state (no request yet)
   if (!request && !isLoading && !error) {
     return (
       <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl flex flex-col items-center justify-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--bg-tertiary)] mb-3">
           <span className="text-2xl opacity-50">📡</span>
         </div>
-        <p className="font-mono text-[var(--text-secondary)] text-sm">シナリオを選んで「Run」をクリック</p>
-        <p className="font-mono text-[var(--text-secondary)] text-xs mt-1 opacity-60">レスポンスがここに表示されます</p>
+        <p className="font-mono text-[var(--text-secondary)] text-sm">Select a scenario and click "Run"</p>
+        <p className="font-mono text-[var(--text-secondary)] text-xs mt-1 opacity-60">
+          Response will be displayed here
+        </p>
       </div>
     );
   }
 
   return (
     <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
-      {/* ヘッダー：リクエスト情報 */}
+      {/* Header: Request info */}
       <div className="shrink-0 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-tertiary)]/50">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          {/* リクエストURL */}
+          {/* Request URL */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {request && (
               <>
@@ -76,9 +78,9 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
             )}
           </div>
 
-          {/* ステータス + モード */}
+          {/* Status + Mode */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* モード表示 */}
+            {/* Mode display */}
             <div
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-medium transition-all"
               style={{
@@ -93,7 +95,7 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
               {config.label}
             </div>
 
-            {/* ステータスコード */}
+            {/* Status code */}
             {response && (
               <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-xs font-bold"
@@ -110,9 +112,9 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
         </div>
       </div>
 
-      {/* コンテンツエリア */}
+      {/* Content area */}
       <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* ローディング */}
+        {/* Loading */}
         {isLoading && (
           <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border)]">
@@ -130,23 +132,23 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
           </div>
         )}
 
-        {/* エラー表示 */}
+        {/* Error display */}
         {error && (
           <div className="h-full flex items-center justify-center p-4">
             <div className="max-w-md w-full px-5 py-4 rounded-xl bg-[#f8717110] border border-[#f8717125]">
-              {/* タイトル */}
+              {/* Title */}
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">⚠️</span>
                 <h3 className="font-mono text-base font-semibold text-[var(--accent-red)]">{error.title}</h3>
               </div>
 
-              {/* メッセージ */}
+              {/* Message */}
               <p className="font-mono text-sm text-[var(--text-primary)] mb-2">{error.message}</p>
 
-              {/* アクション */}
+              {/* Action */}
               <p className="font-mono text-sm text-[var(--text-secondary)] mb-4">{error.action}</p>
 
-              {/* 詳細情報 */}
+              {/* Details */}
               <div className="pt-3 border-t border-[#f8717120]">
                 <p className="font-mono text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-2">Details</p>
                 <div className="space-y-1 font-mono text-xs">
@@ -180,10 +182,10 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
           </div>
         )}
 
-        {/* レスポンスボディ */}
+        {/* Response body */}
         {response && !error && (
           <div className="h-full flex flex-col p-4">
-            {/* ラベル */}
+            {/* Label */}
             <div className="shrink-0 flex items-center justify-between mb-2">
               <span className="font-mono text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                 Response Body
@@ -193,9 +195,9 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
               </span>
             </div>
 
-            {/* JSONコードブロック */}
+            {/* JSON code block */}
             <div className="relative group flex-1 min-h-0">
-              {/* 装飾的なグラデーションライン */}
+              {/* Decorative gradient line */}
               <div
                 className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full opacity-60"
                 style={{
@@ -205,13 +207,13 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
 
               <pre
                 className="json-display h-full pl-4 pr-4 py-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] overflow-auto font-mono text-sm leading-relaxed"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: JSONハイライト用
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: For JSON highlighting
                 dangerouslySetInnerHTML={{
                   __html: highlightJson(JSON.stringify(response.body, null, 2)),
                 }}
               />
 
-              {/* コピーボタン */}
+              {/* Copy button */}
               <button
                 type="button"
                 onClick={() => {
@@ -225,7 +227,7 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
           </div>
         )}
 
-        {/* リクエスト中でレスポンスがまだない場合のプレースホルダー */}
+        {/* Placeholder when request is in progress but no response yet */}
         {!response && !error && !isLoading && request && (
           <div className="h-full flex items-center justify-center">
             <p className="font-mono text-sm text-[var(--text-secondary)]">Waiting for response...</p>

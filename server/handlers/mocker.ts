@@ -5,7 +5,7 @@ import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 
 /**
- * クエリパラメータを解析
+ * Parse query parameters
  */
 function parseQueryParams(url: URL): Record<string, string | string[]> {
   const params: Record<string, string | string[]> = {};
@@ -21,8 +21,8 @@ function parseQueryParams(url: URL): Record<string, string | string[]> {
 }
 
 /**
- * Mockモード処理
- * 保存済みのJSONファイルからレスポンスを返す
+ * Mock mode handler
+ * Return responses from saved JSON files
  */
 export async function handleMock(c: Context, match: MatchResult): Promise<Response> {
   const method = c.req.method;
@@ -41,10 +41,10 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
     );
   }
 
-  // クエリパラメータを解析
+  // Parse query parameters
   const queryParams = parseQueryParams(url);
 
-  // パラメータマッチングでファイルを検索
+  // Search for file with parameter matching
   const result = await storage.findMatchingFile(pattern, method, match.matchedRoute, match.pathParams, queryParams);
 
   if (!result) {
@@ -63,7 +63,7 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
 
   logger.info(`${method} ${path} → mock → ${result.filePath} (${result.fileData.response.status})`);
 
-  // レスポンスを返却（304/204はボディなし）
+  // Return response (304/204 have no body)
   const status = result.fileData.response.status;
   if (status === 304 || status === 204) {
     return c.body(null, status as never);

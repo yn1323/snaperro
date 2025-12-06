@@ -11,14 +11,14 @@ import { controlApi } from "./control-api.js";
 import { cors } from "./cors.js";
 import { createHandler } from "./handler.js";
 
-// ESM環境での__dirname相当を取得
+// Get __dirname equivalent in ESM environment
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.join(__dirname, "..", "client");
 const demoDistPath = path.join(__dirname, "..", "demo");
 
 /**
- * サーバー起動オプション
+ * Server startup options
  */
 export interface ServerOptions {
   config: SnaperroConfig;
@@ -26,7 +26,7 @@ export interface ServerOptions {
 }
 
 /**
- * サーバー起動結果
+ * Server startup result
  */
 export interface ServerInfo {
   port: number;
@@ -34,7 +34,7 @@ export interface ServerInfo {
 }
 
 /**
- * サーバーを起動
+ * Start the server
  */
 export function startServer(options: ServerOptions): Promise<ServerInfo> {
   return new Promise((resolve) => {
@@ -42,31 +42,31 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       const { config, verbose = false } = options;
       const requestedPort = config.port ?? 3333;
 
-      // 詳細ログ設定
+      // Verbose logging setup
       logger.setVerbose(verbose);
 
-      // 空きポートを探す（最大10回試行）
+      // Find available port (max 10 attempts)
       const port = await findAvailablePort(requestedPort);
 
       if (port !== requestedPort) {
-        logger.info(`ポート ${requestedPort} は使用中のため、${port} を使用します`);
+        logger.info(`Port ${requestedPort} is in use, using ${port} instead`);
       }
 
-      // ストレージ初期化
+      // Initialize storage
       await storage.ensureBaseDir();
 
-      // Honoアプリケーション作成
+      // Create Hono application
       const app = new Hono();
 
-      // CORS ミドルウェア
+      // CORS middleware
       app.use("*", cors());
 
       // ========================================
-      // GUI配信（制御APIより先に定義）
+      // GUI serving (defined before control API)
       // ========================================
       const indexHtmlPath = path.join(clientDistPath, "index.html");
 
-      // index.html配信
+      // Serve index.html
       app.get("/__snaperro__/client", (c) => {
         if (!fs.existsSync(indexHtmlPath)) {
           return c.text("GUI is not built. Run 'pnpm build:client' first.", 404);
@@ -83,7 +83,7 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
         return c.html(html);
       });
 
-      // 静的アセット配信
+      // Serve static assets
       app.get("/__snaperro__/client/assets/:filename", (c) => {
         const filename = c.req.param("filename");
         const filePath = path.join(clientDistPath, "assets", filename);
@@ -105,7 +105,7 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       });
 
       // ========================================
-      // Demo配信
+      // Demo serving
       // ========================================
       const demoIndexHtmlPath = path.join(demoDistPath, "index.html");
 
@@ -146,15 +146,15 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       });
 
       // ========================================
-      // 制御API（/__snaperro__/*）
+      // Control API (/__snaperro__/*)
       // ========================================
       app.route("/__snaperro__", controlApi);
 
-      // メインハンドラー（その他のリクエスト）
+      // Main handler (other requests)
       const handler = createHandler(config);
       app.all("*", handler);
 
-      // サーバー起動
+      // Start server
       serve(
         {
           fetch: app.fetch,

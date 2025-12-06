@@ -9,13 +9,13 @@ interface PatternMenuProps {
 }
 
 /**
- * パターン操作メニュー（⋮ドロップダウン）
+ * Pattern action menu (⋮ dropdown)
  */
 export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, onDelete }: PatternMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // 外側クリックでメニューを閉じる
+  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -29,7 +29,7 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
     }
   }, [isOpen]);
 
-  // Escキーでメニューを閉じる
+  // Close menu with Esc key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
@@ -54,7 +54,7 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
           setIsOpen(!isOpen);
         }}
         className="w-6 h-6 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded cursor-pointer"
-        title={`${patternName} のメニュー`}
+        title={`Menu for ${patternName}`}
       >
         ⋮
       </button>
@@ -66,21 +66,21 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
             onClick={() => handleAction(onRename)}
             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
           >
-            リネーム
+            Rename
           </button>
           <button
             type="button"
             onClick={() => handleAction(onDuplicate)}
             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
           >
-            複製
+            Duplicate
           </button>
           <button
             type="button"
             onClick={() => handleAction(onDownload)}
             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
           >
-            ZIPダウンロード
+            Download ZIP
           </button>
           <div className="border-t border-gray-200" />
           <button
@@ -88,7 +88,7 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
             onClick={() => handleAction(onDelete)}
             className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 cursor-pointer"
           >
-            削除
+            Delete
           </button>
         </div>
       )}

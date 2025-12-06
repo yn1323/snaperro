@@ -8,17 +8,17 @@ const modeHints: Record<Mode, { icon: string; text: string; subtext: string }> =
   proxy: {
     icon: "→",
     text: "Proxy",
-    subtext: "リクエストを転送中",
+    subtext: "Forwarding requests",
   },
   record: {
     icon: "●",
     text: "Record",
-    subtext: "レスポンスを保存中",
+    subtext: "Saving responses",
   },
   mock: {
     icon: "◆",
     text: "Mock",
-    subtext: "保存データを返却中",
+    subtext: "Returning saved data",
   },
 };
 

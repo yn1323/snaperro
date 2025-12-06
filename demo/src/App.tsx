@@ -18,12 +18,90 @@ type ResponseInfo = {
   body: unknown;
 };
 
+export type ErrorType = "network" | "no-pattern" | "no-mock" | "bad-gateway" | "unknown";
+
+export type ErrorInfo = {
+  type: ErrorType;
+  title: string;
+  message: string;
+  action: string;
+  details: {
+    url: string;
+    status?: number;
+    statusText?: string;
+    endpoint?: string;
+    rawMessage?: string;
+  };
+};
+
+// エラー情報を生成
+function createErrorInfo(
+  type: ErrorType,
+  url: string,
+  status?: number,
+  statusText?: string,
+  // biome-ignore lint/suspicious/noExplicitAny: API response type varies
+  responseBody?: any,
+  rawMessage?: string,
+): ErrorInfo {
+  const baseDetails = { url, status, statusText, rawMessage };
+
+  switch (type) {
+    case "network":
+      return {
+        type,
+        title: "Connection Failed",
+        message: "Could not connect to snaperro server.",
+        action: "Make sure the server is running: npx snaperro demo",
+        details: baseDetails,
+      };
+    case "no-pattern":
+      return {
+        type,
+        title: "No Pattern Selected",
+        message: "Please select a pattern in the GUI first.",
+        action: "Click [Open GUI] to select a pattern.",
+        details: baseDetails,
+      };
+    case "no-mock":
+      return {
+        type,
+        title: "No Matching Mock Found",
+        message: "No mock data exists for this request.",
+        action: "Try [Record] mode first to save the response, or create a mock file in the GUI.",
+        details: {
+          ...baseDetails,
+          endpoint: responseBody?.endpoint,
+        },
+      };
+    case "bad-gateway":
+      return {
+        type,
+        title: "Upstream Server Error",
+        message: "Could not connect to the target API.",
+        action: "Check if the target server is available.",
+        details: {
+          ...baseDetails,
+          rawMessage: responseBody?.message || rawMessage,
+        },
+      };
+    default:
+      return {
+        type: "unknown",
+        title: "Request Failed",
+        message: "An unexpected error occurred.",
+        action: "Please try again or check the server logs.",
+        details: baseDetails,
+      };
+  }
+}
+
 export default function App() {
   const [mode, setMode] = useState<Mode>("proxy");
   const [isLoading, setIsLoading] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<RequestInfo | null>(null);
   const [response, setResponse] = useState<ResponseInfo | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorInfo | null>(null);
 
   // モード変更時にサーバーと同期
   const handleModeChange = useCallback(async (newMode: Mode) => {
@@ -48,14 +126,43 @@ export default function App() {
 
     try {
       const res = await fetch(url);
-      const body = await res.json();
+
+      // JSONパースを試みる（304/204はボディなし）
+      let body: unknown = null;
+      if (res.status !== 304 && res.status !== 204) {
+        try {
+          body = await res.json();
+        } catch {
+          // JSONパース失敗
+          setError(createErrorInfo("unknown", url, res.status, res.statusText, null, "Response is not valid JSON"));
+          return;
+        }
+      }
+
+      // HTTPエラーステータスをチェック
+      if (!res.ok) {
+        const responseBody = body as { error?: string; endpoint?: string; message?: string };
+
+        if (res.status === 400 && responseBody.error === "No pattern selected") {
+          setError(createErrorInfo("no-pattern", url, res.status, res.statusText, responseBody));
+        } else if (res.status === 404 && responseBody.error === "No matching mock found") {
+          setError(createErrorInfo("no-mock", url, res.status, res.statusText, responseBody));
+        } else if (res.status === 502 && responseBody.error === "Bad Gateway") {
+          setError(createErrorInfo("bad-gateway", url, res.status, res.statusText, responseBody));
+        } else {
+          setError(createErrorInfo("unknown", url, res.status, res.statusText, responseBody, responseBody.error));
+        }
+        return;
+      }
 
       setResponse({
         status: res.status,
         body,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error occurred");
+      // ネットワークエラー
+      const rawMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(createErrorInfo("network", url, undefined, undefined, null, rawMessage));
     } finally {
       setIsLoading(false);
     }

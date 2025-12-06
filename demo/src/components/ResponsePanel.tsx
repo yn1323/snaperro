@@ -1,3 +1,4 @@
+import type { ErrorInfo } from "../App";
 import type { Mode } from "./ModeSelector";
 
 type ResponsePanelProps = {
@@ -11,7 +12,7 @@ type ResponsePanelProps = {
   } | null;
   mode: Mode;
   isLoading: boolean;
-  error: string | null;
+  error: ErrorInfo | null;
 };
 
 const modeConfig: Record<Mode, { label: string; color: string; icon: string }> = {
@@ -132,11 +133,48 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
         {/* エラー表示 */}
         {error && (
           <div className="h-full flex items-center justify-center p-4">
-            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-[#f8717115] border border-[#f8717130]">
-              <span className="text-lg">⚠️</span>
-              <div>
-                <p className="font-mono text-sm font-medium text-[var(--accent-red)]">Error</p>
-                <p className="font-mono text-xs text-[var(--text-secondary)] mt-1">{error}</p>
+            <div className="max-w-md w-full px-5 py-4 rounded-xl bg-[#f8717110] border border-[#f8717125]">
+              {/* タイトル */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">⚠️</span>
+                <h3 className="font-mono text-base font-semibold text-[var(--accent-red)]">{error.title}</h3>
+              </div>
+
+              {/* メッセージ */}
+              <p className="font-mono text-sm text-[var(--text-primary)] mb-2">{error.message}</p>
+
+              {/* アクション */}
+              <p className="font-mono text-sm text-[var(--text-secondary)] mb-4">{error.action}</p>
+
+              {/* 詳細情報 */}
+              <div className="pt-3 border-t border-[#f8717120]">
+                <p className="font-mono text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-2">Details</p>
+                <div className="space-y-1 font-mono text-xs">
+                  {error.details.status && (
+                    <div className="flex gap-2">
+                      <span className="text-[var(--text-secondary)]">Status:</span>
+                      <span className="text-[var(--accent-red)]">
+                        {error.details.status} {error.details.statusText}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="text-[var(--text-secondary)]">URL:</span>
+                    <span className="text-[var(--text-primary)] break-all">{error.details.url}</span>
+                  </div>
+                  {error.details.endpoint && (
+                    <div className="flex gap-2">
+                      <span className="text-[var(--text-secondary)]">Endpoint:</span>
+                      <span className="text-[var(--text-primary)]">{error.details.endpoint}</span>
+                    </div>
+                  )}
+                  {error.details.rawMessage && (
+                    <div className="flex gap-2">
+                      <span className="text-[var(--text-secondary)]">Message:</span>
+                      <span className="text-[var(--text-primary)] break-all">{error.details.rawMessage}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

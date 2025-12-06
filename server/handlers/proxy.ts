@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { logger } from "../core/logger.js";
+import { getProxyAgent } from "../core/proxy-agent.js";
 import type { ApiConfig } from "../types/config.js";
 
 /**
@@ -49,6 +50,8 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       method,
       headers,
       body,
+      // @ts-expect-error - dispatcher is a Node.js-specific option from undici
+      dispatcher: getProxyAgent(),
     });
 
     const elapsed = Date.now() - startTime;

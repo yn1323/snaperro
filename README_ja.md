@@ -155,6 +155,31 @@ API_KEY=your-api-key-here
 | `routes` | string[] | ○ | マッチするルートパターン |
 | `headers` | object | - | 付与するヘッダー |
 
+#### 上流プロキシ
+
+企業プロキシ環境下で使用する場合、上流プロキシを設定できます。
+
+**設定ファイルで指定:**
+
+```typescript
+export default defineConfig({
+  upstreamProxy: {
+    url: "http://proxy.company.com:8080",
+  },
+  // ...
+})
+```
+
+**環境変数で指定:**
+
+```bash
+export HTTPS_PROXY=http://proxy.company.com:8080
+# 認証付きの場合
+export HTTPS_PROXY=http://username:password@proxy.company.com:8080
+```
+
+設定ファイルが環境変数より優先されます。
+
 ### CLI コマンド
 
 | コマンド | 説明 |

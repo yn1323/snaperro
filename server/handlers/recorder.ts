@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
 import { logger } from "../core/logger.js";
 import type { MatchResult } from "../core/matcher.js";
+import { getProxyAgent } from "../core/proxy-agent.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { FileData, HttpMethod } from "../types/file.js";
@@ -85,6 +86,8 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       method,
       headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,
+      // @ts-expect-error - dispatcher is a Node.js-specific option from undici
+      dispatcher: getProxyAgent(),
     });
 
     // 2. Get response body (304/204 have no body)

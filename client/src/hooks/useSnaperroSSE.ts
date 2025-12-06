@@ -23,6 +23,7 @@ interface UseSnaperroSSEReturn {
 }
 
 const initialState: SnaperroState = {
+  version: "",
   mode: "proxy",
   currentPattern: null,
   patterns: [],
@@ -42,6 +43,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   // イベントハンドラ
   const handleConnected = useCallback((data: ConnectedEventData) => {
     setState({
+      version: data.version,
       mode: data.mode as Mode,
       currentPattern: data.currentPattern,
       patterns: data.patterns,

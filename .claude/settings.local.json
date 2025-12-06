@@ -19,7 +19,8 @@
       "Skill(frontend-design:frontend-design)",
       "Bash(find:*)",
       "Bash(pnpm build:demo:*)",
-      "Bash(npx . demo)"
+      "Bash(npx . demo)",
+      "Bash(pnpm type-check:client:*)"
     ],
     "deny": [],
     "ask": []

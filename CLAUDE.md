@@ -53,4 +53,4 @@ pnpm type-check && pnpm format
    - アプリケーションのメッセージ、UI、コメント: 英語
    - doc: 日本語
    - コンソール出力: 英語
-   - README: 英語
+   - README: 英語（README_jaは日本語）

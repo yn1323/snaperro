@@ -21,6 +21,16 @@ export const ApiConfigSchema = z.object({
 export type ApiConfig = z.infer<typeof ApiConfigSchema>;
 
 /**
+ * Upstream proxy configuration schema
+ */
+export const UpstreamProxySchema = z.object({
+  /** Proxy URL (e.g., http://proxy.company.com:8080 or http://user:pass@proxy:8080) */
+  url: z.url(),
+});
+
+export type UpstreamProxyConfig = z.infer<typeof UpstreamProxySchema>;
+
+/**
  * snaperro設定ファイルスキーマ
  */
 export const SnaperroConfigSchema = z.object({
@@ -28,6 +38,8 @@ export const SnaperroConfigSchema = z.object({
   port: z.number().int().min(1).max(65535).optional().default(3333),
   /** 記録データの保存先ディレクトリ（デフォルト: .snaperro/files） */
   filesDir: z.string().optional().default(".snaperro/files"),
+  /** Upstream proxy configuration */
+  upstreamProxy: UpstreamProxySchema.optional(),
   /** API設定 */
   apis: z.record(z.string(), ApiConfigSchema),
 });

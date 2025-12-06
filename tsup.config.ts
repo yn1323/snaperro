@@ -11,6 +11,7 @@ export default defineConfig([
     sourcemap: true,
     target: "node18",
     outDir: "dist",
+    external: ["undici"],
   },
   // CLI用（shebangあり）
   {
@@ -25,5 +26,6 @@ export default defineConfig([
     banner: {
       js: "#!/usr/bin/env node",
     },
+    external: ["undici"],
   },
 ]);

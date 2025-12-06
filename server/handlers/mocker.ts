@@ -63,6 +63,10 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
 
   logger.info(`${method} ${path} → mock → ${result.filePath} (${result.fileData.response.status})`);
 
-  // レスポンスを返却
-  return c.json(result.fileData.response.body as object, result.fileData.response.status as never);
+  // レスポンスを返却（304/204はボディなし）
+  const status = result.fileData.response.status;
+  if (status === 304 || status === 204) {
+    return c.body(null, status as never);
+  }
+  return c.json(result.fileData.response.body as object, status as never);
 }

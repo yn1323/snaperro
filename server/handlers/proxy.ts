@@ -51,13 +51,21 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     const elapsed = Date.now() - startTime;
     logger.info(`  → ${response.status} (${elapsed}ms)`);
 
-    // ヘッダーをコピー（fetchのレスポンスヘッダーはimmutableのため）
+    // ヘッダーをコピー（問題のあるヘッダーを除外）
+    // Content-Encoding: response.text()で解凍済みなのにgzipが残るとブラウザが再解凍を試みてエラー
+    // Transfer-Encoding: chunkedなどが残ると問題
+    // Content-Length: ボディサイズが変わっている可能性があるため除外
     const responseHeaders = new Headers();
+    const skipHeaders = ["content-encoding", "transfer-encoding", "content-length"];
     for (const [key, value] of response.headers.entries()) {
-      responseHeaders.set(key, value);
+      if (!skipHeaders.includes(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
     }
 
-    return new Response(response.body, {
+    // ボディを明示的に読み取る（ReadableStreamを直接渡すと消費済みで空になる問題を回避）
+    const bodyText = await response.text();
+    return new Response(bodyText, {
       status: response.status,
       statusText: response.statusText,
       headers: responseHeaders,

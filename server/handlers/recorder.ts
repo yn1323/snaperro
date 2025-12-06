@@ -84,13 +84,15 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       body: requestBody ? JSON.stringify(requestBody) : undefined,
     });
 
-    // 2. レスポンスボディを取得
+    // 2. レスポンスボディを取得（304/204はボディなし）
     const responseText = await response.text();
-    let responseBody: unknown;
-    try {
-      responseBody = JSON.parse(responseText);
-    } catch {
-      responseBody = responseText;
+    let responseBody: unknown = null;
+    if (response.status !== 304 && response.status !== 204 && responseText) {
+      try {
+        responseBody = JSON.parse(responseText);
+      } catch {
+        responseBody = responseText;
+      }
     }
 
     // 3. クエリパラメータを解析

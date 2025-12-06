@@ -36,6 +36,27 @@ npx snaperro init
 npx snaperro start
 ```
 
+### デモ
+
+snaperroの動作を実際に体験できるデモ環境を提供しています。
+
+```bash
+npx snaperro demo
+```
+
+ブラウザで `http://localhost:3333/__snaperro__/demo` が開きます。
+
+#### 体験できる機能
+
+| 機能 | 説明 |
+|-----|------|
+| モード切替 | Proxy/Record/Mockの切替と動作の違いを体験 |
+| Path Parameter | `/users/:id` でIDごとに異なるレスポンスを保存・返却 |
+| Query String | `/posts?userId=1` でクエリごとに異なるレスポンスを保存・返却 |
+| Nested Resource | `/posts/:id/comments` でネストしたリソースの取得 |
+
+詳細な管理（パターン/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
+
 ### 設定ファイル
 
 #### snaperro.config.ts
@@ -87,6 +108,7 @@ API_KEY=your-api-key-here
 | `npx snaperro init` | プロジェクトを初期化 |
 | `npx snaperro start` | サーバーを起動 |
 | `npx snaperro start -p 4000` | ポート指定で起動 |
+| `npx snaperro demo` | デモ環境を起動 |
 | `npx snaperro postman` | Postmanコレクションを出力 |
 
 ### 3つのモード
@@ -247,6 +269,8 @@ npx tsx src/cli/index.ts start
 | テストを監視モードで実行したい | `pnpm test:watch` |
 | コードを整形したい | `pnpm format` |
 | 型エラーを確認したい | `pnpm type-check` |
+| デモを開発したい | `pnpm dev:demo` |
+| デモをビルドしたい | `pnpm build:demo` |
 
 ### プロジェクト構成
 

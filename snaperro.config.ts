@@ -9,7 +9,7 @@ export default defineConfig({
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
-      routes: ["/users/**", "/posts/**", "/comments/**"],
+      routes: ["/users", "/users/:id", "/posts", "/posts/:id", "/posts/:id/comments", "/comments"],
     },
 
     // 例: カスタムAPI
@@ -19,7 +19,7 @@ export default defineConfig({
     //   headers: {
     //     "X-Api-Key": process.env.USER_API_KEY!,
     //   },
-    //   routes: ["/api/users/**"],
+    //   routes: ["/api/users", "/api/users/:id"],
     // },
   },
 });

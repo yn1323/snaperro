@@ -17,11 +17,11 @@ const iconMap: Record<string, string> = {
   nested: "📂",
 };
 
-const categoryBadge: Record<string, { label: string; color: string }> = {
-  basic: { label: "Basic", color: "#71717a" },
-  pathParam: { label: "Path Param", color: "#22d3ee" },
-  queryString: { label: "Query String", color: "#a78bfa" },
-  nested: { label: "Nested", color: "#fb923c" },
+const categoryColors: Record<string, string> = {
+  basic: "#71717a",
+  pathParam: "#22d3ee",
+  queryString: "#a78bfa",
+  nested: "#fb923c",
 };
 
 export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardProps) {
@@ -32,63 +32,57 @@ export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardPro
     onExecute(url);
   };
 
-  const badge = categoryBadge[scenario.category];
+  const accentColor = categoryColors[scenario.category];
 
   return (
-    <div className="bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 hover:border-[#3f3f46] transition-colors">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{iconMap[scenario.icon] || "📦"}</span>
-          <h3 className="font-mono font-semibold">{scenario.title}</h3>
+    <div className="group rounded-lg px-2 py-2 hover:bg-[var(--bg-tertiary)] transition-colors">
+      <div className="flex items-center gap-2">
+        {/* Icon */}
+        <span className="text-base shrink-0">{iconMap[scenario.icon] || "📦"}</span>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-medium truncate">{scenario.title}</span>
+            {scenario.category !== "basic" && (
+              <span
+                className="shrink-0 w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: accentColor }}
+                title={scenario.category}
+              />
+            )}
+          </div>
+
+          {/* Param selector (inline) */}
+          {scenario.paramOptions && (
+            <select
+              value={paramValue}
+              onChange={(e) => setParamValue(e.target.value)}
+              className="mt-1 w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 font-mono text-xs focus:outline-none focus:border-[var(--accent-cyan)]"
+            >
+              {scenario.paramOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} ({opt.value})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-        <span
-          className="text-xs px-2 py-1 rounded-full font-mono"
-          style={{
-            backgroundColor: `${badge.color}20`,
-            color: badge.color,
-          }}
+
+        {/* Run button */}
+        <button
+          type="button"
+          onClick={handleExecute}
+          disabled={isLoading}
+          className={`
+            shrink-0 px-2 py-1 rounded font-mono text-xs font-medium transition-all
+            bg-[var(--bg-primary)] border border-[var(--border)]
+            ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-[var(--accent-cyan)] hover:text-[var(--accent-cyan)]"}
+          `}
         >
-          {badge.label}
-        </span>
+          Run
+        </button>
       </div>
-
-      <p className="font-mono text-sm text-[var(--text-secondary)] mb-4">{scenario.description}</p>
-
-      {scenario.paramOptions && (
-        <div className="mb-4">
-          <label
-            htmlFor={`param-${scenario.id}`}
-            className="block text-xs text-[var(--text-secondary)] mb-1.5 font-mono"
-          >
-            {scenario.paramType === "path" ? "Path Parameter" : "Query String"}: {scenario.paramName}
-          </label>
-          <select
-            id={`param-${scenario.id}`}
-            value={paramValue}
-            onChange={(e) => setParamValue(e.target.value)}
-            className="w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded-lg px-3 py-2 font-mono text-sm focus:outline-none focus:border-[var(--accent-cyan)]"
-          >
-            {scenario.paramOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label} ({opt.value})
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={handleExecute}
-        disabled={isLoading}
-        className={`
-          w-full py-2.5 rounded-lg font-mono text-sm font-medium transition-all
-          bg-[var(--bg-tertiary)] border border-[var(--border)]
-          ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-[var(--border)] hover:border-[#3f3f46]"}
-        `}
-      >
-        {isLoading ? "Loading..." : "Execute"}
-      </button>
     </div>
   );
 }

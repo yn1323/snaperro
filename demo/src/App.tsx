@@ -62,13 +62,19 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <Header mode={mode} onModeChange={handleModeChange} isLoading={isLoading} />
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
-        <ScenarioGrid scenarios={scenarios} onExecute={handleExecute} isLoading={isLoading} />
-        <ResponsePanel request={currentRequest} response={response} mode={mode} isLoading={isLoading} error={error} />
-        <GuidePanel mode={mode} />
-      </main>
+      <div className="flex-1 flex min-h-0">
+        {/* Left Sidebar */}
+        <aside className="w-80 border-r border-[var(--border)] flex flex-col bg-[var(--bg-secondary)]">
+          <ScenarioGrid scenarios={scenarios} onExecute={handleExecute} isLoading={isLoading} />
+          <GuidePanel mode={mode} />
+        </aside>
+        {/* Main Content */}
+        <main className="flex-1 p-4 min-w-0">
+          <ResponsePanel request={currentRequest} response={response} mode={mode} isLoading={isLoading} error={error} />
+        </main>
+      </div>
     </div>
   );
 }

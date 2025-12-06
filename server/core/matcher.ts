@@ -48,19 +48,33 @@ export function parseRoutePattern(pattern: string): ParsedPattern {
 
   // パスから :param を抽出してパラメータ名を収集
   const paramNames: string[] = [];
-  const regexPattern = path
-    .split("/")
-    .map((segment) => {
-      if (segment.startsWith(":")) {
-        const paramName = segment.slice(1);
-        paramNames.push(paramName);
-        return "([^/]+)";
-      }
-      // 正規表現の特殊文字をエスケープ
-      return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    })
-    .join("\\/");
+  const segments = path.split("/");
+  const regexParts: string[] = [];
+  let hasWildcard = false;
 
+  for (const segment of segments) {
+    if (segment === "**") {
+      // ** は末尾にのみ許可し、残りの全パスにマッチ
+      // /users/** → /users, /users/1, /users/1/posts 全てマッチ
+      hasWildcard = true;
+      break; // **以降は無視
+    }
+
+    if (segment.startsWith(":")) {
+      const paramName = segment.slice(1);
+      paramNames.push(paramName);
+      regexParts.push("([^/]+)");
+    } else {
+      // 正規表現の特殊文字をエスケープ
+      regexParts.push(segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    }
+  }
+
+  let regexPattern = regexParts.join("\\/");
+  if (hasWildcard) {
+    // ワイルドカードの場合、オプショナルな残りパスにマッチ
+    regexPattern += "(?:\\/.*)?";
+  }
   const regex = new RegExp(`^${regexPattern}$`);
 
   return { method, path, paramNames, regex };

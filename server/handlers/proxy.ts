@@ -51,11 +51,16 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     const elapsed = Date.now() - startTime;
     logger.info(`  → ${response.status} (${elapsed}ms)`);
 
-    // レスポンスをそのまま返す
+    // ヘッダーをコピー（fetchのレスポンスヘッダーはimmutableのため）
+    const responseHeaders = new Headers();
+    for (const [key, value] of response.headers.entries()) {
+      responseHeaders.set(key, value);
+    }
+
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
-      headers: response.headers,
+      headers: responseHeaders,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

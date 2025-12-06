@@ -189,3 +189,75 @@ describe("findMatchingApi", () => {
     });
   });
 });
+
+// ワイルドカード（**）のテスト
+describe("ワイルドカード（**）", () => {
+  describe("parseRoutePattern", () => {
+    it("末尾の ** をパースする", () => {
+      const result = parseRoutePattern("/users/**");
+      expect(result.method).toBeNull();
+      expect(result.path).toBe("/users/**");
+      expect(result.paramNames).toEqual([]);
+    });
+
+    it("/users/** は /users にマッチする", () => {
+      const result = parseRoutePattern("/users/**");
+      expect("/users".match(result.regex)).not.toBeNull();
+    });
+
+    it("/users/** は /users/1 にマッチする", () => {
+      const result = parseRoutePattern("/users/**");
+      expect("/users/1".match(result.regex)).not.toBeNull();
+    });
+
+    it("/users/** は /users/1/posts にマッチする", () => {
+      const result = parseRoutePattern("/users/**");
+      expect("/users/1/posts".match(result.regex)).not.toBeNull();
+    });
+
+    it("/users/** は /posts にマッチしない", () => {
+      const result = parseRoutePattern("/users/**");
+      expect("/posts".match(result.regex)).toBeNull();
+    });
+
+    it("メソッド指定付きワイルドカード", () => {
+      const result = parseRoutePattern("GET /api/**");
+      expect(result.method).toBe("GET");
+      expect("/api".match(result.regex)).not.toBeNull();
+      expect("/api/users/1".match(result.regex)).not.toBeNull();
+    });
+  });
+
+  describe("findMatchingApi", () => {
+    const wildcardApis: Record<string, ApiConfig> = {
+      jsonPlaceholder: {
+        name: "JSON Placeholder",
+        target: "https://jsonplaceholder.typicode.com",
+        routes: ["/users/**", "/posts/**", "/comments/**"],
+      },
+    };
+
+    it("ワイルドカードルートでベースパスにマッチする", () => {
+      const result = findMatchingApi("GET", "/users", wildcardApis);
+      expect(result).not.toBeNull();
+      expect(result?.apiKey).toBe("jsonPlaceholder");
+    });
+
+    it("ワイルドカードルートでパスパラメータ付きパスにマッチする", () => {
+      const result = findMatchingApi("GET", "/users/1", wildcardApis);
+      expect(result).not.toBeNull();
+      expect(result?.apiKey).toBe("jsonPlaceholder");
+    });
+
+    it("ワイルドカードルートでネストしたパスにマッチする", () => {
+      const result = findMatchingApi("GET", "/posts/1/comments", wildcardApis);
+      expect(result).not.toBeNull();
+      expect(result?.apiKey).toBe("jsonPlaceholder");
+    });
+
+    it("ワイルドカードルートで定義されていないパスにはマッチしない", () => {
+      const result = findMatchingApi("GET", "/albums", wildcardApis);
+      expect(result).toBeNull();
+    });
+  });
+});

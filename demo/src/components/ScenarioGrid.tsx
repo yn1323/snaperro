@@ -13,14 +13,13 @@ export function ScenarioGrid({ scenarios, onExecute, isLoading }: ScenarioGridPr
   const advancedScenarios = scenarios.filter((s) => s.category !== "basic");
 
   return (
-    <div className="space-y-8">
+    <div className="flex-1 overflow-y-auto p-3 space-y-4">
       {/* Basic scenarios */}
       <div>
-        <h2 className="font-mono text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="text-[var(--accent-cyan)]">{"// "}</span>
-          Basic Endpoints
+        <h2 className="font-mono text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-2">
+          Basic
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-1">
           {basicScenarios.map((scenario) => (
             <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
           ))}
@@ -29,14 +28,10 @@ export function ScenarioGrid({ scenarios, onExecute, isLoading }: ScenarioGridPr
 
       {/* Advanced scenarios */}
       <div>
-        <h2 className="font-mono text-lg font-semibold mb-4 flex items-center gap-2">
-          <span className="text-[var(--accent-cyan)]">{"// "}</span>
-          Advanced Scenarios
-          <span className="text-sm font-normal text-[var(--text-secondary)]">
-            - Path Parameters, Query Strings, Nested Resources
-          </span>
+        <h2 className="font-mono text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-2">
+          Advanced
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-1">
           {advancedScenarios.map((scenario) => (
             <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
           ))}

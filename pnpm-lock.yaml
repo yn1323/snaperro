@@ -35,6 +35,9 @@ importers:
       picomatch:
         specifier: ^4.0.2
         version: 4.0.3
+      undici:
+        specifier: ^7.16.0
+        version: 7.16.0
       unzipper:
         specifier: ^0.12.3
         version: 0.12.3
@@ -93,9 +96,6 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
-      undici:
-        specifier: ^7.16.0
-        version: 7.16.0
       vite:
         specifier: ^6.3.5
         version: 6.4.1(@types/node@22.19.1)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)

@@ -15,6 +15,7 @@ import { createHandler } from "./handler.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.join(__dirname, "..", "client");
+const demoDistPath = path.join(__dirname, "..", "demo");
 
 /**
  * サーバー起動オプション
@@ -86,6 +87,47 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       app.get("/__snaperro__/client/assets/:filename", (c) => {
         const filename = c.req.param("filename");
         const filePath = path.join(clientDistPath, "assets", filename);
+
+        if (!fs.existsSync(filePath)) {
+          return c.notFound();
+        }
+
+        const content = fs.readFileSync(filePath);
+        const ext = path.extname(filename).toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          ".js": "application/javascript",
+          ".css": "text/css",
+          ".json": "application/json",
+        };
+
+        c.header("Content-Type", mimeTypes[ext] || "application/octet-stream");
+        return c.body(content);
+      });
+
+      // ========================================
+      // Demo配信
+      // ========================================
+      const demoIndexHtmlPath = path.join(demoDistPath, "index.html");
+
+      app.get("/__snaperro__/demo", (c) => {
+        if (!fs.existsSync(demoIndexHtmlPath)) {
+          return c.text("Demo is not built. Run 'pnpm build:demo' first.", 404);
+        }
+        const html = fs.readFileSync(demoIndexHtmlPath, "utf-8");
+        return c.html(html);
+      });
+
+      app.get("/__snaperro__/demo/", (c) => {
+        if (!fs.existsSync(demoIndexHtmlPath)) {
+          return c.text("Demo is not built. Run 'pnpm build:demo' first.", 404);
+        }
+        const html = fs.readFileSync(demoIndexHtmlPath, "utf-8");
+        return c.html(html);
+      });
+
+      app.get("/__snaperro__/demo/assets/:filename", (c) => {
+        const filename = c.req.param("filename");
+        const filePath = path.join(demoDistPath, "assets", filename);
 
         if (!fs.existsSync(filePath)) {
           return c.notFound();

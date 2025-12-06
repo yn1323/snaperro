@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## プロジェクト概要
 
-snaperro（スナペーロ）- GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化する。詳細は [doc/2025-11-29_プロジェクト方針.md](doc/2025-11-29_プロジェクト方針.md) を参照。
+snaperro（スナペーロ）- GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化する。詳細は [doc/2025-11-29_プロジェクト方針.md](doc/2025-11-29_プロジェクト方針.md)、[doc/2025-12-01_概要.md](doc/2025-12-01_概要.md) を参照。
 
 ## コマンド
 

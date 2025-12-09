@@ -154,6 +154,7 @@ API_KEY=your-api-key-here
 | `target` | string | Yes | Proxy target URL |
 | `routes` | string[] | Yes | Matching route patterns |
 | `headers` | object | No | Headers to add |
+| `maskRequestHeaders` | string[] | No | Headers to mask when recording |
 
 #### Upstream Proxy
 

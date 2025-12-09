@@ -2,6 +2,7 @@ import path from "node:path";
 import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
 import { logger } from "../core/logger.js";
+import { maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
 import { state } from "../core/state.js";
@@ -104,11 +105,12 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     // 3. Parse query parameters
     const queryParams = parseQueryParams(url);
 
-    // 4. Convert request headers for recording
-    const requestHeaders: Record<string, string> = {};
+    // 4. Convert request headers for recording (with masking)
+    const rawRequestHeaders: Record<string, string> = {};
     for (const [key, value] of c.req.raw.headers.entries()) {
-      requestHeaders[key] = value;
+      rawRequestHeaders[key] = value;
     }
+    const requestHeaders = maskHeaders(rawRequestHeaders, match.apiConfig.maskRequestHeaders);
 
     // 5. Convert response headers for recording
     const responseHeaders: Record<string, string> = {};

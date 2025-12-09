@@ -154,6 +154,7 @@ API_KEY=your-api-key-here
 | `target` | string | ○ | プロキシ先URL |
 | `routes` | string[] | ○ | マッチするルートパターン |
 | `headers` | object | - | 付与するヘッダー |
+| `maskRequestHeaders` | string[] | - | 記録時にマスクするヘッダー |
 
 #### 上流プロキシ
 

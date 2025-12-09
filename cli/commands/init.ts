@@ -34,6 +34,7 @@ export default defineConfig({
     //   headers: {
     //     "X-Api-Key": process.env.USER_API_KEY!,
     //   },
+    //   maskRequestHeaders: ["Authorization", "X-Api-Key", "Cookie"],
     //   routes: ["/api/users", "/api/users/:id"],
     // },
   },

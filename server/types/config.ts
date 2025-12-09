@@ -10,6 +10,8 @@ export const ApiConfigSchema = z.object({
   target: z.url(),
   /** 付与するヘッダー（機密情報含む） */
   headers: z.record(z.string(), z.string()).optional(),
+  /** 記録時にマスクするリクエストヘッダー名（大文字小文字区別なし） */
+  maskRequestHeaders: z.array(z.string()).optional(),
   /**
    * マッチするルートパターン
    * - "/api/users/:id" → パスパラメータ :id を抽出

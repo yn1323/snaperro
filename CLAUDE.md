@@ -42,6 +42,7 @@ pnpm type-check && pnpm format
 - NEVER: data-testidをテストで使用
 
 ### YOU MUST（必須事項）
+- YOU MUST: 開発者とのやり取りは日本語でお願いします
 - YOU MUST: 質問をする場合は、1つずつ質問してください
 - YOU MUST: ユーザーの指示で不明瞭な箇所は必ず聞き返してください
 - YOU MUST: コミット前に必ず`pnpm type-check`, `pnpm format`を実行してエラーがないことを確認

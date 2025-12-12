@@ -50,7 +50,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       method,
       headers,
       body,
-      // @ts-expect-error - dispatcher is a Node.js-specific option from undici
+      // @ts-expect-error - undici@7 ProxyAgent type differs from undici-types@6 in @types/node
       dispatcher: getProxyAgent(),
     });
 

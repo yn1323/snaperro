@@ -87,7 +87,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       method,
       headers,
       body: requestBody ? JSON.stringify(requestBody) : undefined,
-      // @ts-expect-error - dispatcher is a Node.js-specific option from undici
+      // @ts-expect-error - undici@7 ProxyAgent type differs from undici-types@6 in @types/node
       dispatcher: getProxyAgent(),
     });
 

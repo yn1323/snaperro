@@ -8,11 +8,18 @@ export default defineConfig({
   port: 3333,
   filesDir: '.snaperro/files',
 
+  // Upstream proxy (for corporate networks)
+  // upstreamProxy: {
+  //   url: "http://proxy.company.com:8080",
+  // },
+
   apis: {
     // JSON Placeholder API (sample)
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
+      // headers: { "X-Api-Key": "your-api-key" },
+      // maskRequestHeaders: ["Authorization", "Cookie"],
       routes: [
         // All methods (GET, POST, PUT, DELETE, etc.)
         "/users",

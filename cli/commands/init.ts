@@ -447,6 +447,7 @@ export async function initCommand(): Promise<void> {
       "Next steps:",
       "1. Start server with: npx snaperro start",
       "2. Switch patterns in GUI to verify operation",
+      "3. Try demo page: http://localhost:3333/__snaperro__/demo",
     ].join("\n"),
   });
 }

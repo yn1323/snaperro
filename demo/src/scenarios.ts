@@ -10,6 +10,7 @@ export type Scenario = {
   paramName?: string;
   paramOptions?: { value: string; label: string }[];
   requestBody?: unknown;
+  requestBodyOptions?: { value: string; label: string; body: unknown }[];
 };
 
 export const scenarios: Scenario[] = [
@@ -49,13 +50,41 @@ export const scenarios: Scenario[] = [
     endpoint: "/users",
     method: "POST",
     category: "basic",
-    requestBody: {
-      name: "New User",
-      username: "newuser",
-      email: "newuser@example.com",
-      phone: "123-456-7890",
-      website: "newuser.com",
-    },
+    requestBodyOptions: [
+      {
+        value: "user-alice",
+        label: "Alice",
+        body: {
+          name: "Alice",
+          username: "alice",
+          email: "alice@example.com",
+          phone: "111-111-1111",
+          website: "alice.com",
+        },
+      },
+      {
+        value: "user-bob",
+        label: "Bob",
+        body: {
+          name: "Bob",
+          username: "bob",
+          email: "bob@example.com",
+          phone: "222-222-2222",
+          website: "bob.com",
+        },
+      },
+      {
+        value: "user-charlie",
+        label: "Charlie",
+        body: {
+          name: "Charlie",
+          username: "charlie",
+          email: "charlie@example.com",
+          phone: "333-333-3333",
+          website: "charlie.com",
+        },
+      },
+    ],
   },
   {
     id: "create-post",
@@ -65,11 +94,35 @@ export const scenarios: Scenario[] = [
     endpoint: "/posts",
     method: "POST",
     category: "basic",
-    requestBody: {
-      userId: 1,
-      title: "New Post Title",
-      body: "This is a new post content...",
-    },
+    requestBodyOptions: [
+      {
+        value: "post-user1-tech",
+        label: "User1: Tech Post",
+        body: {
+          userId: 1,
+          title: "Introduction to TypeScript",
+          body: "TypeScript is a strongly typed programming language...",
+        },
+      },
+      {
+        value: "post-user1-travel",
+        label: "User1: Travel Post",
+        body: {
+          userId: 1,
+          title: "My Trip to Japan",
+          body: "Last summer I visited Tokyo and Kyoto...",
+        },
+      },
+      {
+        value: "post-user2-food",
+        label: "User2: Food Post",
+        body: {
+          userId: 2,
+          title: "Best Pasta Recipes",
+          body: "Here are my favorite pasta recipes...",
+        },
+      },
+    ],
   },
 
   // Path parameter scenarios

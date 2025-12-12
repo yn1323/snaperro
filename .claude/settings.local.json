@@ -20,7 +20,9 @@
       "Bash(find:*)",
       "Bash(pnpm build:demo:*)",
       "Bash(npx . demo)",
-      "Bash(pnpm type-check:client:*)"
+      "Bash(pnpm type-check:client:*)",
+      "Bash(dir c:Usersyn132worksnaperroclient /s /b)",
+      "Bash(dir c:Usersyn132worksnaperrodemo /s /b)"
     ],
     "deny": [],
     "ask": []

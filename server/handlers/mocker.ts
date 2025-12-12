@@ -44,8 +44,28 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
   // Parse query parameters
   const queryParams = parseQueryParams(url);
 
+  // Get request body
+  let requestBody: unknown;
+  if (method !== "GET" && method !== "HEAD") {
+    const text = await c.req.text();
+    if (text) {
+      try {
+        requestBody = JSON.parse(text);
+      } catch {
+        requestBody = text;
+      }
+    }
+  }
+
   // Search for file with parameter matching
-  const result = await storage.findMatchingFile(pattern, method, match.matchedRoute, match.pathParams, queryParams);
+  const result = await storage.findMatchingFile(
+    pattern,
+    method,
+    match.matchedRoute,
+    match.pathParams,
+    queryParams,
+    requestBody,
+  );
 
   if (!result) {
     logger.warn(`${method} ${path} → no matching mock found`);

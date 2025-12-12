@@ -17,6 +17,7 @@ program
   .option("-v, --verbose", "Show verbose logs")
   .option("-c, --config <path>", "Config file path", "snaperro.config.ts")
   .option("-e, --env <path>", "Env file path")
+  .option("--no-watch", "Disable config file watching")
   .action(startCommand);
 
 program.command("postman").description("Output Postman collection").action(postmanCommand);

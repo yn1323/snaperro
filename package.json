@@ -63,6 +63,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.6",
     "archiver": "^7.0.1",
+    "chokidar": "^5.0.0",
     "commander": "^13.1.0",
     "consola": "^3.4.2",
     "dotenv": "^17.2.3",

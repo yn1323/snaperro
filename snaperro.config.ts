@@ -10,6 +10,7 @@ export default defineConfig({
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
       routes: ["/users", "/users/:id", "/posts", "/posts/:id", "/posts/:id/comments", "/comments"],
+      maskRequestHeaders: ["connection"],
     },
 
     // 例: カスタムAPI

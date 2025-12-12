@@ -4,14 +4,19 @@ import type { SnaperroConfig } from "../types/config.js";
 import { SnaperroConfigSchema } from "../types/config.js";
 
 /**
- * 設定ファイルを読み込み
- * jiti を使って TypeScript ファイルを動的にインポート
+ * Load config file
+ * Use jiti to dynamically import TypeScript files
+ *
+ * @param configPath - Path to config file
+ * @param disableCache - If true, disable module cache for hot reload
  */
-export async function loadConfig(configPath?: string): Promise<SnaperroConfig> {
+export async function loadConfig(configPath?: string, disableCache = false): Promise<SnaperroConfig> {
   const resolvedPath = configPath ?? path.resolve(process.cwd(), "snaperro.config.ts");
 
   try {
-    const jiti = createJiti(import.meta.url);
+    const jiti = createJiti(import.meta.url, {
+      moduleCache: !disableCache,
+    });
     const configModule = await jiti.import(resolvedPath);
     const config = (configModule as { default: SnaperroConfig }).default;
 

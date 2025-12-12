@@ -81,10 +81,13 @@ export const logger = {
   /**
    * 起動時のボックス表示
    */
-  startup(port: number, guiUrl?: string) {
+  startup(port: number, guiUrl?: string, demoUrl?: string) {
     const lines = [`Server running at http://localhost:${port}`];
     if (guiUrl) {
       lines.push(`GUI: ${guiUrl}`);
+    }
+    if (demoUrl) {
+      lines.push(`Demo: ${demoUrl}`);
     }
     consola.box({
       title: "snaperro",

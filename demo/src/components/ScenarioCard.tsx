@@ -26,10 +26,16 @@ const categoryColors: Record<string, string> = {
 
 export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardProps) {
   const [paramValue, setParamValue] = useState(scenario.paramOptions?.[0]?.value || "");
+  const [bodyOptionValue, setBodyOptionValue] = useState(scenario.requestBodyOptions?.[0]?.value || "");
 
   const handleExecute = () => {
     const url = buildUrl(scenario, paramValue);
-    onExecute(url, scenario.method, scenario.requestBody);
+    let body = scenario.requestBody;
+    if (scenario.requestBodyOptions && bodyOptionValue) {
+      const selectedOption = scenario.requestBodyOptions.find((opt) => opt.value === bodyOptionValue);
+      body = selectedOption?.body;
+    }
+    onExecute(url, scenario.method, body);
   };
 
   const accentColor = categoryColors[scenario.category];
@@ -68,6 +74,21 @@ export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardPro
               {scenario.paramOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label} ({opt.value})
+                </option>
+              ))}
+            </select>
+          )}
+
+          {/* Request body selector (for POST methods) */}
+          {scenario.requestBodyOptions && (
+            <select
+              value={bodyOptionValue}
+              onChange={(e) => setBodyOptionValue(e.target.value)}
+              className="mt-1 w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 font-mono text-xs focus:outline-none focus:border-[var(--accent-cyan)]"
+            >
+              {scenario.requestBodyOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>

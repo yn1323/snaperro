@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serve } from "@hono/node-server";
+import { type ServerType, serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "../core/logger.js";
 import { findAvailablePort } from "../core/port.js";
@@ -32,6 +32,32 @@ export interface ServerOptions {
 export interface ServerInfo {
   port: number;
   guiUrl: string;
+  server: ServerType;
+}
+
+/**
+ * Gracefully shutdown the server
+ */
+export function shutdownServer(server: ServerType): Promise<void> {
+  return new Promise((resolve, reject) => {
+    logger.info("Shutting down server...");
+
+    server.close((err) => {
+      if (err) {
+        logger.error("Error during server shutdown", err);
+        reject(err);
+      } else {
+        logger.debug("Server shutdown complete");
+        resolve();
+      }
+    });
+
+    // Force close after timeout (5 seconds)
+    setTimeout(() => {
+      logger.warn("Forcing server shutdown after timeout");
+      resolve();
+    }, 5000);
+  });
 }
 
 /**
@@ -159,15 +185,16 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       app.all("*", handler);
 
       // Start server
-      serve(
+      const server = serve(
         {
           fetch: app.fetch,
           port,
         },
         () => {
           const guiUrl = `http://localhost:${port}/__snaperro__/client`;
-          logger.startup(port, guiUrl);
-          resolve({ port, guiUrl });
+          const demoUrl = `http://localhost:${port}/__snaperro__/demo`;
+          logger.startup(port, guiUrl, demoUrl);
+          resolve({ port, guiUrl, server });
         },
       );
     };

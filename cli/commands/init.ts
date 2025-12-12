@@ -8,11 +8,18 @@ export default defineConfig({
   port: 3333,
   filesDir: '.snaperro/files',
 
+  // Upstream proxy (for corporate networks)
+  // upstreamProxy: {
+  //   url: "http://proxy.company.com:8080",
+  // },
+
   apis: {
     // JSON Placeholder API (sample)
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
+      // headers: { "X-Api-Key": "your-api-key" },
+      // maskRequestHeaders: ["Authorization", "Cookie"],
       routes: [
         // All methods (GET, POST, PUT, DELETE, etc.)
         "/users",
@@ -447,6 +454,7 @@ export async function initCommand(): Promise<void> {
       "Next steps:",
       "1. Start server with: npx snaperro start",
       "2. Switch patterns in GUI to verify operation",
+      "3. Try demo page: http://localhost:3333/__snaperro__/demo",
     ].join("\n"),
   });
 }

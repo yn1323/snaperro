@@ -56,7 +56,7 @@ export function shutdownServer(server: ServerType): Promise<void> {
     setTimeout(() => {
       logger.warn("Forcing server shutdown after timeout");
       resolve();
-    }, 5000);
+    }, 2000);
   });
 }
 

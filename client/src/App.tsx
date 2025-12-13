@@ -218,8 +218,9 @@ export default function App() {
             onModeChange={handleModeChange}
           />
         }
-        patternPane={
+        patternPane={(width) => (
           <PatternPane
+            width={width}
             patterns={state.patterns}
             currentPattern={state.currentPattern}
             onSelect={handlePatternSelect}
@@ -230,16 +231,17 @@ export default function App() {
             onDownload={handlePatternDownload}
             onDelete={handlePatternDelete}
           />
-        }
-        filePane={
+        )}
+        filePane={(width) => (
           <FilePane
+            width={width}
             files={state.files}
             selectedFile={selectedFile}
             onSelect={setSelectedFile}
             onUpload={handleFileUpload}
             onDownload={handleFileDownload}
           />
-        }
+        )}
         editorPane={
           <EditorPane
             fileData={fileData}

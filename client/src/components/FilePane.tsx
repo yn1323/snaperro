@@ -2,7 +2,18 @@ import { Badge, Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
 import type { FileInfo } from "../types";
 
+const METHOD_COLORS: Record<string, { bg: string; color: string }> = {
+  GET: { bg: "green.100", color: "green.700" },
+  POST: { bg: "blue.100", color: "blue.700" },
+  PUT: { bg: "yellow.100", color: "yellow.700" },
+  PATCH: { bg: "orange.100", color: "orange.700" },
+  DELETE: { bg: "red.100", color: "red.700" },
+  OPTIONS: { bg: "gray.200", color: "gray.600" },
+  HEAD: { bg: "gray.200", color: "gray.600" },
+};
+
 interface FilePaneProps {
+  width: number;
   files: FileInfo[];
   selectedFile: string | null;
   onSelect: (filename: string) => void;
@@ -12,9 +23,9 @@ interface FilePaneProps {
 
 /**
  * Center pane - File list
- * Width: 250px
+ * Width: resizable
  */
-export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }: FilePaneProps) {
+export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDownload }: FilePaneProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
@@ -77,7 +88,7 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
   };
 
   return (
-    <Flex w="250px" bg="white" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
+    <Flex w={`${width}px`} bg="white" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
       <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.50">
         <Text fontWeight="600" fontSize="sm" color="gray.700">
           Files ({files.length})
@@ -155,8 +166,8 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
                     >
                       <Flex alignItems="center" gap={2}>
                         <Badge
-                          bg="gray.200"
-                          color="gray.600"
+                          bg={METHOD_COLORS[file.method]?.bg ?? "gray.200"}
+                          color={METHOD_COLORS[file.method]?.color ?? "gray.600"}
                           fontFamily="mono"
                           fontSize="2xs"
                           px={1.5}

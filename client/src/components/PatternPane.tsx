@@ -6,6 +6,7 @@ import { RenameDialog } from "./dialogs/RenameDialog";
 import { PatternMenu } from "./PatternMenu";
 
 interface PatternPaneProps {
+  width: number;
   patterns: string[];
   currentPattern: string | null;
   onSelect: (pattern: string) => void;
@@ -19,9 +20,10 @@ interface PatternPaneProps {
 
 /**
  * Left pane - Pattern list
- * Width: 150px fixed
+ * Width: resizable
  */
 export function PatternPane({
+  width,
   patterns,
   currentPattern,
   onSelect,
@@ -57,7 +59,7 @@ export function PatternPane({
   };
 
   return (
-    <Flex w="150px" bg="gray.50" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
+    <Flex w={`${width}px`} bg="gray.50" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
       <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.100">
         <Text fontWeight="600" fontSize="sm" color="gray.700">
           Patterns

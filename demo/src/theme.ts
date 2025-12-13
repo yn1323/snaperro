@@ -27,8 +27,8 @@ const config = defineConfig({
         },
       },
       fonts: {
-        heading: { value: "'JetBrains Mono', monospace" },
-        body: { value: "'JetBrains Mono', monospace" },
+        heading: { value: "'Inter', 'Noto Sans JP', sans-serif" },
+        body: { value: "'Inter', 'Noto Sans JP', sans-serif" },
         mono: { value: "'JetBrains Mono', monospace" },
       },
     },

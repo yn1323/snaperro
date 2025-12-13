@@ -14,7 +14,7 @@ export const MenuContent = React.forwardRef<HTMLDivElement, MenuContentProps>(fu
   return (
     <Portal disabled={!portalled} container={portalRef}>
       <ChakraMenu.Positioner>
-        <ChakraMenu.Content ref={ref} {...rest} />
+        <ChakraMenu.Content ref={ref} bg="white" color="gray.800" {...rest} />
       </ChakraMenu.Positioner>
     </Portal>
   );

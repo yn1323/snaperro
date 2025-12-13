@@ -20,6 +20,8 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
           aria-label={`Menu for ${patternName}`}
           variant="ghost"
           size="xs"
+          color="gray.500"
+          _hover={{ color: "gray.700", bg: "gray.200" }}
           onClick={(e) => e.stopPropagation()}
         >
           ⋮

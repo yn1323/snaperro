@@ -68,6 +68,105 @@ controlApi.put("/mode", async (c) => {
 });
 
 // ============================================================
+// フォルダ操作
+// ============================================================
+
+/**
+ * フォルダ一覧取得
+ * GET /__snaperro__/folders
+ */
+controlApi.get("/folders", async (c) => {
+  const folders = await storage.listFolders();
+  return c.json({ folders });
+});
+
+/**
+ * フォルダ作成
+ * POST /__snaperro__/folders
+ * Body: { name: string }
+ */
+controlApi.post("/folders", async (c) => {
+  const body = await c.req.json<{ name: string }>();
+  const name = body.name;
+
+  if (!name || typeof name !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: name" }, 400);
+  }
+
+  // フォルダが既に存在するかチェック
+  if (await storage.folderExists(name)) {
+    return c.json({ error: "Folder already exists", name }, 400);
+  }
+
+  await storage.createFolder(name);
+  return c.json({ name, message: "Folder created" }, 201);
+});
+
+/**
+ * フォルダ削除
+ * DELETE /__snaperro__/folders/:name
+ */
+controlApi.delete("/folders/:name", async (c) => {
+  const name = c.req.param("name");
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Folder not found", name }, 404);
+  }
+
+  await storage.deleteFolder(name);
+  return c.json({ name, message: "Folder deleted" });
+});
+
+/**
+ * フォルダ名変更
+ * PUT /__snaperro__/folders/:name/rename
+ * Body: { newName: string }
+ */
+controlApi.put("/folders/:name/rename", async (c) => {
+  const name = c.req.param("name");
+  const body = await c.req.json<{ newName: string }>();
+  const newName = body.newName;
+
+  if (!newName || typeof newName !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+  }
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Folder not found", name }, 404);
+  }
+
+  try {
+    await storage.renameFolder(name, newName);
+    return c.json({
+      oldName: name,
+      newName,
+      message: "Folder renamed",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to rename folder";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * フォルダ内パターン一覧取得
+ * GET /__snaperro__/folders/:folder/patterns
+ */
+controlApi.get("/folders/:folder/patterns", async (c) => {
+  const folder = c.req.param("folder");
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(folder))) {
+    return c.json({ error: "Folder not found", name: folder }, 404);
+  }
+
+  const patterns = await storage.listPatternsInFolder(folder);
+  return c.json({ folder, patterns });
+});
+
+// ============================================================
 // パターン操作
 // ============================================================
 
@@ -491,6 +590,7 @@ controlApi.get("/events", async (c) => {
     // 1. 初期状態を送信
     const currentPattern = state.getPattern();
     const patternNames = await storage.listPatterns();
+    const folders = await storage.listFolders();
     const files = currentPattern ? await storage.getPatternFiles(currentPattern) : [];
 
     await stream.writeSSE({
@@ -500,6 +600,7 @@ controlApi.get("/events", async (c) => {
         mode: state.getMode(),
         currentPattern,
         patterns: patternNames,
+        folders,
         files: files.map((f) => ({
           filename: f.path,
           endpoint: f.endpoint,

@@ -85,6 +85,9 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       // Initialize storage
       await storage.ensureBaseDir();
 
+      // Migrate root patterns to folder structure
+      await storage.migrateRootPatterns();
+
       // Create Hono application
       const app = new Hono();
 

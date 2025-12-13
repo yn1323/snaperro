@@ -1,29 +1,23 @@
 import { Button, Input } from "@chakra-ui/react";
 import { useRef, useState } from "react";
-import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from "../ui/dialog";
+import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from "./ui/dialog";
 
-interface RenameDialogProps {
+interface CreateFolderModalProps {
   isOpen: boolean;
-  currentName: string;
-  title?: string;
   onClose: () => void;
-  onSubmit: (newName: string) => void;
+  onCreate: (name: string) => void;
 }
 
 /**
- * Rename dialog
+ * New folder creation modal
  */
-export function RenameDialog({ isOpen, currentName, title = "Rename Pattern", onClose, onSubmit }: RenameDialogProps) {
-  const [name, setName] = useState(currentName);
+export function CreateFolderModal({ isOpen, onClose, onCreate }: CreateFolderModalProps) {
+  const [name, setName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenChange = (details: { open: boolean }) => {
     if (details.open) {
-      setName(currentName);
-      // Select all text after dialog opens
-      setTimeout(() => {
-        inputRef.current?.select();
-      }, 50);
+      setName("");
     } else {
       onClose();
     }
@@ -31,20 +25,17 @@ export function RenameDialog({ isOpen, currentName, title = "Rename Pattern", on
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = name.trim();
-    if (trimmed && trimmed !== currentName) {
-      onSubmit(trimmed);
+    if (name.trim()) {
+      onCreate(name.trim());
       onClose();
     }
   };
-
-  const isValid = name.trim() && name.trim() !== currentName;
 
   return (
     <DialogRoot open={isOpen} onOpenChange={handleOpenChange} initialFocusEl={() => inputRef.current}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>Create New Folder</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody>
@@ -52,15 +43,15 @@ export function RenameDialog({ isOpen, currentName, title = "Rename Pattern", on
               ref={inputRef}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Enter new pattern name"
+              placeholder="Enter folder name"
             />
           </DialogBody>
           <DialogFooter gap={2}>
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" colorPalette="blue" disabled={!isValid}>
-              Rename
+            <Button type="submit" colorPalette="blue" disabled={!name.trim()}>
+              Create
             </Button>
           </DialogFooter>
         </form>

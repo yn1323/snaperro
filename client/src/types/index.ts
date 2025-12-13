@@ -33,6 +33,14 @@ export interface PatternInfo {
 }
 
 /**
+ * フォルダ情報
+ */
+export interface FolderInfo {
+  name: string;
+  patternsCount: number;
+}
+
+/**
  * アプリケーション状態（SSEで管理）
  */
 export interface SnaperroState {
@@ -40,6 +48,7 @@ export interface SnaperroState {
   mode: Mode;
   currentPattern: string | null;
   patterns: string[];
+  folders: FolderInfo[];
   files: FileInfo[];
 }
 
@@ -86,6 +95,9 @@ export type SSEEventType =
   | "pattern_created"
   | "pattern_deleted"
   | "pattern_renamed"
+  | "folder_created"
+  | "folder_deleted"
+  | "folder_renamed"
   | "file_created"
   | "file_updated"
   | "file_deleted";
@@ -98,6 +110,7 @@ export interface ConnectedEventData {
   mode: Mode;
   currentPattern: string | null;
   patterns: string[];
+  folders: FolderInfo[];
   files: FileInfo[];
 }
 
@@ -134,6 +147,28 @@ export interface PatternDeletedEventData {
  * パターン名変更イベントデータ
  */
 export interface PatternRenamedEventData {
+  oldName: string;
+  newName: string;
+}
+
+/**
+ * フォルダ作成イベントデータ
+ */
+export interface FolderCreatedEventData {
+  name: string;
+}
+
+/**
+ * フォルダ削除イベントデータ
+ */
+export interface FolderDeletedEventData {
+  name: string;
+}
+
+/**
+ * フォルダ名変更イベントデータ
+ */
+export interface FolderRenamedEventData {
   oldName: string;
   newName: string;
 }

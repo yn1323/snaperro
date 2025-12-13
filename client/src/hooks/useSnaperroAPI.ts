@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { FileData, FileInfo, Mode, PatternInfo } from "../types";
+import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo } from "../types";
 
 const API_BASE = "/__snaperro__";
 
@@ -16,6 +16,12 @@ interface UseSnaperroAPIReturn {
   deletePattern: (name: string) => Promise<void>;
   downloadPattern: (name: string) => Promise<void>;
   uploadPattern: (file: File, name?: string) => Promise<void>;
+
+  // フォルダ操作
+  getFolders: () => Promise<FolderInfo[]>;
+  createFolder: (name: string) => Promise<void>;
+  deleteFolder: (name: string) => Promise<void>;
+  renameFolder: (name: string, newName: string) => Promise<void>;
 
   // ファイル操作
   getFiles: (pattern: string) => Promise<FileInfo[]>;
@@ -137,6 +143,36 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
   }, []);
 
   // ============================================================
+  // フォルダ操作
+  // ============================================================
+  const getFolders = useCallback(async (): Promise<FolderInfo[]> => {
+    const result = await apiFetch<{ folders: FolderInfo[] }>(`${API_BASE}/folders`);
+    return result.folders;
+  }, []);
+
+  const createFolder = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+  }, []);
+
+  const deleteFolder = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+  }, []);
+
+  const renameFolder = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders/${encodeURIComponent(name)}/rename`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newName }),
+    });
+  }, []);
+
+  // ============================================================
   // ファイル操作
   // ============================================================
   const getFiles = useCallback(async (pattern: string): Promise<FileInfo[]> => {
@@ -211,6 +247,10 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       deletePattern,
       downloadPattern,
       uploadPattern,
+      getFolders,
+      createFolder,
+      deleteFolder,
+      renameFolder,
       getFiles,
       getFile,
       updateFile,
@@ -228,6 +268,10 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       deletePattern,
       downloadPattern,
       uploadPattern,
+      getFolders,
+      createFolder,
+      deleteFolder,
+      renameFolder,
       getFiles,
       getFile,
       updateFile,

@@ -24,6 +24,7 @@ export default function App() {
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
 
   // Reset file selection when pattern changes
   const currentPattern = state.currentPattern;
@@ -88,12 +89,13 @@ export default function App() {
   const handlePatternCreate = useCallback(
     async (name: string) => {
       try {
-        await api.createPattern(name);
+        const fullName = currentFolder ? `${currentFolder}/${name}` : name;
+        await api.createPattern(fullName);
       } catch (err) {
         console.error("Pattern create error:", err);
       }
     },
-    [api],
+    [api, currentFolder],
   );
 
   const handlePatternUpload = useCallback(
@@ -149,6 +151,54 @@ export default function App() {
       }
     },
     [api],
+  );
+
+  // Folder handlers
+  const handleFolderSelect = useCallback((folder: string) => {
+    setCurrentFolder(folder);
+  }, []);
+
+  const handleFolderBack = useCallback(() => {
+    setCurrentFolder(null);
+  }, []);
+
+  const handleFolderCreate = useCallback(
+    async (name: string) => {
+      try {
+        await api.createFolder(name);
+      } catch (err) {
+        console.error("Folder create error:", err);
+      }
+    },
+    [api],
+  );
+
+  const handleFolderRename = useCallback(
+    async (oldName: string, newName: string) => {
+      try {
+        await api.renameFolder(oldName, newName);
+        if (currentFolder === oldName) {
+          setCurrentFolder(newName);
+        }
+      } catch (err) {
+        console.error("Folder rename error:", err);
+      }
+    },
+    [api, currentFolder],
+  );
+
+  const handleFolderDelete = useCallback(
+    async (name: string) => {
+      try {
+        await api.deleteFolder(name);
+        if (currentFolder === name) {
+          setCurrentFolder(null);
+        }
+      } catch (err) {
+        console.error("Folder delete error:", err);
+      }
+    },
+    [api, currentFolder],
   );
 
   const handleFileSave = useCallback(
@@ -221,6 +271,13 @@ export default function App() {
         patternPane={(width) => (
           <PatternPane
             width={width}
+            folders={state.folders}
+            currentFolder={currentFolder}
+            onFolderSelect={handleFolderSelect}
+            onFolderBack={handleFolderBack}
+            onFolderCreate={handleFolderCreate}
+            onFolderRename={handleFolderRename}
+            onFolderDelete={handleFolderDelete}
             patterns={state.patterns}
             currentPattern={state.currentPattern}
             onSelect={handlePatternSelect}

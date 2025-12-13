@@ -1,4 +1,4 @@
-import { Box, IconButton } from "@chakra-ui/react";
+import { IconButton } from "@chakra-ui/react";
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from "./ui/menu";
 
 interface FolderMenuProps {
@@ -30,11 +30,9 @@ export function FolderMenu({ folderName, onRename, onDelete }: FolderMenuProps) 
           Rename
         </MenuItem>
         <MenuSeparator />
-        <Box color="red.500">
-          <MenuItem value="delete" onClick={onDelete}>
-            Delete
-          </MenuItem>
-        </Box>
+        <MenuItem value="delete" color="red.500" onClick={onDelete}>
+          Delete
+        </MenuItem>
       </MenuContent>
     </MenuRoot>
   );

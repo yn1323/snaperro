@@ -200,15 +200,15 @@ controlApi.get("/patterns/current", (c) => {
  * Body: { pattern: string }
  */
 controlApi.put("/patterns/current", async (c) => {
-  const body = await c.req.json<{ pattern: string }>();
+  const body = await c.req.json<{ pattern: string | null }>();
   const pattern = body.pattern;
 
-  if (!pattern || typeof pattern !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: pattern" }, 400);
+  if (pattern !== null && typeof pattern !== "string") {
+    return c.json({ error: "Invalid request", details: "pattern must be string or null" }, 400);
   }
 
-  // パターンが存在するかチェック
-  if (!(await storage.patternExists(pattern))) {
+  // null でない場合はパターンの存在チェック
+  if (pattern !== null && !(await storage.patternExists(pattern))) {
     return c.json({ error: "Pattern not found", pattern }, 404);
   }
 

@@ -14,7 +14,7 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
   return (
     <Portal disabled={!portalled} container={portalRef}>
       {backdrop && <ChakraDialog.Backdrop bg="blackAlpha.600" />}
-      <ChakraDialog.Positioner>
+      <ChakraDialog.Positioner display="flex" alignItems="center" justifyContent="center">
         <ChakraDialog.Content ref={ref} bg="white" color="gray.800" {...rest} asChild={false}>
           {children}
         </ChakraDialog.Content>

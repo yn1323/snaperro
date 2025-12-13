@@ -158,9 +158,16 @@ export default function App() {
     setCurrentFolder(folder);
   }, []);
 
-  const handleFolderBack = useCallback(() => {
+  const handleFolderBack = useCallback(async () => {
     setCurrentFolder(null);
-  }, []);
+    setSelectedFile(null);
+    setFileData(null);
+    try {
+      await api.setCurrentPattern(null);
+    } catch (err) {
+      console.error("Pattern deselect error:", err);
+    }
+  }, [api]);
 
   const handleFolderCreate = useCallback(
     async (name: string) => {

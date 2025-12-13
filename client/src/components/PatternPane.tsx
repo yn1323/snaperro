@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Text, VStack } from "@chakra-ui/react";
 import { useMemo, useState } from "react";
-import { LuBox, LuChevronLeft, LuFolder } from "react-icons/lu";
+import { LuBox, LuChevronLeft, LuFolder, LuUpload } from "react-icons/lu";
 import type { FolderInfo } from "../types";
 import { CreateFolderModal } from "./CreateFolderModal";
 import { CreatePatternModal } from "./CreatePatternModal";
@@ -115,14 +115,15 @@ export function PatternPane({
           <Flex alignItems="center" gap={1}>
             <Button
               variant="ghost"
-              size="xs"
-              p={0}
-              minW="auto"
+              size="sm"
+              px={2}
+              minW="32px"
+              h="28px"
               onClick={onFolderBack}
               _hover={{ bg: "gray.200" }}
               aria-label="Back to folders"
             >
-              <LuChevronLeft size={16} />
+              <LuChevronLeft size={20} />
             </Button>
             <Text fontWeight="600" fontSize="sm" color="gray.700" truncate>
               {currentFolder}
@@ -145,7 +146,8 @@ export function PatternPane({
                 <Button
                   variant="ghost"
                   flex={1}
-                  px={2}
+                  pl={3}
+                  pr={2}
                   py={1.5}
                   h="auto"
                   justifyContent="flex-start"
@@ -198,7 +200,8 @@ export function PatternPane({
                 <Button
                   variant="ghost"
                   flex={1}
-                  px={2}
+                  pl={3}
+                  pr={2}
                   py={1.5}
                   h="auto"
                   justifyContent="flex-start"
@@ -239,8 +242,17 @@ export function PatternPane({
           onClick={() => (currentFolder === null ? setIsFolderModalOpen(true) : setIsModalOpen(true))}
           _hover={{ bg: "accent.600" }}
           transition="all 0.15s ease"
+          gap={1}
         >
-          + New
+          {currentFolder === null ? (
+            <>
+              <LuFolder size={14} /> New Folder
+            </>
+          ) : (
+            <>
+              <LuBox size={14} /> New Pattern
+            </>
+          )}
         </Button>
         <Button
           as="label"
@@ -251,8 +263,9 @@ export function PatternPane({
           cursor="pointer"
           _hover={{ bg: "gray.300" }}
           transition="all 0.15s ease"
+          gap={1}
         >
-          Import ZIP
+          <LuUpload size={14} /> Import Pattern ZIP
           <input type="file" accept=".zip" onChange={handleFileUpload} hidden />
         </Button>
       </VStack>

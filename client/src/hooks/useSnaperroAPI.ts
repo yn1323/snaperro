@@ -9,7 +9,7 @@ interface UseSnaperroAPIReturn {
 
   // パターン操作
   getPatterns: () => Promise<PatternInfo[]>;
-  setCurrentPattern: (pattern: string) => Promise<void>;
+  setCurrentPattern: (pattern: string | null) => Promise<void>;
   createPattern: (name: string) => Promise<void>;
   duplicatePattern: (name: string, newName: string) => Promise<void>;
   renamePattern: (name: string, newName: string) => Promise<void>;
@@ -67,7 +67,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     return result.patterns;
   }, []);
 
-  const setCurrentPattern = useCallback(async (pattern: string): Promise<void> => {
+  const setCurrentPattern = useCallback(async (pattern: string | null): Promise<void> => {
     await apiFetch(`${API_BASE}/patterns/current`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

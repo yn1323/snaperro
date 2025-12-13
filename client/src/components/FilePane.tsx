@@ -1,5 +1,6 @@
 import { Badge, Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
+import { LuUpload } from "react-icons/lu";
 import type { FileInfo } from "../types";
 
 const METHOD_COLORS: Record<string, { bg: string; color: string }> = {
@@ -176,10 +177,12 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
                         >
                           {file.method}
                         </Badge>
+                        <Text flex={1} fontSize="xs" color="gray.500" truncate title={file.filename}>
+                          {file.filename}
+                        </Text>
                         <Button
                           variant="ghost"
                           size="xs"
-                          ml="auto"
                           p={1}
                           minW="auto"
                           h="auto"
@@ -194,9 +197,6 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
                           ⬇
                         </Button>
                       </Flex>
-                      <Text fontSize="xs" color="gray.500" mt={1} truncate title={file.filename}>
-                        {file.filename}
-                      </Text>
                     </Box>
                   );
                 })}
@@ -215,8 +215,9 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
           cursor="pointer"
           _hover={{ bg: "accent.600" }}
           transition="all 0.15s ease"
+          gap={1}
         >
-          + Upload
+          <LuUpload size={14} /> Import JSON File
           <input type="file" accept=".json" onChange={handleFileUpload} hidden />
         </Button>
       </Box>

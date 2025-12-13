@@ -1,5 +1,5 @@
 import { Button, Input } from "@chakra-ui/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from "../ui/dialog";
 
 interface RenameDialogProps {
@@ -17,14 +17,18 @@ export function RenameDialog({ isOpen, currentName, title = "Rename Pattern", on
   const [name, setName] = useState(currentName);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleOpenChange = (details: { open: boolean }) => {
-    if (details.open) {
+  // Sync name with currentName when dialog opens
+  useEffect(() => {
+    if (isOpen) {
       setName(currentName);
-      // Select all text after dialog opens
       setTimeout(() => {
         inputRef.current?.select();
       }, 50);
-    } else {
+    }
+  }, [isOpen, currentName]);
+
+  const handleOpenChange = (details: { open: boolean }) => {
+    if (!details.open) {
       onClose();
     }
   };

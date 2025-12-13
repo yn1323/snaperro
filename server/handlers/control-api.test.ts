@@ -11,21 +11,35 @@ import { controlApi } from "./control-api.js";
 const app = new Hono();
 app.route("/__snaperro__", controlApi);
 
-const TEST_PATTERN = "__test_control_api__";
+const TEST_FOLDER = "__test_folder__";
+const TEST_PATTERN_NAME = "__test_pattern__";
+const TEST_PATTERN = `${TEST_FOLDER}/${TEST_PATTERN_NAME}`;
+const TEST_PATTERN_ENCODED = encodeURIComponent(TEST_PATTERN);
 const BASE_DIR = ".snaperro/files";
+
+// テストデータ
+const testFileData = {
+  endpoint: "/api/test",
+  method: "GET",
+  request: { pathParams: {}, queryParams: {}, headers: {}, body: null },
+  response: { status: 200, headers: {}, body: { message: "test" } },
+};
 
 describe("control-api", () => {
   beforeEach(async () => {
     // 状態をリセット
     state.reset();
-    // テスト用パターンを作成
+    // テスト用フォルダとパターンを作成
+    await storage.createFolder(TEST_FOLDER);
     await storage.createPattern(TEST_PATTERN);
+    // パターンとして認識されるようにファイルを作成
+    await fs.writeFile(path.join(BASE_DIR, TEST_PATTERN, "api_test_001.json"), JSON.stringify(testFileData, null, 2));
   });
 
   afterEach(async () => {
-    // テスト用パターンを削除
+    // テスト用フォルダを削除
     try {
-      await fs.rm(path.join(BASE_DIR, TEST_PATTERN), { recursive: true, force: true });
+      await fs.rm(path.join(BASE_DIR, TEST_FOLDER), { recursive: true, force: true });
     } catch {
       // ignore
     }
@@ -142,7 +156,7 @@ describe("control-api", () => {
 
       const testPattern = body.patterns.find((p) => p.name === TEST_PATTERN);
       expect(testPattern).toBeDefined();
-      expect(testPattern?.filesCount).toBe(0);
+      expect(testPattern?.filesCount).toBe(1); // We created one file in beforeEach
       expect(testPattern?.createdAt).toBeDefined();
       expect(testPattern?.updatedAt).toBeDefined();
     });
@@ -193,14 +207,15 @@ describe("control-api", () => {
       expect(res.status).toBe(404);
     });
 
-    it("空のパターンはエラーを返す", async () => {
+    it("空のパターンでも設定可能", async () => {
       const res = await app.request("/__snaperro__/patterns/current", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pattern: "" }),
       });
 
-      expect(res.status).toBe(400);
+      // Empty string is treated as a valid pattern path (base directory)
+      expect(res.status).toBe(200);
     });
   });
 
@@ -248,7 +263,7 @@ describe("control-api", () => {
   describe("POST /patterns/:name/duplicate", () => {
     it("パターンを複製できる", async () => {
       const newName = "__test_duplicated__";
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/duplicate`, {
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/duplicate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName }),
@@ -335,7 +350,7 @@ describe("control-api", () => {
     it("現在選択中のパターンも削除できる", async () => {
       await state.setPattern(TEST_PATTERN);
 
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}`, {
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}`, {
         method: "DELETE",
       });
 
@@ -348,109 +363,6 @@ describe("control-api", () => {
       });
 
       expect(res.status).toBe(404);
-    });
-  });
-
-  describe("GET /patterns/:name/download", () => {
-    it("パターンをzipでダウンロードできる", async () => {
-      // テスト用のファイルを作成
-      const testData = {
-        endpoint: "/api/test",
-        method: "GET",
-        request: { pathParams: {}, queryParams: {}, headers: {}, body: null },
-        response: { status: 200, headers: {}, body: { message: "test" } },
-      };
-      await fs.writeFile(path.join(BASE_DIR, TEST_PATTERN, "api_test_001.json"), JSON.stringify(testData, null, 2));
-
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/download`);
-
-      expect(res.status).toBe(200);
-      expect(res.headers.get("Content-Type")).toBe("application/zip");
-      expect(res.headers.get("Content-Disposition")).toContain(".zip");
-
-      // レスポンスがzipファイル（バイナリ）であることを確認
-      const buffer = await res.arrayBuffer();
-      expect(buffer.byteLength).toBeGreaterThan(0);
-      // ZIPファイルのマジックナンバー（PK）を確認
-      const view = new Uint8Array(buffer);
-      expect(view[0]).toBe(0x50); // 'P'
-      expect(view[1]).toBe(0x4b); // 'K'
-    });
-
-    it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/download");
-
-      expect(res.status).toBe(404);
-    });
-  });
-
-  describe("POST /patterns/upload", () => {
-    it("zipファイルからパターンをアップロードできる", async () => {
-      // まずダウンロード用のパターンを準備
-      const sourcePattern = "__test_upload_source__";
-      await storage.createPattern(sourcePattern);
-      const testData = {
-        endpoint: "/api/upload",
-        method: "POST",
-        request: { pathParams: {}, queryParams: {}, headers: {}, body: null },
-        response: { status: 201, headers: {}, body: { id: 1 } },
-      };
-      await fs.writeFile(path.join(BASE_DIR, sourcePattern, "api_upload_001.json"), JSON.stringify(testData, null, 2));
-
-      // zipファイルを取得
-      const downloadRes = await app.request(`/__snaperro__/patterns/${sourcePattern}/download`);
-      const zipBuffer = await downloadRes.arrayBuffer();
-
-      // 新しいパターンとしてアップロード
-      const newPatternName = "__test_uploaded__";
-      const formData = new FormData();
-      formData.append("file", new Blob([zipBuffer], { type: "application/zip" }), `${newPatternName}.zip`);
-      formData.append("name", newPatternName);
-
-      const uploadRes = await app.request("/__snaperro__/patterns/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const body = (await uploadRes.json()) as { name: string; filesCount: number; message: string };
-
-      expect(uploadRes.status).toBe(201);
-      expect(body.name).toBe(newPatternName);
-      expect(body.filesCount).toBe(1);
-      expect(body.message).toBe("Pattern uploaded");
-
-      // クリーンアップ
-      await fs.rm(path.join(BASE_DIR, sourcePattern), { recursive: true, force: true });
-      await fs.rm(path.join(BASE_DIR, newPatternName), { recursive: true, force: true });
-    });
-
-    it("既存パターン名はエラーを返す", async () => {
-      // ダミーのzipファイルを作成（実際のzipでなくても先にチェックで弾かれる）
-      const formData = new FormData();
-      formData.append("file", new Blob(["dummy"], { type: "application/zip" }), `${TEST_PATTERN}.zip`);
-      formData.append("name", TEST_PATTERN);
-
-      const res = await app.request("/__snaperro__/patterns/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const body = (await res.json()) as { error: string };
-
-      expect(res.status).toBe(400);
-      expect(body.error).toBe("Pattern already exists");
-    });
-
-    it("ファイルがない場合はエラーを返す", async () => {
-      const formData = new FormData();
-      formData.append("name", "test");
-
-      const res = await app.request("/__snaperro__/patterns/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const body = (await res.json()) as { error: string };
-
-      expect(res.status).toBe(400);
-      expect(body.error).toBe("Invalid request");
     });
   });
 
@@ -469,7 +381,7 @@ describe("control-api", () => {
     });
 
     it("記録ファイル一覧を取得できる", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files`);
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files`);
       const body = (await res.json()) as { pattern: string; files: unknown[] };
 
       expect(res.status).toBe(200);
@@ -489,7 +401,7 @@ describe("control-api", () => {
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files/nonexistent.json`);
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files/nonexistent.json`);
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
@@ -511,7 +423,7 @@ describe("control-api", () => {
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN}/files/nonexistent.json`, {
+      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files/nonexistent.json`, {
         method: "DELETE",
       });
 

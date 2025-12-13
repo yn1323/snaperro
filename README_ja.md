@@ -144,6 +144,7 @@ API_KEY=your-api-key-here
 |-----|-----|------|
 | `port` | number | サーバーポート（デフォルト: 3333） |
 | `filesDir` | string | ファイル保存ディレクトリ（デフォルト: `.snaperro/files`） |
+| `mockFallback` | string | モックファイルが見つからない場合の動作（デフォルト: `"404"`） |
 | `apis` | object | API定義のオブジェクト |
 
 #### API定義
@@ -248,6 +249,23 @@ export NO_PROXY=localhost,127.0.0.1
 
 ```
 リクエスト → snaperro → JSONファイルを検索 → レスポンス
+```
+
+#### Mockフォールバック動作
+
+モックファイルが見つからない場合の動作を `mockFallback` で設定できます:
+
+| 値 | 説明 |
+|-----|------|
+| `"404"` | 404エラーを返す（デフォルト） |
+| `"proxy"` | 実サーバーにプロキシ |
+| `"proxy&record"` | 実サーバーにプロキシ + レスポンスを記録 |
+
+```typescript
+export default defineConfig({
+  mockFallback: "proxy&record",  // プロキシ + 記録にフォールバック
+  // ...
+})
 ```
 
 ### パターンとは

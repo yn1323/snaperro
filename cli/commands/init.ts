@@ -8,6 +8,12 @@ export default defineConfig({
   port: 3333,
   filesDir: '.snaperro/files',
 
+  // Mock fallback behavior when mock file is not found
+  // "404" - Return 404 error (default)
+  // "proxy" - Forward to real server
+  // "proxy&record" - Forward to real server and record response
+  mockFallback: "404",
+
   // Upstream proxy (for corporate networks)
   // upstreamProxy: {
   //   url: "http://proxy.company.com:8080",

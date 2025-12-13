@@ -33,6 +33,16 @@ export const UpstreamProxySchema = z.object({
 export type UpstreamProxyConfig = z.infer<typeof UpstreamProxySchema>;
 
 /**
+ * Mock fallback behavior schema
+ * - "404": Return 404 error (default)
+ * - "proxy": Forward request to real server
+ * - "proxy&record": Forward to real server and record the response
+ */
+export const MockFallbackSchema = z.enum(["404", "proxy", "proxy&record"]);
+
+export type MockFallback = z.infer<typeof MockFallbackSchema>;
+
+/**
  * snaperro設定ファイルスキーマ
  */
 export const SnaperroConfigSchema = z.object({
@@ -42,6 +52,8 @@ export const SnaperroConfigSchema = z.object({
   filesDir: z.string().optional().default(".snaperro/files"),
   /** Upstream proxy configuration */
   upstreamProxy: UpstreamProxySchema.optional(),
+  /** Fallback behavior when mock file is not found (default: "404") */
+  mockFallback: MockFallbackSchema.optional().default("404"),
   /** API設定 */
   apis: z.record(z.string(), ApiConfigSchema),
 });

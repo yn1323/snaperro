@@ -3,6 +3,7 @@ import { defineConfig } from "snaperro";
 export default defineConfig({
   port: 3333,
   filesDir: ".snaperro/files",
+  mockFallback: "proxy&record",
 
   apis: {
     // JSON Placeholder API（サンプル）

@@ -43,7 +43,7 @@ export function createHandler(config: SnaperroConfig) {
         return handleRecord(c, match);
 
       case "mock":
-        return handleMock(c, match);
+        return handleMock(c, match, config);
 
       default:
         logger.error(`Unknown mode: ${mode}`);

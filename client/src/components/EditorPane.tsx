@@ -1,3 +1,4 @@
+import { Box, Button, Flex, HStack, Text, Textarea } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import type { FileData } from "../types";
 
@@ -70,72 +71,113 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
   // No file selected
   if (!filename) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-sm">Select a file</div>
-      </div>
+      <Flex flex={1} bg="gray.50" alignItems="center" justifyContent="center">
+        <Text color="gray.500" fontSize="sm">
+          Select a file
+        </Text>
+      </Flex>
     );
   }
 
   // Loading
   if (isLoading) {
     return (
-      <div className="flex-1 bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500 text-sm">Loading...</div>
-      </div>
+      <Flex flex={1} bg="gray.50" alignItems="center" justifyContent="center">
+        <Text color="gray.500" fontSize="sm">
+          Loading...
+        </Text>
+      </Flex>
     );
   }
 
   return (
-    <div className="flex-1 bg-white flex flex-col min-w-0">
-      {/* Header */}
-      <div className="p-2 border-b border-gray-300 bg-gray-50 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-sm text-gray-700 truncate" title={filename}>
+    <Flex flex={1} bg="white" direction="column" minW={0}>
+      <Flex
+        p={2}
+        borderBottom="1px"
+        borderColor="gray.200"
+        bg="gray.50"
+        alignItems="center"
+        justifyContent="space-between"
+        flexShrink={0}
+      >
+        <HStack gap={2} minW={0}>
+          <Text fontWeight="600" fontSize="sm" color="gray.700" truncate title={filename}>
             {filename}
-          </span>
-          {hasChanges && <span className="text-xs text-orange-500 shrink-0">*Unsaved</span>}
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <button
-            type="button"
+          </Text>
+          {hasChanges && (
+            <Text fontSize="xs" color="accent.600" flexShrink={0}>
+              *Unsaved
+            </Text>
+          )}
+        </HStack>
+        <HStack gap={2} flexShrink={0}>
+          <Button
+            size="xs"
+            bg="gray.200"
+            color="gray.700"
             onClick={handleFormat}
             disabled={!!parseError}
-            className="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
+            _hover={{ bg: "gray.300" }}
+            transition="all 0.15s ease"
           >
             Format
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="xs"
+            bg="accent.500"
+            color="white"
             onClick={handleSave}
             disabled={!!parseError || !hasChanges}
-            className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
+            _hover={{ bg: "accent.600" }}
+            _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
+            transition="all 0.15s ease"
           >
             Save
-          </button>
-          <button
-            type="button"
+          </Button>
+          <Button
+            size="xs"
+            bg="recording.500"
+            color="white"
             onClick={onDelete}
-            className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 cursor-pointer"
+            _hover={{ bg: "recording.600" }}
+            transition="all 0.15s ease"
           >
             Delete
-          </button>
-        </div>
-      </div>
+          </Button>
+        </HStack>
+      </Flex>
 
-      {/* Parse error display */}
       {parseError && (
-        <div className="px-3 py-2 bg-red-100 text-red-700 text-xs border-b border-red-200 shrink-0">
+        <Box
+          px={3}
+          py={2}
+          bg="recording.50"
+          color="recording.600"
+          fontSize="xs"
+          borderBottom="1px"
+          borderColor="recording.100"
+          flexShrink={0}
+        >
           JSON Error: {parseError}
-        </div>
+        </Box>
       )}
 
-      {/* Editor */}
-      <textarea
+      <Textarea
         value={editedContent}
         onChange={(e) => handleContentChange(e.target.value)}
-        className="flex-1 p-4 font-mono text-sm resize-none focus:outline-none bg-gray-900 text-gray-100"
+        flex={1}
+        p={4}
+        fontFamily="mono"
+        fontSize="sm"
+        resize="none"
+        bg="gray.900"
+        color="gray.100"
+        border="none"
+        borderRadius={0}
+        _focus={{ outline: "none", boxShadow: "none" }}
         spellCheck={false}
       />
-    </div>
+    </Flex>
   );
 }

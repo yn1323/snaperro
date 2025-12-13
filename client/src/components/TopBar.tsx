@@ -1,3 +1,4 @@
+import { Box, Button, Flex, HStack, Spacer, Text } from "@chakra-ui/react";
 import type { Mode } from "../types";
 
 interface TopBarProps {
@@ -8,10 +9,10 @@ interface TopBarProps {
   onModeChange: (mode: Mode) => void;
 }
 
-const modes: { value: Mode; label: string; color: string; activeColor: string }[] = [
-  { value: "record", label: "Record", color: "bg-gray-700 hover:bg-gray-600", activeColor: "bg-red-600" },
-  { value: "proxy", label: "Proxy", color: "bg-gray-700 hover:bg-gray-600", activeColor: "bg-blue-600" },
-  { value: "mock", label: "Mock", color: "bg-gray-700 hover:bg-gray-600", activeColor: "bg-green-600" },
+const modes: { value: Mode; label: string; icon: string }[] = [
+  { value: "record", label: "Record", icon: "●" },
+  { value: "proxy", label: "Proxy", icon: "→" },
+  { value: "mock", label: "Mock", icon: "◆" },
 ];
 
 /**
@@ -27,38 +28,66 @@ export function TopBar({ version, mode, connected, currentPattern, onModeChange 
   };
 
   return (
-    <div className="h-12 bg-gray-800 text-white flex items-center px-4 gap-4 shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2">
-        <span className="text-xl">🐕</span>
-        <span className="text-xl font-bold">snaperro</span>
-        {version && <span className="text-xs text-gray-400">v{version}</span>}
-      </div>
+    <Flex
+      h="48px"
+      bg="gray.900"
+      color="white"
+      alignItems="center"
+      px={4}
+      gap={4}
+      flexShrink={0}
+      borderBottom="2px solid"
+      borderColor="accent.500"
+    >
+      <HStack gap={2}>
+        <Text fontSize="xl">🐕</Text>
+        <Text fontSize="lg" fontWeight="600" letterSpacing="-0.02em">
+          snaperro
+        </Text>
+        {version && (
+          <Text fontSize="xs" color="gray.500">
+            v{version}
+          </Text>
+        )}
+      </HStack>
 
-      {/* Mode selector */}
-      <div className="flex items-center gap-2 ml-6">
-        <div className="flex gap-1">
-          {modes.map(({ value, label, color, activeColor }) => (
-            <button
+      <HStack gap={1} ml={6}>
+        {modes.map(({ value, label, icon }) => {
+          const isActive = mode === value;
+          const isRecording = value === "record" && isActive;
+
+          return (
+            <Button
               key={value}
-              type="button"
+              size="sm"
+              bg={isActive ? (isRecording ? "recording.500" : "accent.500") : "transparent"}
+              color={isActive ? "white" : "gray.400"}
+              border="1px solid"
+              borderColor={isActive ? (isRecording ? "recording.500" : "accent.500") : "gray.700"}
+              _hover={{
+                bg: isActive ? (isRecording ? "recording.600" : "accent.600") : "gray.800",
+                borderColor: isActive ? (isRecording ? "recording.600" : "accent.600") : "gray.600",
+              }}
               onClick={() => handleModeClick(value)}
-              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors cursor-pointer ${
-                mode === value ? activeColor : color
-              } text-white`}
+              transition="all 0.15s ease"
             >
-              {value === "record" && mode === "record" && <span className="mr-1.5">●</span>}
+              <Text mr={1.5} fontSize="xs">
+                {icon}
+              </Text>
               {label}
-            </button>
-          ))}
-        </div>
-      </div>
+            </Button>
+          );
+        })}
+      </HStack>
 
-      {/* Connection status */}
-      <div className="ml-auto flex items-center gap-2">
-        <span className={`w-2 h-2 rounded-full ${connected ? "bg-green-400" : "bg-red-400"}`} />
-        <span className="text-sm text-gray-400">{connected ? "Connected" : "Disconnected"}</span>
-      </div>
-    </div>
+      <Spacer />
+
+      <HStack gap={2}>
+        <Box w={2} h={2} borderRadius="full" bg={connected ? "accent.400" : "recording.400"} />
+        <Text fontSize="xs" color="gray.500">
+          {connected ? "Connected" : "Disconnected"}
+        </Text>
+      </HStack>
+    </Flex>
   );
 }

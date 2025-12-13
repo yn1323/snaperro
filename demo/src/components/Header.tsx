@@ -1,3 +1,4 @@
+import { Flex, Heading, HStack, Link, Text } from "@chakra-ui/react";
 import type { Mode } from "./ModeSelector";
 import { ModeSelector } from "./ModeSelector";
 
@@ -14,28 +15,51 @@ export function Header({ mode, onModeChange, isLoading }: HeaderProps) {
       : "/__snaperro__/client";
 
   return (
-    <header className="h-14 shrink-0 border-b border-[var(--border)] bg-[var(--bg-secondary)] px-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-xl">🐕</span>
-        <h1 className="font-mono text-lg font-semibold tracking-tight">
+    <Flex
+      as="header"
+      h="14"
+      flexShrink={0}
+      borderBottom="1px"
+      borderColor="gray.200"
+      bg="white"
+      px={4}
+      alignItems="center"
+      justifyContent="space-between"
+      boxShadow="0 1px 3px rgba(0,0,0,0.05)"
+    >
+      <HStack gap={2}>
+        <Text fontSize="xl">🐕</Text>
+        <Heading as="h1" size="md" fontFamily="mono" fontWeight="600" letterSpacing="-0.02em">
           snaperro
-          <span className="text-[var(--text-secondary)] font-normal ml-1.5 text-sm">demo</span>
-        </h1>
-      </div>
+          <Text as="span" color="gray.500" fontWeight="normal" ml={1.5} fontSize="sm">
+            demo
+          </Text>
+        </Heading>
+      </HStack>
 
-      <div className="flex items-center gap-4">
+      <HStack gap={4}>
         <ModeSelector mode={mode} onChange={onModeChange} isLoading={isLoading} />
 
-        <a
+        <Link
           href={guiUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border)] text-sm font-medium hover:bg-[var(--border)] transition-colors flex items-center gap-1.5"
+          px={3}
+          py={1.5}
+          fontSize="sm"
+          fontWeight="500"
+          borderRadius="lg"
+          border="1px"
+          borderColor="gray.200"
+          _hover={{ bg: "gray.50", borderColor: "accent.300" }}
+          transition="all 0.15s ease"
         >
           Open GUI
-          <span className="text-[var(--text-secondary)]">→</span>
-        </a>
-      </div>
-    </header>
+          <Text as="span" color="accent.500" ml={1.5}>
+            →
+          </Text>
+        </Link>
+      </HStack>
+    </Flex>
   );
 }

@@ -1,3 +1,4 @@
+import { Box, Text, VStack } from "@chakra-ui/react";
 import type { Scenario } from "../scenarios";
 import { ScenarioCard } from "./ScenarioCard";
 
@@ -8,35 +9,54 @@ type ScenarioGridProps = {
 };
 
 export function ScenarioGrid({ scenarios, onExecute, isLoading }: ScenarioGridProps) {
-  // Group scenarios by category
   const basicScenarios = scenarios.filter((s) => s.category === "basic");
   const advancedScenarios = scenarios.filter((s) => s.category !== "basic");
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 space-y-4">
-      {/* Basic scenarios */}
-      <div>
-        <h2 className="font-mono text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-2">
-          Basic
-        </h2>
-        <div className="space-y-1">
-          {basicScenarios.map((scenario) => (
-            <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
-          ))}
-        </div>
-      </div>
+    <Box flex={1} overflowY="auto" p={3}>
+      <VStack gap={4} align="stretch">
+        <Box>
+          <Text
+            as="h2"
+            fontFamily="mono"
+            fontSize="xs"
+            fontWeight="medium"
+            color="gray.500"
+            textTransform="uppercase"
+            letterSpacing="wider"
+            mb={2}
+            px={2}
+          >
+            Basic
+          </Text>
+          <VStack gap={1} align="stretch">
+            {basicScenarios.map((scenario) => (
+              <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
+            ))}
+          </VStack>
+        </Box>
 
-      {/* Advanced scenarios */}
-      <div>
-        <h2 className="font-mono text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-2">
-          Advanced
-        </h2>
-        <div className="space-y-1">
-          {advancedScenarios.map((scenario) => (
-            <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
-          ))}
-        </div>
-      </div>
-    </div>
+        <Box>
+          <Text
+            as="h2"
+            fontFamily="mono"
+            fontSize="xs"
+            fontWeight="medium"
+            color="gray.500"
+            textTransform="uppercase"
+            letterSpacing="wider"
+            mb={2}
+            px={2}
+          >
+            Advanced
+          </Text>
+          <VStack gap={1} align="stretch">
+            {advancedScenarios.map((scenario) => (
+              <ScenarioCard key={scenario.id} scenario={scenario} onExecute={onExecute} isLoading={isLoading} />
+            ))}
+          </VStack>
+        </Box>
+      </VStack>
+    </Box>
   );
 }

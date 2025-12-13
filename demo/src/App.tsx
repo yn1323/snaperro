@@ -1,3 +1,4 @@
+import { Box, Flex } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
 import { GuidePanel } from "./components/GuidePanel";
 import { Header } from "./components/Header";
@@ -34,7 +35,6 @@ export type ErrorInfo = {
   };
 };
 
-// エラー情報を生成
 function createErrorInfo(
   type: ErrorType,
   url: string,
@@ -103,7 +103,6 @@ export default function App() {
   const [response, setResponse] = useState<ResponseInfo | null>(null);
   const [error, setError] = useState<ErrorInfo | null>(null);
 
-  // モード変更時にサーバーと同期
   const handleModeChange = useCallback(async (newMode: Mode) => {
     setMode(newMode);
     try {
@@ -117,7 +116,6 @@ export default function App() {
     }
   }, []);
 
-  // シナリオ実行
   const handleExecute = useCallback(async (url: string, method: string, requestBody?: unknown) => {
     setIsLoading(true);
     setError(null);
@@ -131,19 +129,16 @@ export default function App() {
         body: requestBody ? JSON.stringify(requestBody) : undefined,
       });
 
-      // JSONパースを試みる（304/204はボディなし）
       let body: unknown = null;
       if (res.status !== 304 && res.status !== 204) {
         try {
           body = await res.json();
         } catch {
-          // JSONパース失敗
           setError(createErrorInfo("unknown", url, res.status, res.statusText, null, "Response is not valid JSON"));
           return;
         }
       }
 
-      // HTTPエラーステータスをチェック
       if (!res.ok) {
         const responseBody = body as { error?: string; endpoint?: string; message?: string };
 
@@ -164,7 +159,6 @@ export default function App() {
         body,
       });
     } catch (err) {
-      // ネットワークエラー
       const rawMessage = err instanceof Error ? err.message : "Unknown error";
       setError(createErrorInfo("network", url, undefined, undefined, null, rawMessage));
     } finally {
@@ -173,19 +167,17 @@ export default function App() {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <Flex h="100vh" direction="column" bg="gray.50">
       <Header mode={mode} onModeChange={handleModeChange} isLoading={isLoading} />
-      <div className="flex-1 flex min-h-0">
-        {/* Left Sidebar */}
-        <aside className="w-80 border-r border-[var(--border)] flex flex-col bg-[var(--bg-secondary)]">
+      <Flex flex={1} minH={0}>
+        <Flex as="aside" w="320px" borderRight="1px" borderColor="gray.200" direction="column" bg="white">
           <ScenarioGrid scenarios={scenarios} onExecute={handleExecute} isLoading={isLoading} />
           <GuidePanel mode={mode} />
-        </aside>
-        {/* Main Content */}
-        <main className="flex-1 p-4 min-w-0">
+        </Flex>
+        <Box as="main" flex={1} p={4} minW={0} bg="gray.100">
           <ResponsePanel request={currentRequest} response={response} mode={mode} isLoading={isLoading} error={error} />
-        </main>
-      </div>
-    </div>
+        </Box>
+      </Flex>
+    </Flex>
   );
 }

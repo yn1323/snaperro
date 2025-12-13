@@ -1,5 +1,5 @@
 import { Box, Button, Flex, HStack, Text, Textarea } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FileData } from "../types";
 
 interface EditorPaneProps {
@@ -8,16 +8,46 @@ interface EditorPaneProps {
   isLoading: boolean;
   onSave: (data: FileData) => void;
   onDelete: () => void;
+  searchQuery?: string;
+}
+
+// Escape special regex characters
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Highlight matching text
+function highlightText(text: string, query: string | undefined): React.ReactNode {
+  if (!query) return text;
+  const parts = text.split(new RegExp(`(${escapeRegExp(query)})`, "gi"));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase() ? (
+      <mark key={i} style={{ background: "yellow", color: "black" }}>
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
 }
 
 /**
  * Right pane - JSON editor
  * Uses remaining width
  */
-export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: EditorPaneProps) {
+export function EditorPane({ fileData, filename, isLoading, onSave, onDelete, searchQuery }: EditorPaneProps) {
   const [editedContent, setEditedContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
+  const preRef = useRef<HTMLPreElement>(null);
+
+  // Sync scroll position between textarea and highlight layer
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (preRef.current) {
+      preRef.current.scrollTop = e.currentTarget.scrollTop;
+      preRef.current.scrollLeft = e.currentTarget.scrollLeft;
+    }
+  };
 
   // Update editor when file data changes
   useEffect(() => {
@@ -65,6 +95,15 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
       setHasChanges(false);
     } catch {
       // Parse should have succeeded if parseError is null
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      if (!parseError && hasChanges) {
+        handleSave();
+      }
     }
   };
 
@@ -163,21 +202,53 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete }: 
         </Box>
       )}
 
-      <Textarea
-        value={editedContent}
-        onChange={(e) => handleContentChange(e.target.value)}
-        flex={1}
-        p={4}
-        fontFamily="mono"
-        fontSize="sm"
-        resize="none"
-        bg="gray.900"
-        color="gray.100"
-        border="none"
-        borderRadius={0}
-        _focus={{ outline: "none", boxShadow: "none" }}
-        spellCheck={false}
-      />
+      <Box position="relative" flex={1} overflow="hidden">
+        {/* Background: Highlight display layer */}
+        <Box
+          as="pre"
+          ref={preRef}
+          position="absolute"
+          inset={0}
+          p={4}
+          m={0}
+          fontFamily="mono"
+          fontSize="sm"
+          lineHeight="1.5"
+          letterSpacing="normal"
+          bg="gray.50"
+          color="green.700"
+          whiteSpace="pre-wrap"
+          wordBreak="break-word"
+          overflow="auto"
+          pointerEvents="none"
+        >
+          {highlightText(editedContent, searchQuery)}
+        </Box>
+
+        {/* Foreground: Editable Textarea (transparent background) */}
+        <Textarea
+          value={editedContent}
+          onChange={(e) => handleContentChange(e.target.value)}
+          onScroll={handleScroll}
+          onKeyDown={handleKeyDown}
+          position="absolute"
+          inset={0}
+          p={4}
+          fontFamily="mono"
+          fontSize="sm"
+          lineHeight="1.5"
+          letterSpacing="normal"
+          resize="none"
+          overflow="auto"
+          bg="transparent"
+          color="transparent"
+          caretColor="gray.900"
+          border="none"
+          borderRadius={0}
+          _focus={{ outline: "none", boxShadow: "none" }}
+          spellCheck={false}
+        />
+      </Box>
     </Flex>
   );
 }

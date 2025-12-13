@@ -4,6 +4,9 @@ import type {
   FileChangedEventData,
   FileDeletedEventData,
   FileInfo,
+  FolderCreatedEventData,
+  FolderDeletedEventData,
+  FolderRenamedEventData,
   Mode,
   ModeChangedEventData,
   PatternChangedEventData,
@@ -27,6 +30,7 @@ const initialState: SnaperroState = {
   mode: "proxy",
   currentPattern: null,
   patterns: [],
+  folders: [],
   files: [],
 };
 
@@ -47,6 +51,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
       mode: data.mode as Mode,
       currentPattern: data.currentPattern,
       patterns: data.patterns,
+      folders: data.folders,
       files: data.files,
     });
     setConnected(true);
@@ -65,17 +70,35 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   }, []);
 
   const handlePatternCreated = useCallback((data: PatternCreatedEventData) => {
-    setState((prev) => ({
-      ...prev,
-      patterns: [...prev.patterns, data.name].sort(),
-    }));
+    setState((prev) => {
+      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
+      return {
+        ...prev,
+        patterns: [...prev.patterns, data.name].sort(),
+        // フォルダの件数をインクリメント
+        folders: folderName
+          ? prev.folders.map((f) => (f.name === folderName ? { ...f, patternsCount: f.patternsCount + 1 } : f))
+          : prev.folders,
+      };
+    });
   }, []);
 
   const handlePatternDeleted = useCallback((data: PatternDeletedEventData) => {
-    setState((prev) => ({
-      ...prev,
-      patterns: prev.patterns.filter((p) => p !== data.name),
-    }));
+    setState((prev) => {
+      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
+      return {
+        ...prev,
+        patterns: prev.patterns.filter((p) => p !== data.name),
+        // フォルダの件数をデクリメント
+        folders: folderName
+          ? prev.folders.map((f) =>
+              f.name === folderName ? { ...f, patternsCount: Math.max(0, f.patternsCount - 1) } : f,
+            )
+          : prev.folders,
+      };
+    });
   }, []);
 
   const handlePatternRenamed = useCallback((data: PatternRenamedEventData) => {
@@ -83,6 +106,32 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
       ...prev,
       patterns: prev.patterns.map((p) => (p === data.oldName ? data.newName : p)).sort(),
       currentPattern: prev.currentPattern === data.oldName ? data.newName : prev.currentPattern,
+    }));
+  }, []);
+
+  const handleFolderCreated = useCallback((data: FolderCreatedEventData) => {
+    setState((prev) => ({
+      ...prev,
+      folders: [...prev.folders, { name: data.name, patternsCount: data.patternsCount ?? 0 }].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      patterns: data.patterns ? [...prev.patterns, ...data.patterns].sort() : prev.patterns,
+    }));
+  }, []);
+
+  const handleFolderDeleted = useCallback((data: FolderDeletedEventData) => {
+    setState((prev) => ({
+      ...prev,
+      folders: prev.folders.filter((f) => f.name !== data.name),
+    }));
+  }, []);
+
+  const handleFolderRenamed = useCallback((data: FolderRenamedEventData) => {
+    setState((prev) => ({
+      ...prev,
+      folders: prev.folders
+        .map((f) => (f.name === data.oldName ? { ...f, name: data.newName } : f))
+        .sort((a, b) => a.name.localeCompare(b.name)),
     }));
   }, []);
 
@@ -142,6 +191,9 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
       "pattern_created",
       "pattern_deleted",
       "pattern_renamed",
+      "folder_created",
+      "folder_deleted",
+      "folder_renamed",
       "file_created",
       "file_updated",
       "file_deleted",
@@ -169,6 +221,15 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
               break;
             case "pattern_renamed":
               handlePatternRenamed(data);
+              break;
+            case "folder_created":
+              handleFolderCreated(data);
+              break;
+            case "folder_deleted":
+              handleFolderDeleted(data);
+              break;
+            case "folder_renamed":
+              handleFolderRenamed(data);
               break;
             case "file_created":
               handleFileCreated(data);
@@ -205,6 +266,9 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     handlePatternCreated,
     handlePatternDeleted,
     handlePatternRenamed,
+    handleFolderCreated,
+    handleFolderDeleted,
+    handleFolderRenamed,
     handleFileCreated,
     handleFileUpdated,
     handleFileDeleted,

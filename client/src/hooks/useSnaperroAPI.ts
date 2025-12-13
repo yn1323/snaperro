@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { FileData, FileInfo, Mode, PatternInfo } from "../types";
+import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo, SearchResult } from "../types";
 
 const API_BASE = "/__snaperro__";
 
@@ -9,13 +9,19 @@ interface UseSnaperroAPIReturn {
 
   // パターン操作
   getPatterns: () => Promise<PatternInfo[]>;
-  setCurrentPattern: (pattern: string) => Promise<void>;
+  setCurrentPattern: (pattern: string | null) => Promise<void>;
   createPattern: (name: string) => Promise<void>;
   duplicatePattern: (name: string, newName: string) => Promise<void>;
   renamePattern: (name: string, newName: string) => Promise<void>;
   deletePattern: (name: string) => Promise<void>;
-  downloadPattern: (name: string) => Promise<void>;
-  uploadPattern: (file: File, name?: string) => Promise<void>;
+
+  // フォルダ操作
+  getFolders: () => Promise<FolderInfo[]>;
+  createFolder: (name: string) => Promise<void>;
+  deleteFolder: (name: string) => Promise<void>;
+  renameFolder: (name: string, newName: string) => Promise<void>;
+  downloadFolder: (name: string) => Promise<void>;
+  uploadFolder: (file: File) => Promise<void>;
 
   // ファイル操作
   getFiles: (pattern: string) => Promise<FileInfo[]>;
@@ -24,6 +30,7 @@ interface UseSnaperroAPIReturn {
   deleteFile: (pattern: string, filename: string) => Promise<void>;
   uploadFile: (pattern: string, file: File) => Promise<void>;
   downloadFile: (pattern: string, filename: string) => Promise<void>;
+  searchFiles: (pattern: string, query: string) => Promise<SearchResult[]>;
 }
 
 /**
@@ -61,7 +68,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     return result.patterns;
   }, []);
 
-  const setCurrentPattern = useCallback(async (pattern: string): Promise<void> => {
+  const setCurrentPattern = useCallback(async (pattern: string | null): Promise<void> => {
     await apiFetch(`${API_BASE}/patterns/current`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -99,8 +106,38 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     });
   }, []);
 
-  const downloadPattern = useCallback(async (name: string): Promise<void> => {
-    const url = `${API_BASE}/patterns/${encodeURIComponent(name)}/download`;
+  // ============================================================
+  // フォルダ操作
+  // ============================================================
+  const getFolders = useCallback(async (): Promise<FolderInfo[]> => {
+    const result = await apiFetch<{ folders: FolderInfo[] }>(`${API_BASE}/folders`);
+    return result.folders;
+  }, []);
+
+  const createFolder = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+  }, []);
+
+  const deleteFolder = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders/${encodeURIComponent(name)}`, {
+      method: "DELETE",
+    });
+  }, []);
+
+  const renameFolder = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/folders/${encodeURIComponent(name)}/rename`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newName }),
+    });
+  }, []);
+
+  const downloadFolder = useCallback(async (name: string): Promise<void> => {
+    const url = `${API_BASE}/folders/${encodeURIComponent(name)}/download`;
     const response = await fetch(url);
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: "Download failed" }));
@@ -118,14 +155,11 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     URL.revokeObjectURL(downloadUrl);
   }, []);
 
-  const uploadPattern = useCallback(async (file: File, name?: string): Promise<void> => {
+  const uploadFolder = useCallback(async (file: File): Promise<void> => {
     const formData = new FormData();
     formData.append("file", file);
-    if (name) {
-      formData.append("name", name);
-    }
 
-    const response = await fetch(`${API_BASE}/patterns/upload`, {
+    const response = await fetch(`${API_BASE}/folders/upload`, {
       method: "POST",
       body: formData,
     });
@@ -200,6 +234,13 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     URL.revokeObjectURL(downloadUrl);
   }, []);
 
+  const searchFiles = useCallback(async (pattern: string, query: string): Promise<SearchResult[]> => {
+    const result = await apiFetch<{ pattern: string; query: string; files: SearchResult[] }>(
+      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/search?q=${encodeURIComponent(query)}`,
+    );
+    return result.files;
+  }, []);
+
   return useMemo(
     () => ({
       setMode,
@@ -209,14 +250,19 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       duplicatePattern,
       renamePattern,
       deletePattern,
-      downloadPattern,
-      uploadPattern,
+      getFolders,
+      createFolder,
+      deleteFolder,
+      renameFolder,
+      downloadFolder,
+      uploadFolder,
       getFiles,
       getFile,
       updateFile,
       deleteFile,
       uploadFile,
       downloadFile,
+      searchFiles,
     }),
     [
       setMode,
@@ -226,14 +272,19 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       duplicatePattern,
       renamePattern,
       deletePattern,
-      downloadPattern,
-      uploadPattern,
+      getFolders,
+      createFolder,
+      deleteFolder,
+      renameFolder,
+      downloadFolder,
+      uploadFolder,
       getFiles,
       getFile,
       updateFile,
       deleteFile,
       uploadFile,
       downloadFile,
+      searchFiles,
     ],
   );
 }

@@ -1,10 +1,11 @@
 import { Button, Input } from "@chakra-ui/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DialogBody, DialogContent, DialogFooter, DialogHeader, DialogRoot, DialogTitle } from "../ui/dialog";
 
 interface RenameDialogProps {
   isOpen: boolean;
   currentName: string;
+  title?: string;
   onClose: () => void;
   onSubmit: (newName: string) => void;
 }
@@ -12,18 +13,22 @@ interface RenameDialogProps {
 /**
  * Rename dialog
  */
-export function RenameDialog({ isOpen, currentName, onClose, onSubmit }: RenameDialogProps) {
+export function RenameDialog({ isOpen, currentName, title = "Rename Pattern", onClose, onSubmit }: RenameDialogProps) {
   const [name, setName] = useState(currentName);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleOpenChange = (details: { open: boolean }) => {
-    if (details.open) {
+  // Sync name with currentName when dialog opens
+  useEffect(() => {
+    if (isOpen) {
       setName(currentName);
-      // Select all text after dialog opens
       setTimeout(() => {
         inputRef.current?.select();
       }, 50);
-    } else {
+    }
+  }, [isOpen, currentName]);
+
+  const handleOpenChange = (details: { open: boolean }) => {
+    if (!details.open) {
       onClose();
     }
   };
@@ -43,7 +48,7 @@ export function RenameDialog({ isOpen, currentName, onClose, onSubmit }: RenameD
     <DialogRoot open={isOpen} onOpenChange={handleOpenChange} initialFocusEl={() => inputRef.current}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Rename Pattern</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody>

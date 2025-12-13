@@ -68,6 +68,105 @@ controlApi.put("/mode", async (c) => {
 });
 
 // ============================================================
+// フォルダ操作
+// ============================================================
+
+/**
+ * フォルダ一覧取得
+ * GET /__snaperro__/folders
+ */
+controlApi.get("/folders", async (c) => {
+  const folders = await storage.listFolders();
+  return c.json({ folders });
+});
+
+/**
+ * フォルダ作成
+ * POST /__snaperro__/folders
+ * Body: { name: string }
+ */
+controlApi.post("/folders", async (c) => {
+  const body = await c.req.json<{ name: string }>();
+  const name = body.name;
+
+  if (!name || typeof name !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: name" }, 400);
+  }
+
+  // フォルダが既に存在するかチェック
+  if (await storage.folderExists(name)) {
+    return c.json({ error: "Folder already exists", name }, 400);
+  }
+
+  await storage.createFolder(name);
+  return c.json({ name, message: "Folder created" }, 201);
+});
+
+/**
+ * フォルダ削除
+ * DELETE /__snaperro__/folders/:name
+ */
+controlApi.delete("/folders/:name", async (c) => {
+  const name = c.req.param("name");
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Folder not found", name }, 404);
+  }
+
+  await storage.deleteFolder(name);
+  return c.json({ name, message: "Folder deleted" });
+});
+
+/**
+ * フォルダ名変更
+ * PUT /__snaperro__/folders/:name/rename
+ * Body: { newName: string }
+ */
+controlApi.put("/folders/:name/rename", async (c) => {
+  const name = c.req.param("name");
+  const body = await c.req.json<{ newName: string }>();
+  const newName = body.newName;
+
+  if (!newName || typeof newName !== "string") {
+    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+  }
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Folder not found", name }, 404);
+  }
+
+  try {
+    await storage.renameFolder(name, newName);
+    return c.json({
+      oldName: name,
+      newName,
+      message: "Folder renamed",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to rename folder";
+    return c.json({ error: message }, 400);
+  }
+});
+
+/**
+ * フォルダ内パターン一覧取得
+ * GET /__snaperro__/folders/:folder/patterns
+ */
+controlApi.get("/folders/:folder/patterns", async (c) => {
+  const folder = c.req.param("folder");
+
+  // フォルダが存在するかチェック
+  if (!(await storage.folderExists(folder))) {
+    return c.json({ error: "Folder not found", name: folder }, 404);
+  }
+
+  const patterns = await storage.listPatternsInFolder(folder);
+  return c.json({ folder, patterns });
+});
+
+// ============================================================
 // パターン操作
 // ============================================================
 
@@ -101,15 +200,15 @@ controlApi.get("/patterns/current", (c) => {
  * Body: { pattern: string }
  */
 controlApi.put("/patterns/current", async (c) => {
-  const body = await c.req.json<{ pattern: string }>();
+  const body = await c.req.json<{ pattern: string | null }>();
   const pattern = body.pattern;
 
-  if (!pattern || typeof pattern !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: pattern" }, 400);
+  if (pattern !== null && typeof pattern !== "string") {
+    return c.json({ error: "Invalid request", details: "pattern must be string or null" }, 400);
   }
 
-  // パターンが存在するかチェック
-  if (!(await storage.patternExists(pattern))) {
+  // null でない場合はパターンの存在チェック
+  if (pattern !== null && !(await storage.patternExists(pattern))) {
     return c.json({ error: "Pattern not found", pattern }, 404);
   }
 
@@ -234,21 +333,20 @@ controlApi.delete("/patterns/:name", async (c) => {
 });
 
 /**
- * パターンzipダウンロード
- * GET /__snaperro__/patterns/:name/download
+ * フォルダZIPダウンロード
+ * GET /__snaperro__/folders/:name/download
  */
-controlApi.get("/patterns/:name/download", async (c) => {
+controlApi.get("/folders/:name/download", async (c) => {
   const name = c.req.param("name");
 
-  if (!(await storage.patternExists(name))) {
-    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Not found", resource: "folder", name }, 404);
   }
 
   try {
-    const zipBuffer = await storage.zipPatternDir(name);
+    const zipBuffer = await storage.zipFolderDir(name);
     c.header("Content-Type", "application/zip");
     c.header("Content-Disposition", `attachment; filename="${encodeURIComponent(name)}.zip"`);
-    // BufferをUint8Arrayに変換してbodyに渡す
     return c.body(new Uint8Array(zipBuffer));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create zip";
@@ -257,44 +355,33 @@ controlApi.get("/patterns/:name/download", async (c) => {
 });
 
 /**
- * パターンzipアップロード
- * POST /__snaperro__/patterns/upload
- * Body: multipart/form-data { file: zipファイル, name?: パターン名 }
+ * フォルダZIPアップロード
+ * POST /__snaperro__/folders/upload
+ * Body: multipart/form-data { file: zipファイル }
+ * 同名フォルダが存在する場合はサフィックスを付与
  */
-controlApi.post("/patterns/upload", async (c) => {
+controlApi.post("/folders/upload", async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file");
-    const nameParam = formData.get("name");
 
     if (!file || !(file instanceof File)) {
       return c.json({ error: "Invalid request", details: "Missing file" }, 400);
     }
 
-    // パターン名を決定（指定がなければzipファイル名から）
-    let patternName: string;
-    if (nameParam && typeof nameParam === "string") {
-      patternName = nameParam;
-    } else {
-      // .zip を除去
-      patternName = file.name.replace(/\.zip$/i, "");
-    }
+    // フォルダ名はzipファイル名から（.zip を除去）
+    const folderName = file.name.replace(/\.zip$/i, "");
 
-    // パターンが既に存在するかチェック
-    if (await storage.patternExists(patternName)) {
-      return c.json({ error: "Pattern already exists", name: patternName }, 400);
-    }
-
-    // zipを解凍して展開
+    // zipを解凍して展開（同名フォルダがあればサフィックス付与）
     const arrayBuffer = await file.arrayBuffer();
     const zipBuffer = Buffer.from(arrayBuffer);
-    const filesCount = await storage.extractZipToPattern(zipBuffer, patternName);
+    const { actualFolderName, patternsCount } = await storage.extractZipToFolder(zipBuffer, folderName);
 
     return c.json(
       {
-        name: patternName,
-        filesCount,
-        message: "Pattern uploaded",
+        name: actualFolderName,
+        patternsCount,
+        message: "Folder uploaded",
       },
       201,
     );
@@ -336,6 +423,26 @@ controlApi.get("/patterns/:pattern/files", async (c) => {
   }));
 
   return c.json({ pattern, files });
+});
+
+/**
+ * パターン内ファイル検索
+ * GET /__snaperro__/patterns/:pattern/files/search?q=<query>
+ */
+controlApi.get("/patterns/:pattern/files/search", async (c) => {
+  const pattern = c.req.param("pattern");
+  const query = c.req.query("q");
+
+  if (!query) {
+    return c.json({ error: "Query required" }, 400);
+  }
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  const results = await storage.searchPatternFiles(pattern, query);
+  return c.json({ pattern, query, files: results });
 });
 
 /**
@@ -491,6 +598,7 @@ controlApi.get("/events", async (c) => {
     // 1. 初期状態を送信
     const currentPattern = state.getPattern();
     const patternNames = await storage.listPatterns();
+    const folders = await storage.listFolders();
     const files = currentPattern ? await storage.getPatternFiles(currentPattern) : [];
 
     await stream.writeSSE({
@@ -500,6 +608,7 @@ controlApi.get("/events", async (c) => {
         mode: state.getMode(),
         currentPattern,
         patterns: patternNames,
+        folders,
         files: files.map((f) => ({
           filename: f.path,
           endpoint: f.endpoint,

@@ -144,6 +144,7 @@ API_KEY=your-api-key-here
 |--------|------|-------------|
 | `port` | number | Server port (default: 3333) |
 | `filesDir` | string | File storage directory (default: `.snaperro/files`) |
+| `mockFallback` | string | Fallback behavior when mock file is not found (default: `"404"`) |
 | `apis` | object | API definitions object |
 
 #### API Definition
@@ -248,6 +249,23 @@ Returns responses from saved JSON files. Does not access the actual API.
 
 ```
 Request → snaperro → Search JSON files → Response
+```
+
+#### Mock Fallback Behavior
+
+When a mock file is not found, you can configure the fallback behavior with `mockFallback`:
+
+| Value | Description |
+|-------|-------------|
+| `"404"` | Return 404 error (default) |
+| `"proxy"` | Forward request to real server |
+| `"proxy&record"` | Forward to real server and record the response |
+
+```typescript
+export default defineConfig({
+  mockFallback: "proxy&record",  // Fallback to proxy and record
+  // ...
+})
 ```
 
 ### What is a Pattern?

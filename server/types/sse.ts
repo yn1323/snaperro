@@ -8,6 +8,9 @@ export type SSEEventType =
   | "pattern_created" // パターン作成
   | "pattern_deleted" // パターン削除
   | "pattern_renamed" // パターン名変更
+  | "folder_created" // フォルダ作成
+  | "folder_deleted" // フォルダ削除
+  | "folder_renamed" // フォルダ名変更
   | "file_created" // ファイル作成（記録時）
   | "file_updated" // ファイル更新
   | "file_deleted"; // ファイル削除
@@ -28,6 +31,10 @@ export interface ConnectedEventData {
   mode: string;
   currentPattern: string | null;
   patterns: string[];
+  folders: Array<{
+    name: string;
+    patternsCount: number;
+  }>;
   files: Array<{
     filename: string;
     endpoint: string;
@@ -67,6 +74,28 @@ export interface PatternDeletedEventData {
  * パターン名変更イベントデータ
  */
 export interface PatternRenamedEventData {
+  oldName: string;
+  newName: string;
+}
+
+/**
+ * フォルダ作成イベントデータ
+ */
+export interface FolderCreatedEventData {
+  name: string;
+}
+
+/**
+ * フォルダ削除イベントデータ
+ */
+export interface FolderDeletedEventData {
+  name: string;
+}
+
+/**
+ * フォルダ名変更イベントデータ
+ */
+export interface FolderRenamedEventData {
   oldName: string;
   newName: string;
 }

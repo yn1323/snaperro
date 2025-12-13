@@ -8,6 +8,7 @@ import { createHandler } from "./handler.js";
 const testConfig: SnaperroConfig = {
   port: 3333,
   filesDir: ".snaperro/files",
+  mockFallback: "404",
   apis: {
     userService: {
       name: "ユーザーサービス",

@@ -135,18 +135,16 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
       },
     };
 
-    // 7. Determine file path (overwrite if exists, new file if not)
-    const { filePath, isNew } = await storage.findOrCreateFile(
+    // 7. Determine file path and save atomically (prevents race conditions)
+    const { filePath, isNew } = await storage.findAndWriteAtomic(
       pattern,
       method,
       match.matchedRoute,
       match.pathParams,
       queryParams,
       requestBody ?? null,
+      fileData,
     );
-
-    // 8. Save to file
-    await storage.write(filePath, fileData);
 
     // 9. Emit SSE event
     eventBus.emitSSE(isNew ? "file_created" : "file_updated", {

@@ -1,22 +1,22 @@
 import { IconButton } from "@chakra-ui/react";
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from "./ui/menu";
 
-interface PatternMenuProps {
-  patternName: string;
+interface FolderMenuProps {
+  folderName: string;
   onRename: () => void;
-  onDuplicate: () => void;
+  onDownload: () => void;
   onDelete: () => void;
 }
 
 /**
- * Pattern action menu (⋮ dropdown)
+ * Folder action menu (⋮ dropdown)
  */
-export function PatternMenu({ patternName, onRename, onDuplicate, onDelete }: PatternMenuProps) {
+export function FolderMenu({ folderName, onRename, onDownload, onDelete }: FolderMenuProps) {
   return (
     <MenuRoot>
       <MenuTrigger asChild>
         <IconButton
-          aria-label={`Menu for ${patternName}`}
+          aria-label={`Menu for ${folderName}`}
           variant="ghost"
           size="xs"
           color="gray.500"
@@ -30,8 +30,8 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDelete }: Pa
         <MenuItem value="rename" onClick={onRename}>
           Rename
         </MenuItem>
-        <MenuItem value="duplicate" onClick={onDuplicate}>
-          Duplicate
+        <MenuItem value="download" onClick={onDownload}>
+          Download ZIP
         </MenuItem>
         <MenuSeparator />
         <MenuItem value="delete" color="red.500" onClick={onDelete}>

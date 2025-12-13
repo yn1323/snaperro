@@ -3,6 +3,9 @@ import { logger } from "../core/logger.js";
 import type { MatchResult } from "../core/matcher.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
+import type { SnaperroConfig } from "../types/config.js";
+import { handleProxy } from "./proxy.js";
+import { handleRecord } from "./recorder.js";
 
 /**
  * Parse query parameters
@@ -24,7 +27,7 @@ function parseQueryParams(url: URL): Record<string, string | string[]> {
  * Mock mode handler
  * Return responses from saved JSON files
  */
-export async function handleMock(c: Context, match: MatchResult): Promise<Response> {
+export async function handleMock(c: Context, match: MatchResult, config: SnaperroConfig): Promise<Response> {
   const method = c.req.method;
   const url = new URL(c.req.url);
   const path = url.pathname;
@@ -68,6 +71,21 @@ export async function handleMock(c: Context, match: MatchResult): Promise<Respon
   );
 
   if (!result) {
+    const fallback = config.mockFallback ?? "404";
+
+    // Fallback: proxy to real server
+    if (fallback === "proxy") {
+      logger.info(`${method} ${path} → mock fallback → proxy`);
+      return handleProxy(c, match.apiConfig);
+    }
+
+    // Fallback: proxy and record
+    if (fallback === "proxy&record") {
+      logger.info(`${method} ${path} → mock fallback → proxy&record`);
+      return handleRecord(c, match);
+    }
+
+    // Fallback: return 404 (default)
     logger.warn(`${method} ${path} → no matching mock found`);
     return c.json(
       {

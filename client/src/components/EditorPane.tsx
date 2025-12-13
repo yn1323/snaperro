@@ -216,7 +216,7 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete, se
           lineHeight="1.5"
           letterSpacing="normal"
           bg="gray.50"
-          color="gray.700"
+          color="green.700"
           whiteSpace="pre-wrap"
           wordBreak="break-word"
           overflow="auto"

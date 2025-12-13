@@ -1,6 +1,6 @@
 import { Badge, Box, Button, Flex, Input, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
-import { LuSearch, LuUpload } from "react-icons/lu";
+import { LuSearch, LuUpload, LuX } from "react-icons/lu";
 import { useSnaperroAPI } from "../hooks/useSnaperroAPI";
 import type { FileInfo, SearchResult } from "../types";
 
@@ -157,7 +157,7 @@ export function FilePane({
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="Search..."
             pl={7}
-            pr={isSearching ? 7 : 2}
+            pr={isSearching || searchQuery ? 7 : 2}
             bg="gray.50"
             border="1px solid"
             borderColor="gray.200"
@@ -167,6 +167,18 @@ export function FilePane({
           {isSearching && (
             <Box position="absolute" right={2}>
               <Spinner size="xs" color="accent.500" />
+            </Box>
+          )}
+          {searchQuery && !isSearching && (
+            <Box
+              position="absolute"
+              right={2}
+              color="gray.400"
+              cursor="pointer"
+              _hover={{ color: "gray.600" }}
+              onClick={() => onSearchQueryChange("")}
+            >
+              <LuX size={14} />
             </Box>
           )}
         </Flex>

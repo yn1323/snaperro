@@ -432,11 +432,23 @@ describe("storage", () => {
   });
 
   describe("listPatterns と createPattern", () => {
-    it("パターンを作成して一覧に表示される", async () => {
-      await storage.createPattern(TEST_PATTERN);
+    it("フォルダ内のパターンを一覧に表示される", async () => {
+      const testFolder = "__test_folder__";
+      const testPatternInFolder = `${testFolder}/${TEST_PATTERN}`;
+
+      // Create folder and pattern
+      await storage.createFolder(testFolder);
+      await storage.createPattern(testPatternInFolder);
+
+      // Write a file to make it a recognized pattern
+      const filePath = buildFilePath(testPatternInFolder, "/api/users", 1);
+      await storage.write(filePath, testFileData);
 
       const patterns = await storage.listPatterns();
-      expect(patterns).toContain(TEST_PATTERN);
+      expect(patterns).toContain(testPatternInFolder);
+
+      // Cleanup
+      await fs.rm(path.join(TEST_BASE_DIR, testFolder), { recursive: true, force: true });
     });
   });
 

@@ -1,3 +1,4 @@
+import { Badge, Box, Button, Flex, HStack, NativeSelect, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { buildUrl, type Scenario } from "../scenarios";
 
@@ -18,10 +19,10 @@ const iconMap: Record<string, string> = {
 };
 
 const categoryColors: Record<string, string> = {
-  basic: "#71717a",
-  pathParam: "#22d3ee",
-  queryString: "#a78bfa",
-  nested: "#fb923c",
+  basic: "gray.400",
+  pathParam: "accent.500",
+  queryString: "purple.400",
+  nested: "orange.400",
 };
 
 export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardProps) {
@@ -41,74 +42,91 @@ export function ScenarioCard({ scenario, onExecute, isLoading }: ScenarioCardPro
   const accentColor = categoryColors[scenario.category];
 
   return (
-    <div className="group rounded-lg px-2 py-2 hover:bg-[var(--bg-tertiary)] transition-colors">
-      <div className="flex items-center gap-2">
-        {/* Icon */}
-        <span className="text-base shrink-0">{iconMap[scenario.icon] || "📦"}</span>
+    <Box
+      px={2}
+      py={2}
+      borderRadius="lg"
+      border="1px solid transparent"
+      _hover={{ bg: "gray.50", borderColor: "gray.200" }}
+      transition="all 0.15s ease"
+      role="group"
+    >
+      <Flex alignItems="center" gap={2}>
+        <Text fontSize="md" flexShrink={0}>
+          {iconMap[scenario.icon] || "📦"}
+        </Text>
 
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+        <Box flex={1} minW={0}>
+          <HStack gap={2}>
             {scenario.method !== "GET" && (
-              <span className="shrink-0 px-1 py-0.5 rounded text-[10px] font-bold bg-[var(--accent-cyan)] text-[var(--bg-primary)]">
+              <Badge bg="gray.200" color="gray.600" fontSize="10px" fontWeight="600" flexShrink={0}>
                 {scenario.method}
-              </span>
+              </Badge>
             )}
-            <span className="font-mono text-sm font-medium truncate">{scenario.title}</span>
+            <Text fontFamily="mono" fontSize="sm" fontWeight="500" truncate>
+              {scenario.title}
+            </Text>
             {scenario.category !== "basic" && (
-              <span
-                className="shrink-0 w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: accentColor }}
-                title={scenario.category}
-              />
+              <Box w="1.5" h="1.5" borderRadius="full" bg={accentColor} flexShrink={0} title={scenario.category} />
             )}
-          </div>
+          </HStack>
 
-          {/* Param selector (inline) */}
           {scenario.paramOptions && (
-            <select
-              value={paramValue}
-              onChange={(e) => setParamValue(e.target.value)}
-              className="mt-1 w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 font-mono text-xs focus:outline-none focus:border-[var(--accent-cyan)]"
-            >
-              {scenario.paramOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label} ({opt.value})
-                </option>
-              ))}
-            </select>
+            <NativeSelect.Root size="xs" mt={1}>
+              <NativeSelect.Field
+                value={paramValue}
+                onChange={(e) => setParamValue(e.target.value)}
+                fontFamily="mono"
+                bg="gray.50"
+                borderColor="gray.200"
+                _hover={{ borderColor: "gray.300" }}
+                _focus={{ borderColor: "accent.500" }}
+              >
+                {scenario.paramOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label} ({opt.value})
+                  </option>
+                ))}
+              </NativeSelect.Field>
+            </NativeSelect.Root>
           )}
 
-          {/* Request body selector (for POST methods) */}
           {scenario.requestBodyOptions && (
-            <select
-              value={bodyOptionValue}
-              onChange={(e) => setBodyOptionValue(e.target.value)}
-              className="mt-1 w-full bg-[var(--bg-primary)] border border-[var(--border)] rounded px-2 py-1 font-mono text-xs focus:outline-none focus:border-[var(--accent-cyan)]"
-            >
-              {scenario.requestBodyOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            <NativeSelect.Root size="xs" mt={1}>
+              <NativeSelect.Field
+                value={bodyOptionValue}
+                onChange={(e) => setBodyOptionValue(e.target.value)}
+                fontFamily="mono"
+                bg="gray.50"
+                borderColor="gray.200"
+                _hover={{ borderColor: "gray.300" }}
+                _focus={{ borderColor: "accent.500" }}
+              >
+                {scenario.requestBodyOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </NativeSelect.Field>
+            </NativeSelect.Root>
           )}
-        </div>
+        </Box>
 
-        {/* Run button */}
-        <button
-          type="button"
+        <Button
+          size="xs"
+          variant="outline"
+          fontFamily="mono"
           onClick={handleExecute}
           disabled={isLoading}
-          className={`
-            shrink-0 px-2 py-1 rounded font-mono text-xs font-medium transition-all
-            bg-[var(--bg-primary)] border border-[var(--border)]
-            ${isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-[var(--accent-cyan)] hover:text-[var(--accent-cyan)]"}
-          `}
+          flexShrink={0}
+          borderColor="gray.300"
+          color="gray.600"
+          _hover={{ borderColor: "accent.500", color: "accent.600", bg: "accent.50" }}
+          transition="all 0.15s ease"
         >
           Run
-        </button>
-      </div>
-    </div>
+        </Button>
+      </Flex>
+    </Box>
   );
 }

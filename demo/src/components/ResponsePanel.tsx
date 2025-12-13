@@ -1,3 +1,4 @@
+import { Badge, Box, Button, Flex, HStack, Spinner, Text } from "@chakra-ui/react";
 import type { ErrorInfo } from "../App";
 import type { Mode } from "./ModeSelector";
 
@@ -15,225 +16,284 @@ type ResponsePanelProps = {
   error: ErrorInfo | null;
 };
 
-const modeConfig: Record<Mode, { label: string; color: string; icon: string }> = {
-  proxy: { label: "Proxy", color: "var(--accent-cyan)", icon: "→" },
-  record: { label: "Record", color: "var(--accent-red)", icon: "●" },
-  mock: { label: "Mock", color: "var(--accent-green)", icon: "◆" },
+const modeConfig: Record<Mode, { label: string; icon: string }> = {
+  proxy: { label: "Proxy", icon: "→" },
+  record: { label: "Record", icon: "●" },
+  mock: { label: "Mock", icon: "◆" },
 };
 
-const statusColor = (status: number): string => {
-  if (status >= 200 && status < 300) return "#4ade80"; // green
-  if (status >= 300 && status < 400) return "#facc15"; // yellow
-  if (status >= 400 && status < 500) return "#fb923c"; // orange
-  return "#f87171"; // red
+const getStatusColorPalette = (status: number): string => {
+  if (status >= 200 && status < 300) return "green";
+  if (status >= 300 && status < 400) return "yellow";
+  if (status >= 400 && status < 500) return "orange";
+  return "red";
 };
 
-// JSON syntax highlighting
 function highlightJson(json: string): string {
-  return (
-    json
-      // String keys (property names)
-      .replace(/"([^"]+)"(?=\s*:)/g, '<span class="json-key">"$1"</span>')
-      // String values
-      .replace(/:\s*"([^"]*)"/g, ': <span class="json-string">"$1"</span>')
-      // Numbers
-      .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-      // boolean/null
-      .replace(/:\s*(true|false|null)/g, ': <span class="json-boolean">$1</span>')
-  );
+  return json
+    .replace(/"([^"]+)"(?=\s*:)/g, '<span class="json-key">"$1"</span>')
+    .replace(/:\s*"([^"]*)"/g, ': <span class="json-string">"$1"</span>')
+    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+    .replace(/:\s*(true|false|null)/g, ': <span class="json-boolean">$1</span>');
 }
 
 export function ResponsePanel({ request, response, mode, isLoading, error }: ResponsePanelProps) {
   const config = modeConfig[mode];
+  const isRecording = mode === "record";
 
-  // Initial state (no request yet)
   if (!request && !isLoading && !error) {
     return (
-      <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl flex flex-col items-center justify-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[var(--bg-tertiary)] mb-3">
-          <span className="text-2xl opacity-50">📡</span>
-        </div>
-        <p className="font-mono text-[var(--text-secondary)] text-sm">Select a scenario and click "Run"</p>
-        <p className="font-mono text-[var(--text-secondary)] text-xs mt-1 opacity-60">
+      <Flex
+        h="full"
+        bg="white"
+        border="1px"
+        borderColor="gray.200"
+        borderRadius="xl"
+        direction="column"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <Flex w={12} h={12} borderRadius="full" bg="gray.100" alignItems="center" justifyContent="center" mb={3}>
+          <Text fontSize="2xl" opacity={0.5}>
+            📡
+          </Text>
+        </Flex>
+        <Text fontFamily="mono" color="gray.500" fontSize="sm">
+          Select a scenario and click "Run"
+        </Text>
+        <Text fontFamily="mono" color="gray.500" fontSize="xs" mt={1} opacity={0.6}>
           Response will be displayed here
-        </p>
-      </div>
+        </Text>
+      </Flex>
     );
   }
 
   return (
-    <div className="h-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl overflow-hidden flex flex-col">
-      {/* Header: Request info */}
-      <div className="shrink-0 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-tertiary)]/50">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          {/* Request URL */}
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {request && (
-              <>
-                <span className="shrink-0 px-2.5 py-1 rounded-md bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan)] font-mono text-xs font-bold tracking-wider">
-                  {request.method}
-                </span>
-                <code className="font-mono text-sm text-[var(--text-primary)] truncate">{request.url}</code>
-              </>
-            )}
-          </div>
+    <Box
+      h="full"
+      bg="white"
+      border="1px"
+      borderColor="gray.200"
+      borderRadius="xl"
+      overflow="hidden"
+      display="flex"
+      flexDirection="column"
+    >
+      <Flex
+        flexShrink={0}
+        px={4}
+        py={3}
+        borderBottom="1px"
+        borderColor="gray.200"
+        bg="gray.50"
+        alignItems="center"
+        justifyContent="space-between"
+        flexWrap="wrap"
+        gap={3}
+      >
+        <HStack gap={3} minW={0} flex={1}>
+          {request && (
+            <>
+              <Badge bg="gray.200" color="gray.600" fontFamily="mono" fontSize="xs" fontWeight="600" flexShrink={0}>
+                {request.method}
+              </Badge>
+              <Text as="code" fontFamily="mono" fontSize="sm" truncate>
+                {request.url}
+              </Text>
+            </>
+          )}
+        </HStack>
 
-          {/* Status + Mode */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Mode display */}
-            <div
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-medium transition-all"
-              style={{
-                backgroundColor: `${config.color}15`,
-                color: config.color,
-                boxShadow: `0 0 12px ${config.color}20`,
-              }}
+        <HStack gap={3} flexShrink={0}>
+          <Badge
+            bg={isRecording ? "recording.50" : "accent.50"}
+            color={isRecording ? "recording.500" : "accent.600"}
+            fontFamily="mono"
+            fontSize="xs"
+            fontWeight="500"
+          >
+            <Text as="span" fontSize="0.6rem" mr={1} className={isRecording ? "animate-pulse" : ""}>
+              {config.icon}
+            </Text>
+            {config.label}
+          </Badge>
+
+          {response && (
+            <Badge
+              colorPalette={getStatusColorPalette(response.status)}
+              fontFamily="mono"
+              fontSize="xs"
+              fontWeight="600"
             >
-              <span className={mode === "record" ? "animate-pulse" : ""} style={{ fontSize: "0.6rem" }}>
-                {config.icon}
-              </span>
-              {config.label}
-            </div>
+              <Box as="span" w="1.5" h="1.5" borderRadius="full" bg="currentColor" mr={2} />
+              {response.status}
+            </Badge>
+          )}
+        </HStack>
+      </Flex>
 
-            {/* Status code */}
-            {response && (
-              <div
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-xs font-bold"
-                style={{
-                  backgroundColor: `${statusColor(response.status)}15`,
-                  color: statusColor(response.status),
-                }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusColor(response.status) }} />
-                {response.status}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Content area */}
-      <div className="relative flex-1 min-h-0 overflow-hidden">
-        {/* Loading */}
+      <Box position="relative" flex={1} minH={0} overflow="hidden">
         {isLoading && (
-          <div className="absolute inset-0 bg-[var(--bg-secondary)]/80 backdrop-blur-sm flex items-center justify-center z-10">
-            <div className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border)]">
-              <div className="relative w-5 h-5">
-                <div
-                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
-                  style={{
-                    borderTopColor: config.color,
-                    borderRightColor: config.color,
-                  }}
-                />
-              </div>
-              <span className="font-mono text-sm text-[var(--text-secondary)]">Fetching...</span>
-            </div>
-          </div>
+          <Flex
+            position="absolute"
+            inset={0}
+            bg="whiteAlpha.800"
+            backdropFilter="blur(4px)"
+            alignItems="center"
+            justifyContent="center"
+            zIndex={10}
+          >
+            <HStack gap={3} px={5} py={3} borderRadius="xl" bg="gray.50" border="1px" borderColor="gray.200">
+              <Spinner size="sm" color="accent.500" />
+              <Text fontFamily="mono" fontSize="sm" color="gray.500">
+                Fetching...
+              </Text>
+            </HStack>
+          </Flex>
         )}
 
-        {/* Error display */}
         {error && (
-          <div className="h-full flex items-center justify-center p-4">
-            <div className="max-w-md w-full px-5 py-4 rounded-xl bg-[#f8717110] border border-[#f8717125]">
-              {/* Title */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">⚠️</span>
-                <h3 className="font-mono text-base font-semibold text-[var(--accent-red)]">{error.title}</h3>
-              </div>
+          <Flex h="full" alignItems="center" justifyContent="center" p={4}>
+            <Box
+              maxW="md"
+              w="full"
+              px={5}
+              py={4}
+              borderRadius="xl"
+              bg="recording.50"
+              border="1px"
+              borderColor="recording.100"
+            >
+              <HStack gap={2} mb={3}>
+                <Text fontSize="xl">⚠️</Text>
+                <Text fontFamily="mono" fontSize="md" fontWeight="600" color="recording.600">
+                  {error.title}
+                </Text>
+              </HStack>
 
-              {/* Message */}
-              <p className="font-mono text-sm text-[var(--text-primary)] mb-2">{error.message}</p>
+              <Text fontFamily="mono" fontSize="sm" mb={2}>
+                {error.message}
+              </Text>
 
-              {/* Action */}
-              <p className="font-mono text-sm text-[var(--text-secondary)] mb-4">{error.action}</p>
+              <Text fontFamily="mono" fontSize="sm" color="gray.600" mb={4}>
+                {error.action}
+              </Text>
 
-              {/* Details */}
-              <div className="pt-3 border-t border-[#f8717120]">
-                <p className="font-mono text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-2">Details</p>
-                <div className="space-y-1 font-mono text-xs">
+              <Box pt={3} borderTop="1px" borderColor="recording.100">
+                <Text
+                  fontFamily="mono"
+                  fontSize="xs"
+                  color="gray.500"
+                  textTransform="uppercase"
+                  letterSpacing="wider"
+                  mb={2}
+                >
+                  Details
+                </Text>
+                <Box spaceY={1} fontFamily="mono" fontSize="xs">
                   {error.details.status && (
-                    <div className="flex gap-2">
-                      <span className="text-[var(--text-secondary)]">Status:</span>
-                      <span className="text-[var(--accent-red)]">
+                    <Flex gap={2}>
+                      <Text color="gray.500">Status:</Text>
+                      <Text color="recording.500">
                         {error.details.status} {error.details.statusText}
-                      </span>
-                    </div>
+                      </Text>
+                    </Flex>
                   )}
-                  <div className="flex gap-2">
-                    <span className="text-[var(--text-secondary)]">URL:</span>
-                    <span className="text-[var(--text-primary)] break-all">{error.details.url}</span>
-                  </div>
+                  <Flex gap={2}>
+                    <Text color="gray.500">URL:</Text>
+                    <Text wordBreak="break-all">{error.details.url}</Text>
+                  </Flex>
                   {error.details.endpoint && (
-                    <div className="flex gap-2">
-                      <span className="text-[var(--text-secondary)]">Endpoint:</span>
-                      <span className="text-[var(--text-primary)]">{error.details.endpoint}</span>
-                    </div>
+                    <Flex gap={2}>
+                      <Text color="gray.500">Endpoint:</Text>
+                      <Text>{error.details.endpoint}</Text>
+                    </Flex>
                   )}
                   {error.details.rawMessage && (
-                    <div className="flex gap-2">
-                      <span className="text-[var(--text-secondary)]">Message:</span>
-                      <span className="text-[var(--text-primary)] break-all">{error.details.rawMessage}</span>
-                    </div>
+                    <Flex gap={2}>
+                      <Text color="gray.500">Message:</Text>
+                      <Text wordBreak="break-all">{error.details.rawMessage}</Text>
+                    </Flex>
                   )}
-                </div>
-              </div>
-            </div>
-          </div>
+                </Box>
+              </Box>
+            </Box>
+          </Flex>
         )}
 
-        {/* Response body */}
         {response && !error && (
-          <div className="h-full flex flex-col p-4">
-            {/* Label */}
-            <div className="shrink-0 flex items-center justify-between mb-2">
-              <span className="font-mono text-xs text-[var(--text-secondary)] uppercase tracking-wider">
+          <Flex h="full" direction="column" p={4}>
+            <Flex flexShrink={0} alignItems="center" justifyContent="space-between" mb={2}>
+              <Text fontFamily="mono" fontSize="xs" color="gray.500" textTransform="uppercase" letterSpacing="wider">
                 Response Body
-              </span>
-              <span className="font-mono text-xs text-[var(--text-secondary)] opacity-60">
+              </Text>
+              <Text fontFamily="mono" fontSize="xs" color="gray.500" opacity={0.6}>
                 {typeof response.body === "object" ? `${JSON.stringify(response.body).length} bytes` : ""}
-              </span>
-            </div>
+              </Text>
+            </Flex>
 
-            {/* JSON code block */}
-            <div className="relative group flex-1 min-h-0">
-              {/* Decorative gradient line */}
-              <div
-                className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full opacity-60"
-                style={{
-                  background: `linear-gradient(to bottom, ${config.color}, transparent)`,
-                }}
+            <Box position="relative" flex={1} minH={0} role="group">
+              <Box
+                position="absolute"
+                left={0}
+                top={0}
+                bottom={0}
+                w="3px"
+                borderRadius="full"
+                bg={response.status < 300 ? "green.400" : response.status < 400 ? "yellow.400" : "recording.400"}
               />
 
-              <pre
-                className="json-display h-full pl-4 pr-4 py-3 rounded-lg bg-[var(--bg-primary)] border border-[var(--border)] overflow-auto font-mono text-sm leading-relaxed"
+              <Box
+                as="pre"
+                className="json-display"
+                h="full"
+                pl={4}
+                pr={4}
+                py={3}
+                borderRadius="lg"
+                bg="gray.50"
+                border="1px"
+                borderColor="gray.200"
+                overflow="auto"
+                fontFamily="mono"
+                fontSize="sm"
+                lineHeight="relaxed"
                 // biome-ignore lint/security/noDangerouslySetInnerHtml: For JSON highlighting
                 dangerouslySetInnerHTML={{
                   __html: highlightJson(JSON.stringify(response.body, null, 2)),
                 }}
               />
 
-              {/* Copy button */}
-              <button
-                type="button"
+              <Button
+                size="xs"
+                position="absolute"
+                top={3}
+                right={3}
+                opacity={0}
+                _groupHover={{ opacity: 1 }}
+                transition="opacity 0.15s ease"
+                fontFamily="mono"
+                bg="gray.200"
+                color="gray.700"
+                _hover={{ bg: "gray.300" }}
                 onClick={() => {
                   navigator.clipboard.writeText(JSON.stringify(response.body, null, 2));
                 }}
-                className="absolute top-3 right-3 px-2 py-1 rounded-md bg-[var(--bg-tertiary)] border border-[var(--border)] font-mono text-xs text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--border)]"
               >
                 Copy
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Box>
+          </Flex>
         )}
 
-        {/* Placeholder when request is in progress but no response yet */}
         {!response && !error && !isLoading && request && (
-          <div className="h-full flex items-center justify-center">
-            <p className="font-mono text-sm text-[var(--text-secondary)]">Waiting for response...</p>
-          </div>
+          <Flex h="full" alignItems="center" justifyContent="center">
+            <Text fontFamily="mono" fontSize="sm" color="gray.500">
+              Waiting for response...
+            </Text>
+          </Flex>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

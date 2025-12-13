@@ -1,3 +1,4 @@
+import { Box, Flex, Text } from "@chakra-ui/react";
 import type { Mode } from "./ModeSelector";
 
 type GuidePanelProps = {
@@ -22,30 +23,37 @@ const modeHints: Record<Mode, { icon: string; text: string; subtext: string }> =
   },
 };
 
-const modeColors: Record<Mode, string> = {
-  proxy: "var(--accent-cyan)",
-  record: "var(--accent-red)",
-  mock: "var(--accent-green)",
-};
-
 export function GuidePanel({ mode }: GuidePanelProps) {
   const hint = modeHints[mode];
-  const color = modeColors[mode];
+  const isRecording = mode === "record";
 
   return (
-    <div
-      className="shrink-0 px-4 py-3 border-t border-[var(--border)] transition-colors duration-300"
-      style={{ borderLeftColor: color, borderLeftWidth: "3px" }}
+    <Box
+      flexShrink={0}
+      px={4}
+      py={3}
+      borderTop="1px"
+      borderColor="gray.200"
+      borderLeft="3px solid"
+      borderLeftColor={isRecording ? "recording.400" : "accent.500"}
+      transition="all 0.15s ease"
     >
-      <div className="flex items-center gap-2">
-        <span className={`font-mono text-sm ${mode === "record" ? "animate-pulse" : ""}`} style={{ color }}>
+      <Flex alignItems="center" gap={2}>
+        <Text
+          fontFamily="mono"
+          fontSize="sm"
+          color={isRecording ? "recording.500" : "accent.600"}
+          className={isRecording ? "animate-pulse" : ""}
+        >
           {hint.icon}
-        </span>
-        <span className="font-mono text-sm font-medium" style={{ color }}>
+        </Text>
+        <Text fontFamily="mono" fontSize="sm" fontWeight="500" color={isRecording ? "recording.500" : "accent.600"}>
           {hint.text}
-        </span>
-        <span className="font-mono text-xs text-[var(--text-secondary)]">{hint.subtext}</span>
-      </div>
-    </div>
+        </Text>
+        <Text fontFamily="mono" fontSize="xs" color="gray.500">
+          {hint.subtext}
+        </Text>
+      </Flex>
+    </Box>
   );
 }

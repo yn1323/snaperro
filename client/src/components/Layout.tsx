@@ -1,3 +1,4 @@
+import { Flex } from "@chakra-ui/react";
 import type { ReactNode } from "react";
 
 interface LayoutProps {
@@ -16,21 +17,13 @@ interface LayoutProps {
  */
 export function Layout({ topBar, patternPane, filePane, editorPane }: LayoutProps) {
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* トップバー */}
+    <Flex direction="column" h="100vh" bg="gray.50">
       {topBar}
-
-      {/* メインコンテンツエリア */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* 左ペイン - パターン (150px固定) */}
+      <Flex flex={1} overflow="hidden" minW={0}>
         {patternPane}
-
-        {/* 中央ペイン - ファイル (250px) */}
         {filePane}
-
-        {/* 右ペイン - エディタ (残り幅) */}
         {editorPane}
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 }

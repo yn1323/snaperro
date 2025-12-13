@@ -1,3 +1,4 @@
+import { Badge, Box, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
 import type { FileInfo } from "../types";
 
@@ -8,16 +9,6 @@ interface FilePaneProps {
   onUpload: (file: File) => void;
   onDownload: (filename: string) => void;
 }
-
-const methodColors: Record<string, string> = {
-  GET: "bg-green-100 text-green-700",
-  POST: "bg-blue-100 text-blue-700",
-  PUT: "bg-orange-100 text-orange-700",
-  PATCH: "bg-yellow-100 text-yellow-700",
-  DELETE: "bg-red-100 text-red-700",
-  OPTIONS: "bg-purple-100 text-purple-700",
-  HEAD: "bg-gray-100 text-gray-700",
-};
 
 /**
  * Center pane - File list
@@ -86,91 +77,138 @@ export function FilePane({ files, selectedFile, onSelect, onUpload, onDownload }
   };
 
   return (
-    <div className="w-[250px] bg-white border-r border-gray-300 flex flex-col shrink-0">
-      {/* Header */}
-      <div className="p-2 border-b border-gray-300 bg-gray-50">
-        <span className="font-semibold text-sm text-gray-700">Files ({files.length})</span>
-      </div>
+    <Flex w="250px" bg="white" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
+      <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.50">
+        <Text fontWeight="600" fontSize="sm" color="gray.700">
+          Files ({files.length})
+        </Text>
+      </Box>
 
-      {/* Search */}
-      <div className="p-2 border-b border-gray-200">
-        <input
-          type="text"
+      <Box p={2} borderBottom="1px" borderColor="gray.200">
+        <Input
+          size="sm"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+          bg="gray.50"
+          border="1px solid"
+          borderColor="gray.200"
+          _hover={{ borderColor: "gray.300" }}
+          _focus={{ borderColor: "accent.500", boxShadow: "0 0 0 1px var(--chakra-colors-accent-500)" }}
         />
-      </div>
+      </Box>
 
-      {/* File list */}
-      <div className="flex-1 overflow-y-auto">
+      <Box flex={1} overflowY="auto">
         {filteredGroups.length === 0 ? (
-          <div className="p-4 text-sm text-gray-500 text-center">{files.length === 0 ? "No files" : "No results"}</div>
+          <Text p={4} fontSize="sm" color="gray.500" textAlign="center">
+            {files.length === 0 ? "No files" : "No results"}
+          </Text>
         ) : (
           filteredGroups.map((group) => (
-            <div key={group.endpoint}>
-              {/* Group header */}
-              <button
-                type="button"
+            <Box key={group.endpoint}>
+              <Button
+                variant="ghost"
+                w="full"
+                px={2}
+                py={1.5}
+                h="auto"
+                bg="gray.100"
+                borderBottom="1px"
+                borderColor="gray.200"
+                borderRadius={0}
+                justifyContent="flex-start"
                 onClick={() => toggleGroup(group.endpoint)}
-                className="w-full px-2 py-1.5 bg-gray-100 border-b border-gray-200 flex items-center gap-1 hover:bg-gray-200 text-left cursor-pointer"
+                _hover={{ bg: "gray.200" }}
+                transition="all 0.15s ease"
               >
-                <span className="text-xs text-gray-500">{expandedGroups.has(group.endpoint) ? "▼" : "▶"}</span>
-                <span className="text-xs text-gray-700 truncate flex-1" title={group.endpoint}>
+                <Text fontSize="xs" color="gray.500">
+                  {expandedGroups.has(group.endpoint) ? "▼" : "▶"}
+                </Text>
+                <Text fontSize="xs" color="gray.700" truncate flex={1} ml={1} textAlign="left" title={group.endpoint}>
                   {group.endpoint}
-                </span>
-                <span className="text-xs text-gray-500">({group.files.length})</span>
-              </button>
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  ({group.files.length})
+                </Text>
+              </Button>
 
-              {/* Files in group */}
               {expandedGroups.has(group.endpoint) &&
-                group.files.map((file) => (
-                  <button
-                    key={file.filename}
-                    type="button"
-                    onClick={() => onSelect(file.filename)}
-                    className={`w-full p-2 pl-4 border-b border-gray-100 text-left cursor-pointer ${
-                      selectedFile === file.filename ? "bg-blue-50" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`px-1.5 py-0.5 text-xs font-mono rounded ${
-                          methodColors[file.method] || "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {file.method}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDownload(file.filename);
-                        }}
-                        className="ml-auto p-1 text-gray-400 hover:text-blue-500 cursor-pointer"
-                        title="Download"
-                      >
-                        ⬇
-                      </button>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1 truncate" title={file.filename}>
-                      {file.filename}
-                    </div>
-                  </button>
-                ))}
-            </div>
+                group.files.map((file) => {
+                  const isSelected = selectedFile === file.filename;
+                  return (
+                    <Box
+                      key={file.filename}
+                      as="button"
+                      w="full"
+                      p={2}
+                      pl={4}
+                      borderBottom="1px"
+                      borderColor="gray.100"
+                      textAlign="left"
+                      cursor="pointer"
+                      bg={isSelected ? "accent.50" : undefined}
+                      borderLeft={isSelected ? "2px solid" : "2px solid transparent"}
+                      borderLeftColor={isSelected ? "accent.500" : "transparent"}
+                      _hover={{ bg: isSelected ? "accent.50" : "gray.50" }}
+                      onClick={() => onSelect(file.filename)}
+                      transition="all 0.15s ease"
+                    >
+                      <Flex alignItems="center" gap={2}>
+                        <Badge
+                          bg="gray.200"
+                          color="gray.600"
+                          fontFamily="mono"
+                          fontSize="2xs"
+                          px={1.5}
+                          py={0.5}
+                          fontWeight="500"
+                        >
+                          {file.method}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          ml="auto"
+                          p={1}
+                          minW="auto"
+                          h="auto"
+                          color="gray.400"
+                          _hover={{ color: "accent.500" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDownload(file.filename);
+                          }}
+                          title="Download"
+                        >
+                          ⬇
+                        </Button>
+                      </Flex>
+                      <Text fontSize="xs" color="gray.500" mt={1} truncate title={file.filename}>
+                        {file.filename}
+                      </Text>
+                    </Box>
+                  );
+                })}
+            </Box>
           ))
         )}
-      </div>
+      </Box>
 
-      {/* Upload button */}
-      <div className="p-2 border-t border-gray-300">
-        <label className="block text-xs bg-blue-500 text-white px-2 py-1.5 rounded hover:bg-blue-600 text-center cursor-pointer font-medium">
+      <Box p={2} borderTop="1px" borderColor="gray.200">
+        <Button
+          as="label"
+          size="xs"
+          bg="accent.500"
+          color="white"
+          w="full"
+          cursor="pointer"
+          _hover={{ bg: "accent.600" }}
+          transition="all 0.15s ease"
+        >
           + Upload
-          <input type="file" accept=".json" onChange={handleFileUpload} className="hidden" />
-        </label>
-      </div>
-    </div>
+          <input type="file" accept=".json" onChange={handleFileUpload} hidden />
+        </Button>
+      </Box>
+    </Flex>
   );
 }

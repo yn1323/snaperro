@@ -215,8 +215,8 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete, se
           fontSize="sm"
           lineHeight="1.5"
           letterSpacing="normal"
-          bg="gray.900"
-          color="gray.100"
+          bg="gray.50"
+          color="gray.700"
           whiteSpace="pre-wrap"
           wordBreak="break-word"
           overflow="auto"
@@ -242,7 +242,7 @@ export function EditorPane({ fileData, filename, isLoading, onSave, onDelete, se
           overflow="auto"
           bg="transparent"
           color="transparent"
-          caretColor="white"
+          caretColor="gray.900"
           border="none"
           borderRadius={0}
           _focus={{ outline: "none", boxShadow: "none" }}

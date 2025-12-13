@@ -1,7 +1,8 @@
-import { Badge, Box, Button, Flex, Input, Text } from "@chakra-ui/react";
+import { Badge, Box, Button, Flex, Input, Spinner, Text } from "@chakra-ui/react";
 import { useEffect, useMemo, useState } from "react";
-import { LuUpload } from "react-icons/lu";
-import type { FileInfo } from "../types";
+import { LuSearch, LuUpload } from "react-icons/lu";
+import { useSnaperroAPI } from "../hooks/useSnaperroAPI";
+import type { FileInfo, SearchResult } from "../types";
 
 const METHOD_COLORS: Record<string, { bg: string; color: string }> = {
   GET: { bg: "green.100", color: "green.700" },
@@ -20,21 +21,58 @@ interface FilePaneProps {
   onSelect: (filename: string) => void;
   onUpload: (file: File) => void;
   onDownload: (filename: string) => void;
+  pattern: string | null;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
 }
 
 /**
  * Center pane - File list
  * Width: resizable
  */
-export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDownload }: FilePaneProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+export function FilePane({
+  width,
+  files,
+  selectedFile,
+  onSelect,
+  onUpload,
+  onDownload,
+  pattern,
+  searchQuery,
+  onSearchQueryChange,
+}: FilePaneProps) {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const api = useSnaperroAPI();
 
   // Reset accordion when pattern changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reset when files change
   useEffect(() => {
     setExpandedGroups(new Set());
   }, [files]);
+
+  // Debounced server search
+  useEffect(() => {
+    if (!searchQuery.trim() || !pattern) {
+      setSearchResults(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const results = await api.searchFiles(pattern, searchQuery);
+        setSearchResults(results);
+      } catch {
+        setSearchResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, pattern, api]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,6 +103,18 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
   const filteredGroups = useMemo(() => {
     if (!searchQuery.trim()) return groupedFiles;
 
+    // If server search results are available, use them
+    if (searchResults) {
+      const matchedFilenames = new Set(searchResults.map((r) => r.filename));
+      return groupedFiles
+        .map((group) => ({
+          ...group,
+          files: group.files.filter((f) => matchedFilenames.has(f.filename)),
+        }))
+        .filter((group) => group.files.length > 0);
+    }
+
+    // Fallback to local search (while waiting for server results)
     const query = searchQuery.toLowerCase();
     return groupedFiles
       .map((group) => ({
@@ -74,7 +124,7 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
         ),
       }))
       .filter((group) => group.files.length > 0);
-  }, [groupedFiles, searchQuery]);
+  }, [groupedFiles, searchQuery, searchResults]);
 
   const toggleGroup = (endpoint: string) => {
     setExpandedGroups((prev) => {
@@ -97,23 +147,35 @@ export function FilePane({ width, files, selectedFile, onSelect, onUpload, onDow
       </Box>
 
       <Box p={2} borderBottom="1px" borderColor="gray.200">
-        <Input
-          size="sm"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search..."
-          bg="gray.50"
-          border="1px solid"
-          borderColor="gray.200"
-          _hover={{ borderColor: "gray.300" }}
-          _focus={{ borderColor: "accent.500", boxShadow: "0 0 0 1px var(--chakra-colors-accent-500)" }}
-        />
+        <Flex position="relative" align="center">
+          <Box position="absolute" left={2} color="gray.400" pointerEvents="none" zIndex={1}>
+            <LuSearch size={14} />
+          </Box>
+          <Input
+            size="sm"
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            placeholder="Search..."
+            pl={7}
+            pr={isSearching ? 7 : 2}
+            bg="gray.50"
+            border="1px solid"
+            borderColor="gray.200"
+            _hover={{ borderColor: "gray.300" }}
+            _focus={{ borderColor: "accent.500", boxShadow: "0 0 0 1px var(--chakra-colors-accent-500)" }}
+          />
+          {isSearching && (
+            <Box position="absolute" right={2}>
+              <Spinner size="xs" color="accent.500" />
+            </Box>
+          )}
+        </Flex>
       </Box>
 
       <Box flex={1} overflowY="auto">
         {filteredGroups.length === 0 ? (
           <Text p={4} fontSize="sm" color="gray.500" textAlign="center">
-            {files.length === 0 ? "No files" : "No results"}
+            {files.length === 0 ? "No files" : isSearching ? "Searching..." : "No results"}
           </Text>
         ) : (
           filteredGroups.map((group) => (

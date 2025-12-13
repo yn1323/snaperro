@@ -25,7 +25,8 @@
       "Bash(dir c:Usersyn132worksnaperrodemo /s /b)",
       "Bash(grep:*)",
       "Bash(pnpm build:client:*)",
-      "Skill(frontend-design)"
+      "Skill(frontend-design)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

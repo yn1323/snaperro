@@ -25,6 +25,7 @@ export default function App() {
   const [isLoadingFile, setIsLoadingFile] = useState(false);
   const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Reset file selection when pattern changes
   const currentPattern = state.currentPattern;
@@ -304,6 +305,9 @@ export default function App() {
             onSelect={setSelectedFile}
             onUpload={handleFileUpload}
             onDownload={handleFileDownload}
+            pattern={currentPattern}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
           />
         )}
         editorPane={
@@ -313,6 +317,7 @@ export default function App() {
             isLoading={isLoadingFile}
             onSave={handleFileSave}
             onDelete={handleFileDelete}
+            searchQuery={searchQuery}
           />
         }
       />

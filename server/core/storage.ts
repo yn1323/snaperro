@@ -113,6 +113,15 @@ export interface MatchingFileResult {
 }
 
 /**
+ * Search result for pattern file search
+ */
+export interface SearchResult {
+  filename: string;
+  endpoint: string;
+  method: string;
+}
+
+/**
  * オブジェクトの深い比較
  */
 function isDeepEqual(a: unknown, b: unknown): boolean {
@@ -374,6 +383,46 @@ export const storage = {
     }
 
     return files;
+  },
+
+  /**
+   * Search files in a pattern by text content
+   * @param pattern Pattern name
+   * @param query Search query (case-insensitive)
+   * @returns Matching files
+   */
+  async searchPatternFiles(pattern: string, query: string): Promise<SearchResult[]> {
+    const results: SearchResult[] = [];
+    const patternDir = path.join(BASE_DIR, pattern);
+    const lowerQuery = query.toLowerCase();
+
+    try {
+      const entries = await fs.readdir(patternDir);
+      for (const entry of entries) {
+        if (!entry.endsWith(".json")) continue;
+
+        const filePath = path.join(patternDir, entry);
+        try {
+          const content = await fs.readFile(filePath, "utf-8");
+
+          // Text search (case-insensitive)
+          if (content.toLowerCase().includes(lowerQuery)) {
+            const data = JSON.parse(content) as FileData;
+            results.push({
+              filename: entry,
+              endpoint: data.endpoint,
+              method: data.method,
+            });
+          }
+        } catch {
+          // Skip files that can't be read or parsed
+        }
+      }
+    } catch {
+      // Directory read failure
+    }
+
+    return results;
   },
 
   /**

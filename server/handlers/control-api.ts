@@ -426,6 +426,26 @@ controlApi.get("/patterns/:pattern/files", async (c) => {
 });
 
 /**
+ * パターン内ファイル検索
+ * GET /__snaperro__/patterns/:pattern/files/search?q=<query>
+ */
+controlApi.get("/patterns/:pattern/files/search", async (c) => {
+  const pattern = c.req.param("pattern");
+  const query = c.req.query("q");
+
+  if (!query) {
+    return c.json({ error: "Query required" }, 400);
+  }
+
+  if (!(await checkPatternExists(pattern))) {
+    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+  }
+
+  const results = await storage.searchPatternFiles(pattern, query);
+  return c.json({ pattern, query, files: results });
+});
+
+/**
  * 記録ファイル内容取得
  * GET /__snaperro__/patterns/:pattern/files/:filename
  */

@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo } from "../types";
+import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo, SearchResult } from "../types";
 
 const API_BASE = "/__snaperro__";
 
@@ -30,6 +30,7 @@ interface UseSnaperroAPIReturn {
   deleteFile: (pattern: string, filename: string) => Promise<void>;
   uploadFile: (pattern: string, file: File) => Promise<void>;
   downloadFile: (pattern: string, filename: string) => Promise<void>;
+  searchFiles: (pattern: string, query: string) => Promise<SearchResult[]>;
 }
 
 /**
@@ -233,6 +234,13 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     URL.revokeObjectURL(downloadUrl);
   }, []);
 
+  const searchFiles = useCallback(async (pattern: string, query: string): Promise<SearchResult[]> => {
+    const result = await apiFetch<{ pattern: string; query: string; files: SearchResult[] }>(
+      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/search?q=${encodeURIComponent(query)}`,
+    );
+    return result.files;
+  }, []);
+
   return useMemo(
     () => ({
       setMode,
@@ -254,6 +262,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       deleteFile,
       uploadFile,
       downloadFile,
+      searchFiles,
     }),
     [
       setMode,
@@ -275,6 +284,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       deleteFile,
       uploadFile,
       downloadFile,
+      searchFiles,
     ],
   );
 }

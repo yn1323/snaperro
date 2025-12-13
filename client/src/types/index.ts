@@ -192,3 +192,16 @@ export interface FileDeletedEventData {
   pattern: string;
   filename: string;
 }
+
+// ============================================================
+// Search types
+// ============================================================
+
+/**
+ * Search result
+ */
+export interface SearchResult {
+  filename: string;
+  endpoint: string;
+  method: string;
+}

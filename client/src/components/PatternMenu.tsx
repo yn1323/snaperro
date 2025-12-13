@@ -5,14 +5,13 @@ interface PatternMenuProps {
   patternName: string;
   onRename: () => void;
   onDuplicate: () => void;
-  onDownload: () => void;
   onDelete: () => void;
 }
 
 /**
  * Pattern action menu (⋮ dropdown)
  */
-export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, onDelete }: PatternMenuProps) {
+export function PatternMenu({ patternName, onRename, onDuplicate, onDelete }: PatternMenuProps) {
   return (
     <MenuRoot>
       <MenuTrigger asChild>
@@ -33,9 +32,6 @@ export function PatternMenu({ patternName, onRename, onDuplicate, onDownload, on
         </MenuItem>
         <MenuItem value="duplicate" onClick={onDuplicate}>
           Duplicate
-        </MenuItem>
-        <MenuItem value="download" onClick={onDownload}>
-          Download ZIP
         </MenuItem>
         <MenuSeparator />
         <MenuItem value="delete" color="red.500" onClick={onDelete}>

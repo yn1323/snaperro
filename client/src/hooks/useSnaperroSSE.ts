@@ -70,17 +70,35 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   }, []);
 
   const handlePatternCreated = useCallback((data: PatternCreatedEventData) => {
-    setState((prev) => ({
-      ...prev,
-      patterns: [...prev.patterns, data.name].sort(),
-    }));
+    setState((prev) => {
+      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
+      return {
+        ...prev,
+        patterns: [...prev.patterns, data.name].sort(),
+        // フォルダの件数をインクリメント
+        folders: folderName
+          ? prev.folders.map((f) => (f.name === folderName ? { ...f, patternsCount: f.patternsCount + 1 } : f))
+          : prev.folders,
+      };
+    });
   }, []);
 
   const handlePatternDeleted = useCallback((data: PatternDeletedEventData) => {
-    setState((prev) => ({
-      ...prev,
-      patterns: prev.patterns.filter((p) => p !== data.name),
-    }));
+    setState((prev) => {
+      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
+      return {
+        ...prev,
+        patterns: prev.patterns.filter((p) => p !== data.name),
+        // フォルダの件数をデクリメント
+        folders: folderName
+          ? prev.folders.map((f) =>
+              f.name === folderName ? { ...f, patternsCount: Math.max(0, f.patternsCount - 1) } : f,
+            )
+          : prev.folders,
+      };
+    });
   }, []);
 
   const handlePatternRenamed = useCallback((data: PatternRenamedEventData) => {
@@ -94,7 +112,10 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   const handleFolderCreated = useCallback((data: FolderCreatedEventData) => {
     setState((prev) => ({
       ...prev,
-      folders: [...prev.folders, { name: data.name, patternsCount: 0 }].sort((a, b) => a.name.localeCompare(b.name)),
+      folders: [...prev.folders, { name: data.name, patternsCount: data.patternsCount ?? 0 }].sort((a, b) =>
+        a.name.localeCompare(b.name),
+      ),
+      patterns: data.patterns ? [...prev.patterns, ...data.patterns].sort() : prev.patterns,
     }));
   }, []);
 

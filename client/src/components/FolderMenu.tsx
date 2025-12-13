@@ -4,13 +4,14 @@ import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from "./u
 interface FolderMenuProps {
   folderName: string;
   onRename: () => void;
+  onDownload: () => void;
   onDelete: () => void;
 }
 
 /**
  * Folder action menu (⋮ dropdown)
  */
-export function FolderMenu({ folderName, onRename, onDelete }: FolderMenuProps) {
+export function FolderMenu({ folderName, onRename, onDownload, onDelete }: FolderMenuProps) {
   return (
     <MenuRoot>
       <MenuTrigger asChild>
@@ -28,6 +29,9 @@ export function FolderMenu({ folderName, onRename, onDelete }: FolderMenuProps) 
       <MenuContent>
         <MenuItem value="rename" onClick={onRename}>
           Rename
+        </MenuItem>
+        <MenuItem value="download" onClick={onDownload}>
+          Download ZIP
         </MenuItem>
         <MenuSeparator />
         <MenuItem value="delete" color="red.500" onClick={onDelete}>

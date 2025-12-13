@@ -14,14 +14,14 @@ interface UseSnaperroAPIReturn {
   duplicatePattern: (name: string, newName: string) => Promise<void>;
   renamePattern: (name: string, newName: string) => Promise<void>;
   deletePattern: (name: string) => Promise<void>;
-  downloadPattern: (name: string) => Promise<void>;
-  uploadPattern: (file: File, name?: string) => Promise<void>;
 
   // フォルダ操作
   getFolders: () => Promise<FolderInfo[]>;
   createFolder: (name: string) => Promise<void>;
   deleteFolder: (name: string) => Promise<void>;
   renameFolder: (name: string, newName: string) => Promise<void>;
+  downloadFolder: (name: string) => Promise<void>;
+  uploadFolder: (file: File) => Promise<void>;
 
   // ファイル操作
   getFiles: (pattern: string) => Promise<FileInfo[]>;
@@ -105,43 +105,6 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     });
   }, []);
 
-  const downloadPattern = useCallback(async (name: string): Promise<void> => {
-    const url = `${API_BASE}/patterns/${encodeURIComponent(name)}/download`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Download failed" }));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `${name}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
-  }, []);
-
-  const uploadPattern = useCallback(async (file: File, name?: string): Promise<void> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    if (name) {
-      formData.append("name", name);
-    }
-
-    const response = await fetch(`${API_BASE}/patterns/upload`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Upload failed" }));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-  }, []);
-
   // ============================================================
   // フォルダ操作
   // ============================================================
@@ -170,6 +133,40 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newName }),
     });
+  }, []);
+
+  const downloadFolder = useCallback(async (name: string): Promise<void> => {
+    const url = `${API_BASE}/folders/${encodeURIComponent(name)}/download`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Download failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `${name}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+  }, []);
+
+  const uploadFolder = useCallback(async (file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${API_BASE}/folders/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error(error.error || `HTTP ${response.status}`);
+    }
   }, []);
 
   // ============================================================
@@ -245,12 +242,12 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       duplicatePattern,
       renamePattern,
       deletePattern,
-      downloadPattern,
-      uploadPattern,
       getFolders,
       createFolder,
       deleteFolder,
       renameFolder,
+      downloadFolder,
+      uploadFolder,
       getFiles,
       getFile,
       updateFile,
@@ -266,12 +263,12 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
       duplicatePattern,
       renamePattern,
       deletePattern,
-      downloadPattern,
-      uploadPattern,
       getFolders,
       createFolder,
       deleteFolder,
       renameFolder,
+      downloadFolder,
+      uploadFolder,
       getFiles,
       getFile,
       updateFile,

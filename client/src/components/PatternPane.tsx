@@ -18,16 +18,16 @@ interface PatternPaneProps {
   onFolderBack: () => void;
   onFolderCreate: (name: string) => void;
   onFolderRename: (oldName: string, newName: string) => void;
+  onFolderDownload: (name: string) => void;
+  onFolderUpload: (file: File) => void;
   onFolderDelete: (name: string) => void;
   // Pattern
   patterns: string[];
   currentPattern: string | null;
   onSelect: (pattern: string) => void;
   onCreate: (name: string) => void;
-  onUpload: (file: File) => void;
   onRename: (oldName: string, newName: string) => void;
   onDuplicate: (name: string) => void;
-  onDownload: (name: string) => void;
   onDelete: (name: string) => void;
 }
 
@@ -43,15 +43,15 @@ export function PatternPane({
   onFolderBack,
   onFolderCreate,
   onFolderRename,
+  onFolderDownload,
+  onFolderUpload,
   onFolderDelete,
   patterns,
   currentPattern,
   onSelect,
   onCreate,
-  onUpload,
   onRename,
   onDuplicate,
-  onDownload,
   onDelete,
 }: PatternPaneProps) {
   // Pattern modal/dialog state
@@ -71,10 +71,10 @@ export function PatternPane({
     return patterns.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
   }, [patterns, currentFolder]);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFolderZipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      onUpload(file);
+      onFolderUpload(file);
       e.target.value = "";
     }
   };
@@ -172,6 +172,7 @@ export function PatternPane({
                   <FolderMenu
                     folderName={folder.name}
                     onRename={() => setFolderRenameTarget(folder.name)}
+                    onDownload={() => onFolderDownload(folder.name)}
                     onDelete={() => setFolderDeleteTarget(folder.name)}
                   />
                 </Box>
@@ -222,7 +223,6 @@ export function PatternPane({
                     patternName={pattern}
                     onRename={() => setRenameTarget(fullName)}
                     onDuplicate={() => onDuplicate(fullName)}
-                    onDownload={() => onDownload(fullName)}
                     onDelete={() => setDeleteTarget(fullName)}
                   />
                 </Box>
@@ -254,20 +254,22 @@ export function PatternPane({
             </>
           )}
         </Button>
-        <Button
-          as="label"
-          size="xs"
-          bg="gray.200"
-          color="gray.700"
-          w="full"
-          cursor="pointer"
-          _hover={{ bg: "gray.300" }}
-          transition="all 0.15s ease"
-          gap={1}
-        >
-          <LuUpload size={14} /> Import Pattern ZIP
-          <input type="file" accept=".zip" onChange={handleFileUpload} hidden />
-        </Button>
+        {currentFolder === null && (
+          <Button
+            as="label"
+            size="xs"
+            bg="gray.200"
+            color="gray.700"
+            w="full"
+            cursor="pointer"
+            _hover={{ bg: "gray.300" }}
+            transition="all 0.15s ease"
+            gap={1}
+          >
+            <LuUpload size={14} /> Import Folder ZIP
+            <input type="file" accept=".zip" onChange={handleFolderZipUpload} hidden />
+          </Button>
+        )}
       </VStack>
 
       {/* Pattern modals/dialogs */}

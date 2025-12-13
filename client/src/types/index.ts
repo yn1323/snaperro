@@ -156,6 +156,8 @@ export interface PatternRenamedEventData {
  */
 export interface FolderCreatedEventData {
   name: string;
+  patternsCount?: number;
+  patterns?: string[];
 }
 
 /**

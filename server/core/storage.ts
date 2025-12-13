@@ -121,14 +121,13 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
 
 /**
  * ディレクトリがフォルダかどうかを判定
- * フォルダ = サブディレクトリを含み、直下に.jsonファイルがない
+ * フォルダ = 直下に.jsonファイルがない（空ディレクトリも含む）
  */
 async function isFolder(dirPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    const hasSubdirs = entries.some((e) => e.isDirectory());
     const hasJsonFiles = entries.some((e) => e.isFile() && e.name.endsWith(".json"));
-    return hasSubdirs && !hasJsonFiles;
+    return !hasJsonFiles;
   } catch {
     return false;
   }
@@ -642,13 +641,13 @@ export const storage = {
   formatSize,
 
   /**
-   * パターンディレクトリをzipにする
+   * フォルダをZIP化する（パターンのサブディレクトリ構造を保持）
    *
-   * @param pattern パターン名
+   * @param folderName フォルダ名
    * @returns zipファイルのBuffer
    */
-  async zipPatternDir(pattern: string): Promise<Buffer> {
-    const patternDir = path.join(BASE_DIR, pattern);
+  async zipFolderDir(folderName: string): Promise<Buffer> {
+    const folderDir = path.join(BASE_DIR, folderName);
 
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
@@ -658,50 +657,74 @@ export const storage = {
       archive.on("end", () => resolve(Buffer.concat(chunks)));
       archive.on("error", reject);
 
-      // パターンディレクトリ内のファイルを追加
-      archive.directory(patternDir, false);
+      // フォルダ内のパターンディレクトリ構造を保持してZIP化
+      archive.directory(folderDir, false);
       archive.finalize();
     });
   },
 
   /**
-   * zipを解凍してパターンディレクトリに展開
+   * ZIPを解凍してフォルダとして展開
+   * 同名フォルダが存在する場合はサフィックスを付与
    *
    * @param zipBuffer zipファイルのBuffer
-   * @param patternName パターン名
-   * @returns 展開したファイル数
+   * @param folderName フォルダ名
+   * @returns 作成されたフォルダ名と展開したパターン数
    */
-  async extractZipToPattern(zipBuffer: Buffer, patternName: string): Promise<number> {
-    const patternDir = path.join(BASE_DIR, patternName);
+  async extractZipToFolder(
+    zipBuffer: Buffer,
+    folderName: string,
+  ): Promise<{ actualFolderName: string; patternsCount: number }> {
+    // ユニークなフォルダ名を生成
+    let actualFolderName = folderName;
+    let suffix = 1;
+    while (await storage.folderExists(actualFolderName)) {
+      actualFolderName = `${folderName}_${suffix}`;
+      suffix++;
+    }
 
-    // パターンディレクトリを作成
-    await fs.mkdir(patternDir, { recursive: true });
+    const folderDir = path.join(BASE_DIR, actualFolderName);
+
+    // フォルダを作成
+    await fs.mkdir(folderDir, { recursive: true });
 
     // 一時ファイルに書き出してから解凍
     const tempZipPath = path.join(BASE_DIR, `_temp_${Date.now()}.zip`);
     await fs.writeFile(tempZipPath, zipBuffer);
 
-    let fileCount = 0;
+    const patternNames = new Set<string>();
 
     try {
       const directory = await unzipper.Open.file(tempZipPath);
 
       for (const file of directory.files) {
-        // ディレクトリはスキップ
+        // ディレクトリエントリはスキップ
         if (file.type === "Directory") continue;
 
         // JSONファイルのみ展開
-        const fileName = path.basename(file.path);
-        if (!fileName.endsWith(".json")) continue;
+        if (!file.path.endsWith(".json")) continue;
 
-        const destPath = path.join(patternDir, fileName);
+        // パス構造を保持（pattern/file.json）
+        const destPath = path.join(folderDir, file.path);
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+
         const content = await file.buffer();
         await fs.writeFile(destPath, content);
-        fileCount++;
+
+        // パターン名を収集（最初のディレクトリ部分）
+        const patternName = file.path.split("/")[0];
+        if (patternName) {
+          patternNames.add(patternName);
+        }
       }
 
-      eventBus.emitSSE("pattern_created", { name: patternName });
-      return fileCount;
+      const patternFullNames = Array.from(patternNames).map((p) => `${actualFolderName}/${p}`);
+      eventBus.emitSSE("folder_created", {
+        name: actualFolderName,
+        patternsCount: patternNames.size,
+        patterns: patternFullNames,
+      });
+      return { actualFolderName, patternsCount: patternNames.size };
     } finally {
       // 一時ファイルを削除
       await fs.unlink(tempZipPath).catch(() => {});

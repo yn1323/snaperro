@@ -98,17 +98,6 @@ export default function App() {
     [api, currentFolder],
   );
 
-  const handlePatternUpload = useCallback(
-    async (file: File) => {
-      try {
-        await api.uploadPattern(file);
-      } catch (err) {
-        console.error("Pattern upload error:", err);
-      }
-    },
-    [api],
-  );
-
   const handlePatternRename = useCallback(
     async (oldName: string, newName: string) => {
       try {
@@ -126,17 +115,6 @@ export default function App() {
         await api.duplicatePattern(name, `${name}_copy`);
       } catch (err) {
         console.error("Pattern duplicate error:", err);
-      }
-    },
-    [api],
-  );
-
-  const handlePatternDownload = useCallback(
-    async (name: string) => {
-      try {
-        await api.downloadPattern(name);
-      } catch (err) {
-        console.error("Pattern download error:", err);
       }
     },
     [api],
@@ -192,6 +170,28 @@ export default function App() {
       }
     },
     [api, currentFolder],
+  );
+
+  const handleFolderDownload = useCallback(
+    async (name: string) => {
+      try {
+        await api.downloadFolder(name);
+      } catch (err) {
+        console.error("Folder download error:", err);
+      }
+    },
+    [api],
+  );
+
+  const handleFolderUpload = useCallback(
+    async (file: File) => {
+      try {
+        await api.uploadFolder(file);
+      } catch (err) {
+        console.error("Folder upload error:", err);
+      }
+    },
+    [api],
   );
 
   const handleFolderDelete = useCallback(
@@ -284,15 +284,15 @@ export default function App() {
             onFolderBack={handleFolderBack}
             onFolderCreate={handleFolderCreate}
             onFolderRename={handleFolderRename}
+            onFolderDownload={handleFolderDownload}
+            onFolderUpload={handleFolderUpload}
             onFolderDelete={handleFolderDelete}
             patterns={state.patterns}
             currentPattern={state.currentPattern}
             onSelect={handlePatternSelect}
             onCreate={handlePatternCreate}
-            onUpload={handlePatternUpload}
             onRename={handlePatternRename}
             onDuplicate={handlePatternDuplicate}
-            onDownload={handlePatternDownload}
             onDelete={handlePatternDelete}
           />
         )}

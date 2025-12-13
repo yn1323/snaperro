@@ -333,21 +333,20 @@ controlApi.delete("/patterns/:name", async (c) => {
 });
 
 /**
- * パターンzipダウンロード
- * GET /__snaperro__/patterns/:name/download
+ * フォルダZIPダウンロード
+ * GET /__snaperro__/folders/:name/download
  */
-controlApi.get("/patterns/:name/download", async (c) => {
+controlApi.get("/folders/:name/download", async (c) => {
   const name = c.req.param("name");
 
-  if (!(await storage.patternExists(name))) {
-    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+  if (!(await storage.folderExists(name))) {
+    return c.json({ error: "Not found", resource: "folder", name }, 404);
   }
 
   try {
-    const zipBuffer = await storage.zipPatternDir(name);
+    const zipBuffer = await storage.zipFolderDir(name);
     c.header("Content-Type", "application/zip");
     c.header("Content-Disposition", `attachment; filename="${encodeURIComponent(name)}.zip"`);
-    // BufferをUint8Arrayに変換してbodyに渡す
     return c.body(new Uint8Array(zipBuffer));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create zip";
@@ -356,44 +355,33 @@ controlApi.get("/patterns/:name/download", async (c) => {
 });
 
 /**
- * パターンzipアップロード
- * POST /__snaperro__/patterns/upload
- * Body: multipart/form-data { file: zipファイル, name?: パターン名 }
+ * フォルダZIPアップロード
+ * POST /__snaperro__/folders/upload
+ * Body: multipart/form-data { file: zipファイル }
+ * 同名フォルダが存在する場合はサフィックスを付与
  */
-controlApi.post("/patterns/upload", async (c) => {
+controlApi.post("/folders/upload", async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file");
-    const nameParam = formData.get("name");
 
     if (!file || !(file instanceof File)) {
       return c.json({ error: "Invalid request", details: "Missing file" }, 400);
     }
 
-    // パターン名を決定（指定がなければzipファイル名から）
-    let patternName: string;
-    if (nameParam && typeof nameParam === "string") {
-      patternName = nameParam;
-    } else {
-      // .zip を除去
-      patternName = file.name.replace(/\.zip$/i, "");
-    }
+    // フォルダ名はzipファイル名から（.zip を除去）
+    const folderName = file.name.replace(/\.zip$/i, "");
 
-    // パターンが既に存在するかチェック
-    if (await storage.patternExists(patternName)) {
-      return c.json({ error: "Pattern already exists", name: patternName }, 400);
-    }
-
-    // zipを解凍して展開
+    // zipを解凍して展開（同名フォルダがあればサフィックス付与）
     const arrayBuffer = await file.arrayBuffer();
     const zipBuffer = Buffer.from(arrayBuffer);
-    const filesCount = await storage.extractZipToPattern(zipBuffer, patternName);
+    const { actualFolderName, patternsCount } = await storage.extractZipToFolder(zipBuffer, folderName);
 
     return c.json(
       {
-        name: patternName,
-        filesCount,
-        message: "Pattern uploaded",
+        name: actualFolderName,
+        patternsCount,
+        message: "Folder uploaded",
       },
       201,
     );

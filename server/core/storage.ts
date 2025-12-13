@@ -1,9 +1,16 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import archiver from "archiver";
+import { Mutex } from "async-mutex";
 import unzipper from "unzipper";
 import type { FileData } from "../types/file.js";
 import { eventBus } from "./event-bus.js";
+
+/**
+ * Mutex for atomic file operations
+ * Prevents race conditions when multiple requests try to create files simultaneously
+ */
+const writeMutex = new Mutex();
 
 let BASE_DIR = ".snaperro/files";
 
@@ -499,6 +506,36 @@ export const storage = {
     } finally {
       // 一時ファイルを削除
       await fs.unlink(tempZipPath).catch(() => {});
+    }
+  },
+
+  /**
+   * Atomic find-and-write operation for Record mode
+   * Prevents race conditions by holding a mutex during sequence number lookup and file write
+   */
+  async findAndWriteAtomic(
+    pattern: string,
+    method: string,
+    endpoint: string,
+    pathParams: Record<string, string>,
+    queryParams: Record<string, string | string[]>,
+    requestBody: unknown,
+    fileData: FileData,
+  ): Promise<{ filePath: string; isNew: boolean }> {
+    const release = await writeMutex.acquire();
+    try {
+      const { filePath, isNew } = await storage.findOrCreateFile(
+        pattern,
+        method,
+        endpoint,
+        pathParams,
+        queryParams,
+        requestBody,
+      );
+      await storage.write(filePath, fileData);
+      return { filePath, isNew };
+    } finally {
+      release();
     }
   },
 };

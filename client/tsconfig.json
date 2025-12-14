@@ -19,5 +19,5 @@
       "@snaperro/shared/*": ["../shared/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../shared"]
 }

@@ -25,10 +25,10 @@ export type {
   PatternRenamedEventData,
   SSEEvent,
   SSEEventType,
-} from "../../shared/types/index.js";
+} from "@snaperro/shared/types/index.js";
 
 // Import for use in local types
-import type { FileInfo, FolderInfo, Mode } from "../../shared/types/index.js";
+import type { FileInfo, FolderInfo, Mode } from "@snaperro/shared/types/index.js";
 
 // ============================================================
 // Client-specific types

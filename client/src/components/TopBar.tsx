@@ -1,5 +1,6 @@
 import { Box, Button, Flex, HStack, Spacer, Text } from "@chakra-ui/react";
 import type { Mode } from "../types";
+import { toaster } from "./ui/toaster";
 
 interface TopBarProps {
   version: string;
@@ -10,8 +11,8 @@ interface TopBarProps {
 }
 
 const modes: { value: Mode; label: string; icon: string }[] = [
-  { value: "record", label: "Record", icon: "●" },
   { value: "proxy", label: "Proxy", icon: "→" },
+  { value: "record", label: "Record", icon: "●" },
   { value: "mock", label: "Mock", icon: "◆" },
 ];
 
@@ -22,7 +23,12 @@ const modes: { value: Mode; label: string; icon: string }[] = [
 export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
     if (targetMode === "record" && !currentPattern) {
-      alert("No pattern selected. Please select a pattern first.");
+      toaster.create({
+        type: "warning",
+        title: "No pattern selected",
+        description: "Please select a pattern first.",
+      });
+      return;
     }
     onModeChange(targetMode);
   };
@@ -55,18 +61,26 @@ export function TopBar({ version, mode, connected, currentPattern, onModeChange 
         {modes.map(({ value, label, icon }) => {
           const isActive = mode === value;
           const isRecording = value === "record" && isActive;
+          const isMock = value === "mock" && isActive;
+
+          const getColor = () => {
+            if (isRecording) return "recording";
+            if (isMock) return "mock";
+            return "accent";
+          };
+          const color = getColor();
 
           return (
             <Button
               key={value}
               size="sm"
-              bg={isActive ? (isRecording ? "recording.500" : "accent.500") : "transparent"}
+              bg={isActive ? `${color}.500` : "transparent"}
               color={isActive ? "white" : "gray.400"}
               border="1px solid"
-              borderColor={isActive ? (isRecording ? "recording.500" : "accent.500") : "gray.700"}
+              borderColor={isActive ? `${color}.500` : "gray.700"}
               _hover={{
-                bg: isActive ? (isRecording ? "recording.600" : "accent.600") : "gray.800",
-                borderColor: isActive ? (isRecording ? "recording.600" : "accent.600") : "gray.600",
+                bg: isActive ? `${color}.600` : "gray.800",
+                borderColor: isActive ? `${color}.600` : "gray.600",
               }}
               onClick={() => handleModeClick(value)}
               transition="all 0.15s ease"

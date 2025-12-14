@@ -33,6 +33,14 @@ export function ModeSelector({ mode, onChange, isLoading }: ModeSelectorProps) {
         const config = modeConfig[m];
         const isActive = mode === m;
         const isRecording = m === "record" && isActive;
+        const isMock = m === "mock" && isActive;
+
+        const getColor = () => {
+          if (isRecording) return "recording";
+          if (isMock) return "mock";
+          return "accent";
+        };
+        const color = getColor();
 
         return (
           <Button
@@ -46,29 +54,16 @@ export function ModeSelector({ mode, onChange, isLoading }: ModeSelectorProps) {
             fontFamily="mono"
             fontSize="sm"
             fontWeight="500"
-            bg={isActive ? (isRecording ? "recording.50" : "accent.50") : "transparent"}
+            bg={isActive ? `${color}.50` : "transparent"}
             border="1px solid"
-            borderColor={isActive ? (isRecording ? "recording.500" : "accent.500") : "transparent"}
-            color={isActive ? (isRecording ? "recording.500" : "accent.600") : "gray.500"}
+            borderColor={isActive ? `${color}.500` : "transparent"}
+            color={isActive ? (isRecording ? `${color}.500` : `${color}.600`) : "gray.500"}
             opacity={isLoading ? 0.5 : 1}
             cursor={isLoading ? "not-allowed" : "pointer"}
             _hover={{ bg: !isActive && !isLoading ? "gray.100" : undefined }}
             title={config.description}
             transition="all 0.15s ease"
           >
-            {isRecording && (
-              <Box
-                position="absolute"
-                left={2}
-                top="50%"
-                transform="translateY(-50%)"
-                w={2}
-                h={2}
-                borderRadius="full"
-                bg="recording.500"
-                className="recording-pulse"
-              />
-            )}
             <Box as="span" ml={isRecording ? 2 : 0}>
               <Box as="span" mr={1.5} fontSize="xs">
                 {config.icon}

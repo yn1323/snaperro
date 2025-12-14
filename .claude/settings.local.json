@@ -26,7 +26,8 @@
       "Bash(grep:*)",
       "Bash(pnpm build:client:*)",
       "Skill(frontend-design)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

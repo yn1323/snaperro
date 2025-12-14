@@ -6,10 +6,14 @@ import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
 import { PatternPane } from "./components/PatternPane";
 import { TopBar } from "./components/TopBar";
+import { Toaster } from "./components/ui/toaster";
 import { useFavicon } from "./hooks/useFavicon";
+import { useFileEditor } from "./hooks/useFileEditor";
+import { usePatternNavigation } from "./hooks/usePatternNavigation";
 import { useSnaperroAPI } from "./hooks/useSnaperroAPI";
 import { useSnaperroSSE } from "./hooks/useSnaperroSSE";
-import type { FileData, Mode } from "./types";
+import type { Mode } from "./types";
+import { withErrorHandling } from "./utils/error-handler";
 
 export default function App() {
   const { state, connected } = useSnaperroSSE();
@@ -19,249 +23,116 @@ export default function App() {
   const favicon = !connected ? "⚠️" : state.mode === "record" ? "🔴" : state.mode === "proxy" ? "🌐" : "🐕";
   useFavicon(favicon);
 
-  // Local state
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [fileData, setFileData] = useState<FileData | null>(null);
-  const [isLoadingFile, setIsLoadingFile] = useState(false);
-  const [deleteFileTarget, setDeleteFileTarget] = useState<string | null>(null);
-  const [currentFolder, setCurrentFolder] = useState<string | null>(null);
+  // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
+  // File editor hook
+  const fileEditor = useFileEditor({
+    api,
+    currentPattern: state.currentPattern,
+  });
+
+  // Pattern navigation hook
+  const navigation = usePatternNavigation({
+    api,
+    onPatternDeselect: fileEditor.resetFileSelection,
+  });
+
   // Reset file selection when pattern changes
-  const currentPattern = state.currentPattern;
   useEffect(() => {
-    // Clear file selection when currentPattern changes
-    if (currentPattern !== undefined) {
-      setSelectedFile(null);
-      setFileData(null);
+    if (state.currentPattern !== undefined) {
+      fileEditor.resetFileSelection();
     }
-  }, [currentPattern]);
-
-  // Load content when file is selected
-  useEffect(() => {
-    const pattern = state.currentPattern;
-    if (!pattern || !selectedFile) {
-      setFileData(null);
-      return;
-    }
-
-    const loadFile = async () => {
-      setIsLoadingFile(true);
-      try {
-        const data = await api.getFile(pattern, selectedFile);
-        setFileData(data);
-      } catch (err) {
-        console.error("File load error:", err);
-        setFileData(null);
-      } finally {
-        setIsLoadingFile(false);
-      }
-    };
-
-    loadFile();
-  }, [state.currentPattern, selectedFile, api]);
+  }, [state.currentPattern, fileEditor.resetFileSelection]);
 
   // ============================================================
-  // Event handlers
+  // Mode handler
   // ============================================================
-
   const handleModeChange = useCallback(
     async (mode: Mode) => {
-      try {
-        await api.setMode(mode);
-      } catch (err) {
-        console.error("Mode change error:", err);
-      }
+      await withErrorHandling(() => api.setMode(mode), "Mode change error");
     },
     [api],
   );
 
-  const handlePatternSelect = useCallback(
-    async (pattern: string) => {
-      try {
-        await api.setCurrentPattern(pattern);
-      } catch (err) {
-        console.error("Pattern select error:", err);
-      }
-    },
-    [api],
-  );
-
+  // ============================================================
+  // Pattern CRUD handlers
+  // ============================================================
   const handlePatternCreate = useCallback(
     async (name: string) => {
-      try {
-        const fullName = currentFolder ? `${currentFolder}/${name}` : name;
-        await api.createPattern(fullName);
-      } catch (err) {
-        console.error("Pattern create error:", err);
-      }
+      const fullName = navigation.currentFolder ? `${navigation.currentFolder}/${name}` : name;
+      await withErrorHandling(() => api.createPattern(fullName), "Pattern create error");
     },
-    [api, currentFolder],
+    [api, navigation.currentFolder],
   );
 
   const handlePatternRename = useCallback(
     async (oldName: string, newName: string) => {
-      try {
-        await api.renamePattern(oldName, newName);
-      } catch (err) {
-        console.error("Pattern rename error:", err);
-      }
+      await withErrorHandling(() => api.renamePattern(oldName, newName), "Pattern rename error");
     },
     [api],
   );
 
   const handlePatternDuplicate = useCallback(
     async (name: string) => {
-      try {
-        await api.duplicatePattern(name, `${name}_copy`);
-      } catch (err) {
-        console.error("Pattern duplicate error:", err);
-      }
+      await withErrorHandling(() => api.duplicatePattern(name, `${name}_copy`), "Pattern duplicate error");
     },
     [api],
   );
 
   const handlePatternDelete = useCallback(
     async (name: string) => {
-      try {
-        await api.deletePattern(name);
-      } catch (err) {
-        console.error("Pattern delete error:", err);
-      }
+      await withErrorHandling(() => api.deletePattern(name), "Pattern delete error");
     },
     [api],
   );
 
-  // Folder handlers
-  const handleFolderSelect = useCallback((folder: string) => {
-    setCurrentFolder(folder);
-  }, []);
-
-  const handleFolderBack = useCallback(async () => {
-    setCurrentFolder(null);
-    setSelectedFile(null);
-    setFileData(null);
-    try {
-      await api.setCurrentPattern(null);
-    } catch (err) {
-      console.error("Pattern deselect error:", err);
-    }
-  }, [api]);
-
+  // ============================================================
+  // Folder CRUD handlers
+  // ============================================================
   const handleFolderCreate = useCallback(
     async (name: string) => {
-      try {
-        await api.createFolder(name);
-      } catch (err) {
-        console.error("Folder create error:", err);
-      }
+      await withErrorHandling(() => api.createFolder(name), "Folder create error");
     },
     [api],
   );
 
   const handleFolderRename = useCallback(
     async (oldName: string, newName: string) => {
-      try {
+      await withErrorHandling(async () => {
         await api.renameFolder(oldName, newName);
-        if (currentFolder === oldName) {
-          setCurrentFolder(newName);
+        if (navigation.currentFolder === oldName) {
+          navigation.setCurrentFolder(newName);
         }
-      } catch (err) {
-        console.error("Folder rename error:", err);
-      }
+      }, "Folder rename error");
     },
-    [api, currentFolder],
+    [api, navigation],
   );
 
   const handleFolderDownload = useCallback(
     async (name: string) => {
-      try {
-        await api.downloadFolder(name);
-      } catch (err) {
-        console.error("Folder download error:", err);
-      }
+      await withErrorHandling(() => api.downloadFolder(name), "Folder download error");
     },
     [api],
   );
 
   const handleFolderUpload = useCallback(
     async (file: File) => {
-      try {
-        await api.uploadFolder(file);
-      } catch (err) {
-        console.error("Folder upload error:", err);
-      }
+      await withErrorHandling(() => api.uploadFolder(file), "Folder upload error");
     },
     [api],
   );
 
   const handleFolderDelete = useCallback(
     async (name: string) => {
-      try {
+      await withErrorHandling(async () => {
         await api.deleteFolder(name);
-        if (currentFolder === name) {
-          setCurrentFolder(null);
+        if (navigation.currentFolder === name) {
+          navigation.setCurrentFolder(null);
         }
-      } catch (err) {
-        console.error("Folder delete error:", err);
-      }
+      }, "Folder delete error");
     },
-    [api, currentFolder],
-  );
-
-  const handleFileSave = useCallback(
-    async (data: FileData) => {
-      if (!state.currentPattern || !selectedFile) return;
-      try {
-        await api.updateFile(state.currentPattern, selectedFile, data);
-        setFileData(data);
-      } catch (err) {
-        console.error("File save error:", err);
-      }
-    },
-    [api, state.currentPattern, selectedFile],
-  );
-
-  const handleFileDelete = useCallback(() => {
-    if (selectedFile) {
-      setDeleteFileTarget(selectedFile);
-    }
-  }, [selectedFile]);
-
-  const handleFileDeleteConfirm = useCallback(async () => {
-    if (!deleteFileTarget || !state.currentPattern) return;
-    try {
-      await api.deleteFile(state.currentPattern, deleteFileTarget);
-      setSelectedFile(null);
-      setFileData(null);
-    } catch (err) {
-      console.error("ファイル削除エラー:", err);
-    }
-    setDeleteFileTarget(null);
-  }, [api, state.currentPattern, deleteFileTarget]);
-
-  const handleFileUpload = useCallback(
-    async (file: File) => {
-      if (!state.currentPattern) return;
-      try {
-        await api.uploadFile(state.currentPattern, file);
-      } catch (err) {
-        console.error("File upload error:", err);
-      }
-    },
-    [api, state.currentPattern],
-  );
-
-  const handleFileDownload = useCallback(
-    async (filename: string) => {
-      if (!state.currentPattern) return;
-      try {
-        await api.downloadFile(state.currentPattern, filename);
-      } catch (err) {
-        console.error("File download error:", err);
-      }
-    },
-    [api, state.currentPattern],
+    [api, navigation],
   );
 
   return (
@@ -280,9 +151,9 @@ export default function App() {
           <PatternPane
             width={width}
             folders={state.folders}
-            currentFolder={currentFolder}
-            onFolderSelect={handleFolderSelect}
-            onFolderBack={handleFolderBack}
+            currentFolder={navigation.currentFolder}
+            onFolderSelect={navigation.handleFolderSelect}
+            onFolderBack={navigation.handleFolderBack}
             onFolderCreate={handleFolderCreate}
             onFolderRename={handleFolderRename}
             onFolderDownload={handleFolderDownload}
@@ -290,7 +161,7 @@ export default function App() {
             onFolderDelete={handleFolderDelete}
             patterns={state.patterns}
             currentPattern={state.currentPattern}
-            onSelect={handlePatternSelect}
+            onSelect={navigation.handlePatternSelect}
             onCreate={handlePatternCreate}
             onRename={handlePatternRename}
             onDuplicate={handlePatternDuplicate}
@@ -301,22 +172,22 @@ export default function App() {
           <FilePane
             width={width}
             files={state.files}
-            selectedFile={selectedFile}
-            onSelect={setSelectedFile}
-            onUpload={handleFileUpload}
-            onDownload={handleFileDownload}
-            pattern={currentPattern}
+            selectedFile={fileEditor.selectedFile}
+            onSelect={fileEditor.setSelectedFile}
+            onUpload={fileEditor.handleFileUpload}
+            onDownload={fileEditor.handleFileDownload}
+            pattern={state.currentPattern}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
           />
         )}
         editorPane={
           <EditorPane
-            fileData={fileData}
-            filename={selectedFile}
-            isLoading={isLoadingFile}
-            onSave={handleFileSave}
-            onDelete={handleFileDelete}
+            fileData={fileEditor.fileData}
+            filename={fileEditor.selectedFile}
+            isLoading={fileEditor.isLoadingFile}
+            onSave={fileEditor.handleFileSave}
+            onDelete={fileEditor.handleFileDelete}
             searchQuery={searchQuery}
           />
         }
@@ -324,13 +195,15 @@ export default function App() {
 
       {/* File delete confirmation dialog */}
       <ConfirmDialog
-        isOpen={deleteFileTarget !== null}
+        isOpen={fileEditor.deleteFileTarget !== null}
         title="Delete File"
-        message={`Delete file "${deleteFileTarget}"? This action cannot be undone.`}
+        message={`Delete file "${fileEditor.deleteFileTarget}"? This action cannot be undone.`}
         confirmLabel="Delete"
-        onClose={() => setDeleteFileTarget(null)}
-        onConfirm={handleFileDeleteConfirm}
+        onClose={fileEditor.closeDeleteConfirm}
+        onConfirm={fileEditor.handleFileDeleteConfirm}
       />
+
+      <Toaster />
     </>
   );
 }

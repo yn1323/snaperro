@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import { logger } from "../core/logger.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
+import { copyRequestHeaders, parseRequestBody } from "../core/request-utils.js";
 import type { ApiConfig } from "../types/config.js";
 
 /**
@@ -19,30 +20,11 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
   const startTime = Date.now();
 
   try {
-    // Get request body
-    let body: string | null = null;
-    if (method !== "GET" && method !== "HEAD") {
-      body = await c.req.text();
-    }
+    // Get request body (without JSON parsing for proxy)
+    const body = (await parseRequestBody(method, () => c.req.text(), false)) as string | null;
 
     // Copy headers (excluding cache-related headers to always get fresh responses)
-    const headers = new Headers();
-    const skipRequestHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
-    for (const [key, value] of c.req.raw.headers.entries()) {
-      if (!skipRequestHeaders.includes(key.toLowerCase())) {
-        headers.set(key, value);
-      }
-    }
-
-    // Limit Accept-Encoding (Node.js doesn't support zstd/br)
-    headers.set("accept-encoding", "gzip, deflate");
-
-    // Add headers from config
-    if (apiConfig.headers) {
-      for (const [key, value] of Object.entries(apiConfig.headers)) {
-        headers.set(key, value);
-      }
-    }
+    const headers = copyRequestHeaders(c.req.raw.headers, apiConfig.headers);
 
     logger.debugHeaders(Object.fromEntries(headers.entries()));
 

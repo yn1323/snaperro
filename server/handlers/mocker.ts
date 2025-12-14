@@ -1,27 +1,12 @@
 import type { Context } from "hono";
 import { logger } from "../core/logger.js";
 import type { MatchResult } from "../core/matcher.js";
+import { parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { handleProxy } from "./proxy.js";
 import { handleRecord } from "./recorder.js";
-
-/**
- * Parse query parameters
- */
-function parseQueryParams(url: URL): Record<string, string | string[]> {
-  const params: Record<string, string | string[]> = {};
-  for (const [key, value] of url.searchParams.entries()) {
-    const existing = params[key];
-    if (existing) {
-      params[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
-    } else {
-      params[key] = value;
-    }
-  }
-  return params;
-}
 
 /**
  * Mock mode handler
@@ -48,17 +33,7 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
   const queryParams = parseQueryParams(url);
 
   // Get request body
-  let requestBody: unknown;
-  if (method !== "GET" && method !== "HEAD") {
-    const text = await c.req.text();
-    if (text) {
-      try {
-        requestBody = JSON.parse(text);
-      } catch {
-        requestBody = text;
-      }
-    }
-  }
+  const requestBody = await parseRequestBody(method, () => c.req.text());
 
   // Search for file with parameter matching
   const result = await storage.findMatchingFile(

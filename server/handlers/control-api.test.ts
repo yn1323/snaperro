@@ -245,7 +245,7 @@ describe("control-api", () => {
       });
       const body = (await res.json()) as { error: string };
 
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(409);
       expect(body.error).toBe("Pattern already exists");
     });
 

@@ -1,14 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import type { Mode } from "../../shared/types/mode.js";
 import { eventBus } from "./event-bus.js";
 import { storage } from "./storage.js";
 
-const STATE_FILE = ".snaperro/state.json";
+export type { Mode };
 
-/**
- * 動作モード
- */
-export type Mode = "proxy" | "record" | "mock";
+const STATE_FILE = ".snaperro/state.json";
 
 /**
  * 永続化される状態の型

@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { conflictError, internalError, notFoundError, validationError } from "../core/api-response.js";
 import { eventBus } from "../core/event-bus.js";
 import { type Mode, state } from "../core/state.js";
 import { storage } from "../core/storage.js";
@@ -90,12 +91,12 @@ controlApi.post("/folders", async (c) => {
   const name = body.name;
 
   if (!name || typeof name !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: name" }, 400);
+    return c.json(validationError("Missing required field: name"), 400);
   }
 
   // フォルダが既に存在するかチェック
   if (await storage.folderExists(name)) {
-    return c.json({ error: "Folder already exists", name }, 400);
+    return c.json(conflictError("folder", name), 409);
   }
 
   await storage.createFolder(name);
@@ -111,7 +112,7 @@ controlApi.delete("/folders/:name", async (c) => {
 
   // フォルダが存在するかチェック
   if (!(await storage.folderExists(name))) {
-    return c.json({ error: "Folder not found", name }, 404);
+    return c.json(notFoundError("folder", name), 404);
   }
 
   await storage.deleteFolder(name);
@@ -129,12 +130,12 @@ controlApi.put("/folders/:name/rename", async (c) => {
   const newName = body.newName;
 
   if (!newName || typeof newName !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+    return c.json(validationError("Missing required field: newName"), 400);
   }
 
   // フォルダが存在するかチェック
   if (!(await storage.folderExists(name))) {
-    return c.json({ error: "Folder not found", name }, 404);
+    return c.json(notFoundError("folder", name), 404);
   }
 
   try {
@@ -159,7 +160,7 @@ controlApi.get("/folders/:folder/patterns", async (c) => {
 
   // フォルダが存在するかチェック
   if (!(await storage.folderExists(folder))) {
-    return c.json({ error: "Folder not found", name: folder }, 404);
+    return c.json(notFoundError("folder", folder), 404);
   }
 
   const patterns = await storage.listPatternsInFolder(folder);
@@ -204,12 +205,12 @@ controlApi.put("/patterns/current", async (c) => {
   const pattern = body.pattern;
 
   if (pattern !== null && typeof pattern !== "string") {
-    return c.json({ error: "Invalid request", details: "pattern must be string or null" }, 400);
+    return c.json(validationError("pattern must be string or null"), 400);
   }
 
   // null でない場合はパターンの存在チェック
   if (pattern !== null && !(await storage.patternExists(pattern))) {
-    return c.json({ error: "Pattern not found", pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   await state.setPattern(pattern);
@@ -229,12 +230,12 @@ controlApi.post("/patterns", async (c) => {
   const name = body.name;
 
   if (!name || typeof name !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: name" }, 400);
+    return c.json(validationError("Missing required field: name"), 400);
   }
 
   // パターンが既に存在するかチェック
   if (await storage.patternExists(name)) {
-    return c.json({ error: "Pattern already exists", name }, 400);
+    return c.json(conflictError("pattern", name), 409);
   }
 
   await storage.createPattern(name);
@@ -252,12 +253,12 @@ controlApi.post("/patterns/:name/duplicate", async (c) => {
   const newName = body.newName;
 
   if (!newName || typeof newName !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+    return c.json(validationError("Missing required field: newName"), 400);
   }
 
   // ソースが存在するかチェック
   if (!(await storage.patternExists(name))) {
-    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+    return c.json(notFoundError("pattern", name), 404);
   }
 
   try {
@@ -284,12 +285,12 @@ controlApi.put("/patterns/:name/rename", async (c) => {
   const newName = body.newName;
 
   if (!newName || typeof newName !== "string") {
-    return c.json({ error: "Invalid request", details: "Missing required field: newName" }, 400);
+    return c.json(validationError("Missing required field: newName"), 400);
   }
 
   // ソースが存在するかチェック
   if (!(await storage.patternExists(name))) {
-    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+    return c.json(notFoundError("pattern", name), 404);
   }
 
   try {
@@ -320,7 +321,7 @@ controlApi.delete("/patterns/:name", async (c) => {
 
   // パターンが存在するかチェック
   if (!(await storage.patternExists(name))) {
-    return c.json({ error: "Not found", resource: "pattern", name }, 404);
+    return c.json(notFoundError("pattern", name), 404);
   }
 
   // 現在選択中のパターンを削除する場合は未選択状態にする
@@ -340,7 +341,7 @@ controlApi.get("/folders/:name/download", async (c) => {
   const name = c.req.param("name");
 
   if (!(await storage.folderExists(name))) {
-    return c.json({ error: "Not found", resource: "folder", name }, 404);
+    return c.json(notFoundError("folder", name), 404);
   }
 
   try {
@@ -350,7 +351,7 @@ controlApi.get("/folders/:name/download", async (c) => {
     return c.body(new Uint8Array(zipBuffer));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create zip";
-    return c.json({ error: "Internal server error", message }, 500);
+    return c.json(internalError(message), 500);
   }
 });
 
@@ -366,7 +367,7 @@ controlApi.post("/folders/upload", async (c) => {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
-      return c.json({ error: "Invalid request", details: "Missing file" }, 400);
+      return c.json(validationError("Missing file"), 400);
     }
 
     // フォルダ名はzipファイル名から（.zip を除去）
@@ -387,7 +388,7 @@ controlApi.post("/folders/upload", async (c) => {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to extract zip";
-    return c.json({ error: "Internal server error", message }, 500);
+    return c.json(internalError(message), 500);
   }
 });
 
@@ -410,7 +411,7 @@ controlApi.get("/patterns/:pattern/files", async (c) => {
   const pattern = c.req.param("pattern");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   const patternFiles = await storage.getPatternFiles(pattern);
@@ -434,11 +435,11 @@ controlApi.get("/patterns/:pattern/files/search", async (c) => {
   const query = c.req.query("q");
 
   if (!query) {
-    return c.json({ error: "Query required" }, 400);
+    return c.json(validationError("Query required"), 400);
   }
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   const results = await storage.searchPatternFiles(pattern, query);
@@ -454,14 +455,14 @@ controlApi.get("/patterns/:pattern/files/:filename", async (c) => {
   const filename = c.req.param("filename");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   try {
     const data = await storage.read(`${pattern}/${filename}`);
     return c.json(data);
   } catch {
-    return c.json({ error: "Not found", resource: "file", filename }, 404);
+    return c.json(notFoundError("file", filename), 404);
   }
 });
 
@@ -474,7 +475,7 @@ controlApi.get("/patterns/:pattern/files/:filename/download", async (c) => {
   const filename = c.req.param("filename");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   try {
@@ -483,7 +484,7 @@ controlApi.get("/patterns/:pattern/files/:filename/download", async (c) => {
     c.header("Content-Type", "application/json");
     return c.body(JSON.stringify(data, null, 2));
   } catch {
-    return c.json({ error: "Not found", resource: "file", filename }, 404);
+    return c.json(notFoundError("file", filename), 404);
   }
 });
 
@@ -495,7 +496,7 @@ controlApi.post("/patterns/:pattern/files/upload", async (c) => {
   const pattern = c.req.param("pattern");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   try {
@@ -503,7 +504,7 @@ controlApi.post("/patterns/:pattern/files/upload", async (c) => {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
-      return c.json({ error: "Invalid request", details: "Missing file" }, 400);
+      return c.json(validationError("Missing file"), 400);
     }
 
     const content = await file.text();
@@ -529,7 +530,7 @@ controlApi.post("/patterns/:pattern/files/upload", async (c) => {
 
     return c.json({ filename, message: "File uploaded" }, 201);
   } catch {
-    return c.json({ error: "Invalid request", details: "Invalid JSON file" }, 400);
+    return c.json(validationError("Invalid JSON file"), 400);
   }
 });
 
@@ -542,14 +543,14 @@ controlApi.put("/patterns/:pattern/files/:filename", async (c) => {
   const filename = c.req.param("filename");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   const filePath = `${pattern}/${filename}`;
 
   // ファイルが存在するかチェック
   if (!(await storage.exists(filePath))) {
-    return c.json({ error: "Not found", resource: "file", filename }, 404);
+    return c.json(notFoundError("file", filename), 404);
   }
 
   try {
@@ -557,7 +558,7 @@ controlApi.put("/patterns/:pattern/files/:filename", async (c) => {
     await storage.write(filePath, data);
     return c.json({ filename, message: "File updated" });
   } catch {
-    return c.json({ error: "Invalid request", details: "Invalid JSON data" }, 400);
+    return c.json(validationError("Invalid JSON data"), 400);
   }
 });
 
@@ -570,7 +571,7 @@ controlApi.delete("/patterns/:pattern/files/:filename", async (c) => {
   const filename = c.req.param("filename");
 
   if (!(await checkPatternExists(pattern))) {
-    return c.json({ error: "Not found", resource: "pattern", name: pattern }, 404);
+    return c.json(notFoundError("pattern", pattern), 404);
   }
 
   const filePath = `${pattern}/${filename}`;
@@ -579,7 +580,7 @@ controlApi.delete("/patterns/:pattern/files/:filename", async (c) => {
     await storage.deleteFile(filePath);
     return c.json({ filename, message: "File deleted" });
   } catch {
-    return c.json({ error: "Not found", resource: "file", filename }, 404);
+    return c.json(notFoundError("file", filename), 404);
   }
 });
 

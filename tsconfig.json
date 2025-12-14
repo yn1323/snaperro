@@ -15,8 +15,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@snaperro/shared/*": ["./shared/*"]
+    }
   },
-  "include": ["cli/**/*", "server/**/*"],
+  "include": ["cli/**/*", "server/**/*", "shared/**/*"],
   "exclude": ["node_modules", "dist"]
 }

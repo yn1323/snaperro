@@ -230,7 +230,7 @@ describe("handleMock", () => {
         "/api/users",
         {},
         { page: "1", limit: "10" },
-        undefined,
+        null,
       );
     });
 
@@ -256,7 +256,7 @@ describe("handleMock", () => {
         "/api/users",
         {},
         { tag: ["a", "b", "c"] },
-        undefined,
+        null,
       );
     });
 
@@ -309,7 +309,7 @@ describe("handleMock", () => {
         "/api/users/:id",
         { id: "123" },
         {},
-        undefined,
+        null,
       );
     });
 
@@ -324,7 +324,7 @@ describe("handleMock", () => {
         "/api/users/:id",
         { id: "123" },
         {},
-        undefined,
+        null,
       );
     });
   });

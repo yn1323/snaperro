@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo, SearchResult } from "../types";
+import { downloadAsFile } from "../utils/download";
 
 const API_BASE = "/__snaperro__";
 
@@ -138,21 +139,7 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
 
   const downloadFolder = useCallback(async (name: string): Promise<void> => {
     const url = `${API_BASE}/folders/${encodeURIComponent(name)}/download`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Download failed" }));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `${name}.zip`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
+    await downloadAsFile(url, `${name}.zip`);
   }, []);
 
   const uploadFolder = useCallback(async (file: File): Promise<void> => {
@@ -217,21 +204,8 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
 
   const downloadFile = useCallback(async (pattern: string, filename: string): Promise<void> => {
     const url = `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}/download`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Download failed" }));
-      throw new Error(error.error || `HTTP ${response.status}`);
-    }
-
-    const blob = await response.blob();
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = filename.endsWith(".json") ? filename : `${filename}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
+    const downloadFilename = filename.endsWith(".json") ? filename : `${filename}.json`;
+    await downloadAsFile(url, downloadFilename);
   }, []);
 
   const searchFiles = useCallback(async (pattern: string, query: string): Promise<SearchResult[]> => {

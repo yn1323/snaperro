@@ -25,6 +25,13 @@ const config = defineConfig({
           500: { value: "#ef4444" },
           600: { value: "#dc2626" },
         },
+        mock: {
+          50: { value: "#eff6ff" },
+          100: { value: "#dbeafe" },
+          400: { value: "#60a5fa" },
+          500: { value: "#3b82f6" },
+          600: { value: "#2563eb" },
+        },
       },
       fonts: {
         heading: { value: "'Inter', 'Noto Sans JP', sans-serif" },

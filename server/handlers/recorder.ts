@@ -5,25 +5,10 @@ import { logger } from "../core/logger.js";
 import { maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
+import { copyRequestHeaders, parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { FileData, HttpMethod } from "../types/file.js";
-
-/**
- * Parse query parameters
- */
-function parseQueryParams(url: URL): Record<string, string | string[]> {
-  const params: Record<string, string | string[]> = {};
-  for (const [key, value] of url.searchParams.entries()) {
-    const existing = params[key];
-    if (existing) {
-      params[key] = Array.isArray(existing) ? [...existing, value] : [existing, value];
-    } else {
-      params[key] = value;
-    }
-  }
-  return params;
-}
 
 /**
  * Record mode handler
@@ -51,36 +36,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
 
   try {
     // Get request body
-    let requestBody: unknown;
-    if (method !== "GET" && method !== "HEAD") {
-      const text = await c.req.text();
-      if (text) {
-        try {
-          requestBody = JSON.parse(text);
-        } catch {
-          requestBody = text;
-        }
-      }
-    }
+    const requestBody = await parseRequestBody(method, () => c.req.text());
 
     // Copy headers (excluding cache-related headers to always get fresh responses)
-    const headers = new Headers();
-    const skipHeaders = ["host", "connection", "if-none-match", "if-modified-since"];
-    for (const [key, value] of c.req.raw.headers.entries()) {
-      if (!skipHeaders.includes(key.toLowerCase())) {
-        headers.set(key, value);
-      }
-    }
-
-    // Limit Accept-Encoding (Node.js doesn't support zstd/br)
-    headers.set("accept-encoding", "gzip, deflate");
-
-    // Add headers from config
-    if (match.apiConfig.headers) {
-      for (const [key, value] of Object.entries(match.apiConfig.headers)) {
-        headers.set(key, value);
-      }
-    }
+    const headers = copyRequestHeaders(c.req.raw.headers, match.apiConfig.headers);
 
     // 1. Request to actual API
     const response = await fetch(targetUrl, {

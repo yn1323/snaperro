@@ -56,7 +56,7 @@ controlApi.put("/mode", async (c) => {
   const body = await c.req.json<{ mode: string }>();
   const mode = body.mode?.toLowerCase();
 
-  const validModes = ["proxy", "record", "mock"];
+  const validModes = ["proxy", "record", "mock", "smart"];
   if (!validModes.includes(mode)) {
     return c.json({ error: "Invalid mode", validModes }, 400);
   }

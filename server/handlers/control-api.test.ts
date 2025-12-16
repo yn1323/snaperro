@@ -126,7 +126,7 @@ describe("control-api", () => {
 
       expect(res.status).toBe(400);
       expect(body.error).toBe("Invalid mode");
-      expect(body.validModes).toEqual(["proxy", "record", "mock"]);
+      expect(body.validModes).toEqual(["proxy", "record", "mock", "smart"]);
     });
 
     it("大文字小文字を区別しない", async () => {

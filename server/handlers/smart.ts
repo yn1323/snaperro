@@ -1,0 +1,59 @@
+import type { Context } from "hono";
+import { logger } from "../core/logger.js";
+import type { MatchResult } from "../core/matcher.js";
+import { parseQueryParams, parseRequestBody } from "../core/request-utils.js";
+import { state } from "../core/state.js";
+import { storage } from "../core/storage.js";
+import { handleRecord } from "./recorder.js";
+
+/**
+ * Smart mode handler
+ * Return mock if exists, otherwise proxy & record
+ */
+export async function handleSmart(c: Context, match: MatchResult): Promise<Response> {
+  const method = c.req.method;
+  const url = new URL(c.req.url);
+  const path = url.pathname;
+  const pattern = state.getPattern();
+
+  // 1. Pattern is required
+  if (!pattern) {
+    logger.warn(`${method} ${path} → no pattern selected`);
+    return c.json(
+      {
+        error: "No pattern selected",
+        message: "Please select a pattern first",
+      },
+      400,
+    );
+  }
+
+  // 2. Parse query parameters and request body
+  const queryParams = parseQueryParams(url);
+  const requestBody = await parseRequestBody(method, () => c.req.text());
+
+  // 3. Search for existing mock
+  const result = await storage.findMatchingFile(
+    pattern,
+    method,
+    match.matchedRoute,
+    match.pathParams,
+    queryParams,
+    requestBody,
+  );
+
+  // 4. If mock exists, return it
+  if (result) {
+    logger.info(`${method} ${path} → smart → mock → ${result.filePath} (${result.fileData.response.status})`);
+
+    const status = result.fileData.response.status;
+    if (status === 304 || status === 204) {
+      return c.body(null, status as never);
+    }
+    return c.json(result.fileData.response.body as object, status as never);
+  }
+
+  // 5. If no mock, proxy & record
+  logger.info(`${method} ${path} → smart → record`);
+  return handleRecord(c, match);
+}

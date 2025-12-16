@@ -6,6 +6,7 @@ import type { SnaperroConfig } from "../types/config.js";
 import { handleMock } from "./mocker.js";
 import { handleProxy } from "./proxy.js";
 import { handleRecord } from "./recorder.js";
+import { handleSmart } from "./smart.js";
 
 /**
  * Main request handler
@@ -44,6 +45,9 @@ export function createHandler(config: SnaperroConfig) {
 
       case "mock":
         return handleMock(c, match, config);
+
+      case "smart":
+        return handleSmart(c, match);
 
       default:
         logger.error(`Unknown mode: ${mode}`);

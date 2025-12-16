@@ -14,7 +14,7 @@ A mock proxy server that records and replays responses from multiple APIs to str
 
 ## Features
 
-- **3 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback)
+- **4 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback) / Smart (auto)
 - **Parameter Matching**: Accurate matching by path parameters and query parameters
 - **State Persistence**: Mode and pattern settings persist across server restarts
 - **TypeScript Configuration**: Type-safe configuration files
@@ -214,13 +214,14 @@ export NO_PROXY=localhost,127.0.0.1
 | `-e, --env <path>` | Specify env file path (default: `.env` in config directory) |
 | `-v, --verbose` | Show detailed logs |
 
-### 3 Modes
+### 4 Modes
 
 | Mode | Real API | Save JSON | Returns |
 |------|----------|-----------|---------|
 | **Proxy** | Access | No | Real response |
 | **Record** | Access | Yes | Real response |
 | **Mock** | No access | No | Saved JSON |
+| **Smart** | Conditional | Conditional | Mock or Real |
 
 #### Proxy Mode
 
@@ -250,6 +251,25 @@ Returns responses from saved JSON files. Does not access the actual API.
 ```
 Request → snaperro → Search JSON files → Response
 ```
+
+#### Smart Mode
+
+Automatically returns mock data if it exists, otherwise proxies to the real server and records the response.
+
+```
+Request → snaperro → Search mock files
+                ↓
+         Found? → Yes → Return mock (no API access)
+                ↓ No
+         Proxy to real API & Record
+                ↓
+         Return response
+```
+
+This is the recommended mode for daily development:
+- Prevents unnecessary API calls when mock data already exists
+- Automatically records new endpoints
+- Reduces API rate limit concerns
 
 #### Mock Fallback Behavior
 

@@ -5,6 +5,12 @@ export default defineConfig({
   filesDir: ".snaperro/files",
   mockFallback: "404",
 
+  // Available modes:
+  // - proxy: Always forward to real API
+  // - record: Forward to real API and save response
+  // - mock: Return saved mock data
+  // - smart: Return mock if exists, otherwise proxy & record (recommended)
+
   apis: {
     // JSON Placeholder API（サンプル）
     jsonPlaceholder: {

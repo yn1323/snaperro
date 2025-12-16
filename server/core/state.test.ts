@@ -38,6 +38,11 @@ describe("StateManager", () => {
       await state.setMode("mock");
       expect(state.getMode()).toBe("mock");
     });
+
+    it("smartモードを設定できる", async () => {
+      await state.setMode("smart");
+      expect(state.getMode()).toBe("smart");
+    });
   });
 
   describe("pattern", () => {

@@ -80,4 +80,17 @@ describe("createHandler", () => {
       expect(body.error).toBe("No matching mock found");
     });
   });
+
+  describe("Smartモード", () => {
+    it("パターン未設定の場合は400エラーを返す", async () => {
+      await state.setMode("smart");
+      // patternはnullのまま
+
+      const res = await app.request("/api/users");
+      const body = (await res.json()) as { error: string };
+
+      expect(res.status).toBe(400);
+      expect(body.error).toBe("No pattern selected");
+    });
+  });
 });

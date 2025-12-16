@@ -14,6 +14,7 @@ const modes: { value: Mode; label: string; icon: string }[] = [
   { value: "proxy", label: "Proxy", icon: "→" },
   { value: "record", label: "Record", icon: "●" },
   { value: "mock", label: "Mock", icon: "◆" },
+  { value: "smart", label: "Smart", icon: "⚡" },
 ];
 
 /**
@@ -22,7 +23,8 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  */
 export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    if (targetMode === "record" && !currentPattern) {
+    // record と smart はパターン選択が必要
+    if ((targetMode === "record" || targetMode === "smart") && !currentPattern) {
       toaster.create({
         type: "warning",
         title: "No pattern selected",
@@ -66,6 +68,7 @@ export function TopBar({ version, mode, connected, currentPattern, onModeChange 
           const getColor = () => {
             if (isRecording) return "recording";
             if (isMock) return "mock";
+            if (value === "smart" && isActive) return "smart";
             return "accent";
           };
           const color = getColor();

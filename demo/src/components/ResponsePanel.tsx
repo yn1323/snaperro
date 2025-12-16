@@ -20,6 +20,7 @@ const modeConfig: Record<Mode, { label: string; icon: string }> = {
   proxy: { label: "Proxy", icon: "→" },
   record: { label: "Record", icon: "●" },
   mock: { label: "Mock", icon: "◆" },
+  smart: { label: "Smart", icon: "⚡" },
 };
 
 const getStatusColorPalette = (status: number): string => {

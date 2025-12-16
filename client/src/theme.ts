@@ -32,6 +32,13 @@ const config = defineConfig({
           500: { value: "#3b82f6" },
           600: { value: "#2563eb" },
         },
+        smart: {
+          50: { value: "#fffbeb" },
+          100: { value: "#fef3c7" },
+          400: { value: "#fbbf24" },
+          500: { value: "#f59e0b" },
+          600: { value: "#d97706" },
+        },
       },
       fonts: {
         heading: { value: "'Inter', 'Noto Sans JP', sans-serif" },

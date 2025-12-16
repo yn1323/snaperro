@@ -21,6 +21,11 @@ const modeHints: Record<Mode, { icon: string; text: string; subtext: string }> =
     text: "Mock",
     subtext: "Returning saved data",
   },
+  smart: {
+    icon: "⚡",
+    text: "Smart",
+    subtext: "Mock or record automatically",
+  },
 };
 
 export function GuidePanel({ mode }: GuidePanelProps) {

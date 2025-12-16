@@ -1,6 +1,6 @@
 import { Box, Button, Flex } from "@chakra-ui/react";
 
-export type Mode = "proxy" | "record" | "mock";
+export type Mode = "proxy" | "record" | "mock" | "smart";
 
 type ModeSelectorProps = {
   mode: Mode;
@@ -24,6 +24,11 @@ const modeConfig: Record<Mode, { label: string; icon: string; description: strin
     icon: "◆",
     description: "Return saved responses",
   },
+  smart: {
+    label: "Smart",
+    icon: "⚡",
+    description: "Return mock if exists, otherwise record",
+  },
 };
 
 export function ModeSelector({ mode, onChange, isLoading }: ModeSelectorProps) {
@@ -38,6 +43,7 @@ export function ModeSelector({ mode, onChange, isLoading }: ModeSelectorProps) {
         const getColor = () => {
           if (isRecording) return "recording";
           if (isMock) return "mock";
+          if (m === "smart" && isActive) return "smart";
           return "accent";
         };
         const color = getColor();

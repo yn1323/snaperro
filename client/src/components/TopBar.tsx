@@ -23,14 +23,13 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  */
 export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    // record と smart はパターン選択が必要
-    if ((targetMode === "record" || targetMode === "smart") && !currentPattern) {
+    // record, smart, mock はパターン選択が必要
+    if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentPattern) {
       toaster.create({
         type: "warning",
         title: "No pattern selected",
         description: "Please select a pattern first.",
       });
-      return;
     }
     onModeChange(targetMode);
   };

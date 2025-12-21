@@ -6,6 +6,7 @@ import { Hono } from "hono";
 import { logger } from "../core/logger.js";
 import { findAvailablePort } from "../core/port.js";
 import { initializeProxyAgent } from "../core/proxy-agent.js";
+import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { controlApi } from "./control-api.js";
@@ -54,7 +55,7 @@ export function shutdownServer(server: ServerType): Promise<void> {
 
     // Force close after timeout (5 seconds)
     setTimeout(() => {
-      logger.warn("Forcing server shutdown after timeout");
+      // logger.warn("Forcing server shutdown after timeout");
       resolve();
     }, 2000);
   });
@@ -87,6 +88,9 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
 
       // Migrate root patterns to folder structure
       await storage.migrateRootPatterns();
+
+      // Load persisted state (mode and pattern)
+      await state.load();
 
       // Create Hono application
       const app = new Hono();

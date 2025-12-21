@@ -21,7 +21,7 @@ interface PersistedState {
  * モードとパターンを管理し、ファイルに永続化
  */
 class StateManager {
-  private mode: Mode = "proxy";
+  private mode: Mode = "smart";
   private pattern: string | null = null;
 
   /**
@@ -91,7 +91,7 @@ class StateManager {
       this.pattern = state.currentPattern;
     } catch {
       // ファイルが存在しない場合はデフォルト値を使用
-      this.mode = "proxy";
+      this.mode = "smart";
       this.pattern = null;
     }
   }
@@ -100,7 +100,7 @@ class StateManager {
    * 状態をリセット（テスト用）
    */
   reset(): void {
-    this.mode = "proxy";
+    this.mode = "smart";
     this.pattern = null;
   }
 

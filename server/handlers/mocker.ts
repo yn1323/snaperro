@@ -57,7 +57,7 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
     // Fallback: proxy and record
     if (fallback === "proxy&record") {
       logger.info(`${method} ${path} → mock fallback → proxy&record`);
-      return handleRecord(c, match);
+      return handleRecord(c, match, config);
     }
 
     // Fallback: return 404 (default)

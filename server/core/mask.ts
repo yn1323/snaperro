@@ -41,3 +41,21 @@ export function maskHeaders(
 
   return maskedHeaders;
 }
+
+/**
+ * Merge root-level and API-level mask header arrays
+ *
+ * @param rootMask Root-level maskRequestHeaders
+ * @param apiMask API-level maskRequestHeaders
+ * @returns Merged array (deduplicated, case-insensitive) or undefined if both are empty
+ */
+export function getMergedMaskHeaders(
+  rootMask: string[] | undefined,
+  apiMask: string[] | undefined,
+): string[] | undefined {
+  if (!rootMask && !apiMask) return undefined;
+  if (!rootMask) return apiMask;
+  if (!apiMask) return rootMask;
+  const set = new Set([...rootMask.map((h) => h.toLowerCase()), ...apiMask.map((h) => h.toLowerCase())]);
+  return Array.from(set);
+}

@@ -140,11 +140,33 @@ export function FilePane({
 
   return (
     <Flex w={`${width}px`} bg="white" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
-      <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.50">
+      <Flex
+        p={2}
+        borderBottom="1px"
+        borderColor="gray.200"
+        bg="gray.50"
+        alignItems="center"
+        justifyContent="space-between"
+      >
         <Text fontWeight="600" fontSize="sm" color="gray.700">
           Files ({files.length})
         </Text>
-      </Box>
+        <Button
+          as="label"
+          variant="ghost"
+          size="xs"
+          p={1}
+          minW="24px"
+          h="24px"
+          color="gray.500"
+          cursor="pointer"
+          _hover={{ color: "accent.600", bg: "gray.200" }}
+          title="Import JSON File"
+        >
+          <LuUpload size={16} />
+          <input type="file" accept=".json" onChange={handleFileUpload} hidden />
+        </Button>
+      </Flex>
 
       <Box p={2} borderBottom="1px" borderColor="gray.200">
         <Flex position="relative" align="center">
@@ -277,23 +299,6 @@ export function FilePane({
             </Box>
           ))
         )}
-      </Box>
-
-      <Box p={2} borderTop="1px" borderColor="gray.200">
-        <Button
-          as="label"
-          size="xs"
-          bg="accent.500"
-          color="white"
-          w="full"
-          cursor="pointer"
-          _hover={{ bg: "accent.600" }}
-          transition="all 0.15s ease"
-          gap={1}
-        >
-          <LuUpload size={14} /> Import JSON File
-          <input type="file" accept=".json" onChange={handleFileUpload} hidden />
-        </Button>
       </Box>
     </Flex>
   );

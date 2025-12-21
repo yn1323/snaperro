@@ -145,6 +145,7 @@ API_KEY=your-api-key-here
 | `port` | number | Server port (default: 3333) |
 | `filesDir` | string | File storage directory (default: `.snaperro/files`) |
 | `mockFallback` | string | Fallback behavior when mock file is not found (default: `"404"`) |
+| `maskRequestHeaders` | string[] | Headers to mask when recording (applied to all APIs) |
 | `apis` | object | API definitions object |
 
 #### API Definition

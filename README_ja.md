@@ -145,6 +145,7 @@ API_KEY=your-api-key-here
 | `port` | number | サーバーポート（デフォルト: 3333） |
 | `filesDir` | string | ファイル保存ディレクトリ（デフォルト: `.snaperro/files`） |
 | `mockFallback` | string | モックファイルが見つからない場合の動作（デフォルト: `"404"`） |
+| `maskRequestHeaders` | string[] | 記録時にマスクするヘッダー（全API共通） |
 | `apis` | object | API定義のオブジェクト |
 
 #### API定義

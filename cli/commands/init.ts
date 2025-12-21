@@ -14,6 +14,9 @@ export default defineConfig({
   // "proxy&record" - Forward to real server and record response
   mockFallback: "404",
 
+  // Request headers to mask when recording (applied to all APIs)
+  // maskRequestHeaders: ["Authorization", "Cookie"],
+
   // Upstream proxy (for corporate networks)
   // upstreamProxy: {
   //   url: "http://proxy.company.com:8080",

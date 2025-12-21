@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { ConfirmDialog } from "./components/dialogs/ConfirmDialog";
+import { ModeHelpDialog } from "./components/dialogs/ModeHelpDialog";
 import { EditorPane } from "./components/EditorPane";
 import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
@@ -25,6 +26,9 @@ export default function App() {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Mode help dialog state
+  const [isModeHelpOpen, setIsModeHelpOpen] = useState(false);
 
   // File editor hook
   const fileEditor = useFileEditor({
@@ -145,6 +149,7 @@ export default function App() {
             connected={connected}
             currentScenario={state.currentScenario}
             onModeChange={handleModeChange}
+            onHelpClick={() => setIsModeHelpOpen(true)}
           />
         }
         scenarioPane={(width) => (
@@ -202,6 +207,9 @@ export default function App() {
         onClose={fileEditor.closeDeleteConfirm}
         onConfirm={fileEditor.handleFileDeleteConfirm}
       />
+
+      {/* Mode help dialog */}
+      <ModeHelpDialog isOpen={isModeHelpOpen} onClose={() => setIsModeHelpOpen(false)} />
 
       <Toaster />
     </>

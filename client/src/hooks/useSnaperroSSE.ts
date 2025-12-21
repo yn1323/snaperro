@@ -27,7 +27,7 @@ interface UseSnaperroSSEReturn {
 
 const initialState: SnaperroState = {
   version: "",
-  mode: "proxy",
+  mode: "smart",
   currentScenario: null,
   scenarios: [],
   folders: [],

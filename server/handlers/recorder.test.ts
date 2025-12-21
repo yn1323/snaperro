@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiConfig } from "../types/config.js";
+import type { ApiConfig, SnaperroConfig } from "../types/config.js";
 import { handleRecord } from "./recorder.js";
 
 // Create hoisted mock functions
@@ -63,6 +63,15 @@ const testApiConfig: ApiConfig = {
   routes: ["/api/users/:id", "/api/users"],
 };
 
+const testConfig: SnaperroConfig = {
+  port: 3333,
+  filesDir: ".snaperro/files",
+  mockFallback: "404",
+  apis: {
+    testApi: testApiConfig,
+  },
+};
+
 const testMatch = {
   apiKey: "testApi",
   apiConfig: testApiConfig,
@@ -81,7 +90,7 @@ describe("handleRecord", () => {
 
     app = new Hono();
     app.all("*", async (c) => {
-      return handleRecord(c, testMatch);
+      return handleRecord(c, testMatch, testConfig);
     });
   });
 
@@ -239,11 +248,15 @@ describe("handleRecord", () => {
       // Create app with route without path params
       const usersApp = new Hono();
       usersApp.all("*", async (c) => {
-        return handleRecord(c, {
-          ...testMatch,
-          matchedRoute: "/api/users",
-          pathParams: {},
-        });
+        return handleRecord(
+          c,
+          {
+            ...testMatch,
+            matchedRoute: "/api/users",
+            pathParams: {},
+          },
+          testConfig,
+        );
       });
 
       await usersApp.request("/api/users?page=1&limit=10");
@@ -272,11 +285,15 @@ describe("handleRecord", () => {
 
       const usersApp = new Hono();
       usersApp.all("*", async (c) => {
-        return handleRecord(c, {
-          ...testMatch,
-          matchedRoute: "/api/users",
-          pathParams: {},
-        });
+        return handleRecord(
+          c,
+          {
+            ...testMatch,
+            matchedRoute: "/api/users",
+            pathParams: {},
+          },
+          testConfig,
+        );
       });
 
       await usersApp.request("/api/users?tag=a&tag=b");
@@ -402,7 +419,7 @@ describe("handleRecord", () => {
       mockGetScenario.mockReturnValue("test-scenario");
     });
 
-    it("masks request headers when maskRequestHeaders is configured", async () => {
+    it("masks request headers when API-level maskRequestHeaders is configured", async () => {
       mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
       mockFindAndWriteAtomic.mockResolvedValue({
         filePath: "/path/to/file.json",
@@ -416,10 +433,14 @@ describe("handleRecord", () => {
 
       const maskApp = new Hono();
       maskApp.all("*", async (c) => {
-        return handleRecord(c, {
-          ...testMatch,
-          apiConfig: apiConfigWithMask,
-        });
+        return handleRecord(
+          c,
+          {
+            ...testMatch,
+            apiConfig: apiConfigWithMask,
+          },
+          testConfig,
+        );
       });
 
       await maskApp.request("/api/users/123", {
@@ -431,6 +452,81 @@ describe("handleRecord", () => {
 
       const savedData = mockFindAndWriteAtomic.mock.calls[0][6];
       expect(savedData.request.headers.authorization).toBe("Bear**********");
+      expect(savedData.request.headers["content-type"]).toBe("application/json");
+    });
+
+    it("masks request headers when root-level maskRequestHeaders is configured", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      const configWithRootMask: SnaperroConfig = {
+        ...testConfig,
+        maskRequestHeaders: ["authorization"],
+      };
+
+      const maskApp = new Hono();
+      maskApp.all("*", async (c) => {
+        return handleRecord(c, testMatch, configWithRootMask);
+      });
+
+      await maskApp.request("/api/users/123", {
+        headers: {
+          Authorization: "Bearer secret-token-12345",
+          "Content-Type": "application/json",
+        },
+      });
+
+      const savedData = mockFindAndWriteAtomic.mock.calls[0][6];
+      expect(savedData.request.headers.authorization).toBe("Bear**********");
+      expect(savedData.request.headers["content-type"]).toBe("application/json");
+    });
+
+    it("merges root-level and API-level maskRequestHeaders", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      const apiConfigWithMask: ApiConfig = {
+        ...testApiConfig,
+        maskRequestHeaders: ["x-api-key"],
+      };
+
+      const configWithRootMask: SnaperroConfig = {
+        ...testConfig,
+        maskRequestHeaders: ["authorization"],
+        apis: {
+          testApi: apiConfigWithMask,
+        },
+      };
+
+      const maskApp = new Hono();
+      maskApp.all("*", async (c) => {
+        return handleRecord(
+          c,
+          {
+            ...testMatch,
+            apiConfig: apiConfigWithMask,
+          },
+          configWithRootMask,
+        );
+      });
+
+      await maskApp.request("/api/users/123", {
+        headers: {
+          Authorization: "Bearer secret-token-12345",
+          "X-Api-Key": "sk-secret-key-12345",
+          "Content-Type": "application/json",
+        },
+      });
+
+      const savedData = mockFindAndWriteAtomic.mock.calls[0][6];
+      expect(savedData.request.headers.authorization).toBe("Bear**********");
+      expect(savedData.request.headers["x-api-key"]).toBe("sk-s**********");
       expect(savedData.request.headers["content-type"]).toBe("application/json");
     });
   });
@@ -491,10 +587,14 @@ describe("handleRecord", () => {
 
       const headersApp = new Hono();
       headersApp.all("*", async (c) => {
-        return handleRecord(c, {
-          ...testMatch,
-          apiConfig: apiConfigWithHeaders,
-        });
+        return handleRecord(
+          c,
+          {
+            ...testMatch,
+            apiConfig: apiConfigWithHeaders,
+          },
+          testConfig,
+        );
       });
 
       await headersApp.request("/api/users/123");

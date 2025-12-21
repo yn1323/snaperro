@@ -41,13 +41,13 @@ export function createHandler(config: SnaperroConfig) {
         return handleProxy(c, match.apiConfig);
 
       case "record":
-        return handleRecord(c, match);
+        return handleRecord(c, match, config);
 
       case "mock":
         return handleMock(c, match, config);
 
       case "smart":
-        return handleSmart(c, match);
+        return handleSmart(c, match, config);
 
       default:
         logger.error(`Unknown mode: ${mode}`);

@@ -2,19 +2,20 @@ import path from "node:path";
 import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
 import { logger } from "../core/logger.js";
-import { maskHeaders } from "../core/mask.js";
+import { getMergedMaskHeaders, maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
 import { copyRequestHeaders, parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
+import type { SnaperroConfig } from "../types/config.js";
 import type { FileData, HttpMethod } from "../types/file.js";
 
 /**
  * Record mode handler
  * Forward requests to actual API, save responses, and return them
  */
-export async function handleRecord(c: Context, match: MatchResult): Promise<Response> {
+export async function handleRecord(c: Context, match: MatchResult, config: SnaperroConfig): Promise<Response> {
   const method = c.req.method;
   const url = new URL(c.req.url);
   const requestPath = url.pathname;
@@ -69,7 +70,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     for (const [key, value] of c.req.raw.headers.entries()) {
       rawRequestHeaders[key] = value;
     }
-    const requestHeaders = maskHeaders(rawRequestHeaders, match.apiConfig.maskRequestHeaders);
+    const requestHeaders = maskHeaders(
+      rawRequestHeaders,
+      getMergedMaskHeaders(config.maskRequestHeaders, match.apiConfig.maskRequestHeaders),
+    );
 
     // 5. Convert response headers for recording
     const responseHeaders: Record<string, string> = {};

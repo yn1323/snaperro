@@ -1,4 +1,5 @@
-import { Box, Button, Flex, HStack, Spacer, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, IconButton, Spacer, Text } from "@chakra-ui/react";
+import { LuInfo } from "react-icons/lu";
 import type { Mode } from "../types";
 import { toaster } from "./ui/toaster";
 
@@ -8,6 +9,7 @@ interface TopBarProps {
   connected: boolean;
   currentScenario: string | null;
   onModeChange: (mode: Mode) => void;
+  onHelpClick: () => void;
 }
 
 const modes: { value: Mode; label: string; icon: string }[] = [
@@ -21,7 +23,7 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ version, mode, connected, currentScenario, onModeChange }: TopBarProps) {
+export function TopBar({ version, mode, connected, currentScenario, onModeChange, onHelpClick }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
     // record, smart, mock はシナリオ選択が必要
     if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentScenario) {
@@ -95,6 +97,17 @@ export function TopBar({ version, mode, connected, currentScenario, onModeChange
           );
         })}
       </HStack>
+
+      <IconButton
+        aria-label="Mode help"
+        variant="ghost"
+        size="sm"
+        color="gray.400"
+        _hover={{ color: "white", bg: "gray.800" }}
+        onClick={onHelpClick}
+      >
+        <LuInfo />
+      </IconButton>
 
       <Spacer />
 

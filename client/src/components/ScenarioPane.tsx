@@ -1,6 +1,6 @@
-import { Box, Button, Flex, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { useMemo, useState } from "react";
-import { LuBox, LuChevronLeft, LuFolder, LuUpload } from "react-icons/lu";
+import { LuBox, LuChevronLeft, LuFolder, LuFolderPlus, LuPlus, LuUpload } from "react-icons/lu";
 import type { FolderInfo } from "../types";
 import { CreateFolderModal } from "./CreateFolderModal";
 import { CreateScenarioModal } from "./CreateScenarioModal";
@@ -106,31 +106,85 @@ export function ScenarioPane({
   return (
     <Flex w={`${width}px`} bg="gray.50" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
       {/* Header */}
-      <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.100">
+      <Flex
+        p={2}
+        borderBottom="1px"
+        borderColor="gray.200"
+        bg="gray.100"
+        alignItems="center"
+        justifyContent="space-between"
+      >
         {currentFolder === null ? (
-          <Text fontWeight="600" fontSize="sm" color="gray.700">
-            Folders
-          </Text>
+          <>
+            <Text fontWeight="600" fontSize="sm" color="gray.700">
+              Folders
+            </Text>
+            <Flex gap={1}>
+              <Button
+                variant="ghost"
+                size="xs"
+                p={1}
+                minW="24px"
+                h="24px"
+                color="gray.500"
+                onClick={() => setIsFolderModalOpen(true)}
+                _hover={{ color: "accent.600", bg: "gray.200" }}
+                title="New Folder"
+              >
+                <LuFolderPlus size={16} />
+              </Button>
+              <Button
+                as="label"
+                variant="ghost"
+                size="xs"
+                p={1}
+                minW="24px"
+                h="24px"
+                color="gray.500"
+                cursor="pointer"
+                _hover={{ color: "accent.600", bg: "gray.200" }}
+                title="Import Folder ZIP"
+              >
+                <LuUpload size={16} />
+                <input type="file" accept=".zip" onChange={handleFolderZipUpload} hidden />
+              </Button>
+            </Flex>
+          </>
         ) : (
-          <Flex alignItems="center" gap={1}>
+          <>
+            <Flex alignItems="center" gap={1} flex={1} minW={0}>
+              <Button
+                variant="ghost"
+                size="sm"
+                px={2}
+                minW="28px"
+                h="24px"
+                onClick={onFolderBack}
+                _hover={{ bg: "gray.200" }}
+                aria-label="Back to folders"
+              >
+                <LuChevronLeft size={18} />
+              </Button>
+              <Text fontWeight="600" fontSize="sm" color="gray.700" truncate>
+                {currentFolder}
+              </Text>
+            </Flex>
             <Button
               variant="ghost"
-              size="sm"
-              px={2}
-              minW="32px"
-              h="28px"
-              onClick={onFolderBack}
-              _hover={{ bg: "gray.200" }}
-              aria-label="Back to folders"
+              size="xs"
+              p={1}
+              minW="24px"
+              h="24px"
+              color="gray.500"
+              onClick={() => setIsModalOpen(true)}
+              _hover={{ color: "accent.600", bg: "gray.200" }}
+              title="New Scenario"
             >
-              <LuChevronLeft size={20} />
+              <LuPlus size={16} />
             </Button>
-            <Text fontWeight="600" fontSize="sm" color="gray.700" truncate>
-              {currentFolder}
-            </Text>
-          </Flex>
+          </>
         )}
-      </Box>
+      </Flex>
 
       {/* List */}
       <Box flex={1} overflowY="auto">
@@ -231,46 +285,6 @@ export function ScenarioPane({
           })
         )}
       </Box>
-
-      {/* Bottom actions */}
-      <VStack p={2} borderTop="1px" borderColor="gray.200" gap={1}>
-        <Button
-          size="xs"
-          bg="accent.500"
-          color="white"
-          w="full"
-          onClick={() => (currentFolder === null ? setIsFolderModalOpen(true) : setIsModalOpen(true))}
-          _hover={{ bg: "accent.600" }}
-          transition="all 0.15s ease"
-          gap={1}
-        >
-          {currentFolder === null ? (
-            <>
-              <LuFolder size={14} /> New Folder
-            </>
-          ) : (
-            <>
-              <LuBox size={14} /> New Scenario
-            </>
-          )}
-        </Button>
-        {currentFolder === null && (
-          <Button
-            as="label"
-            size="xs"
-            bg="gray.200"
-            color="gray.700"
-            w="full"
-            cursor="pointer"
-            _hover={{ bg: "gray.300" }}
-            transition="all 0.15s ease"
-            gap={1}
-          >
-            <LuUpload size={14} /> Import Folder ZIP
-            <input type="file" accept=".zip" onChange={handleFolderZipUpload} hidden />
-          </Button>
-        )}
-      </VStack>
 
       {/* Scenario modals/dialogs */}
       <CreateScenarioModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />

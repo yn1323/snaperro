@@ -9,7 +9,7 @@ interface ScenarioMenuProps {
 }
 
 /**
- * Scenario action menu (... dropdown)
+ * Scenario action menu (⋮ dropdown)
  */
 export function ScenarioMenu({ scenarioName, onRename, onDuplicate, onDelete }: ScenarioMenuProps) {
   return (
@@ -23,7 +23,7 @@ export function ScenarioMenu({ scenarioName, onRename, onDuplicate, onDelete }: 
           _hover={{ color: "gray.700", bg: "gray.200" }}
           onClick={(e) => e.stopPropagation()}
         >
-          ...
+          ⋮
         </IconButton>
       </MenuTrigger>
       <MenuContent>

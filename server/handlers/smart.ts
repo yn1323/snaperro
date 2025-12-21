@@ -4,13 +4,14 @@ import type { MatchResult } from "../core/matcher.js";
 import { parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
+import type { SnaperroConfig } from "../types/config.js";
 import { handleRecord } from "./recorder.js";
 
 /**
  * Smart mode handler
  * Return mock if exists, otherwise proxy & record
  */
-export async function handleSmart(c: Context, match: MatchResult): Promise<Response> {
+export async function handleSmart(c: Context, match: MatchResult, config: SnaperroConfig): Promise<Response> {
   const method = c.req.method;
   const url = new URL(c.req.url);
   const path = url.pathname;
@@ -55,5 +56,5 @@ export async function handleSmart(c: Context, match: MatchResult): Promise<Respo
 
   // 5. If no mock, proxy & record
   logger.info(`${method} ${path} → smart → record`);
-  return handleRecord(c, match);
+  return handleRecord(c, match, config);
 }

@@ -1,15 +1,15 @@
-import { Box, Button, Flex, Text, VStack } from "@chakra-ui/react";
+import { Box, Button, Flex, Text } from "@chakra-ui/react";
 import { useMemo, useState } from "react";
-import { LuBox, LuChevronLeft, LuFolder, LuUpload } from "react-icons/lu";
+import { LuBox, LuChevronLeft, LuFolder, LuFolderPlus, LuPlus, LuUpload } from "react-icons/lu";
 import type { FolderInfo } from "../types";
 import { CreateFolderModal } from "./CreateFolderModal";
-import { CreatePatternModal } from "./CreatePatternModal";
+import { CreateScenarioModal } from "./CreateScenarioModal";
 import { ConfirmDialog } from "./dialogs/ConfirmDialog";
 import { RenameDialog } from "./dialogs/RenameDialog";
 import { FolderMenu } from "./FolderMenu";
-import { PatternMenu } from "./PatternMenu";
+import { ScenarioMenu } from "./ScenarioMenu";
 
-interface PatternPaneProps {
+interface ScenarioPaneProps {
   width: number;
   // Folder
   folders: FolderInfo[];
@@ -21,10 +21,10 @@ interface PatternPaneProps {
   onFolderDownload: (name: string) => void;
   onFolderUpload: (file: File) => void;
   onFolderDelete: (name: string) => void;
-  // Pattern
-  patterns: string[];
-  currentPattern: string | null;
-  onSelect: (pattern: string) => void;
+  // Scenario
+  scenarios: string[];
+  currentScenario: string | null;
+  onSelect: (scenario: string) => void;
   onCreate: (name: string) => void;
   onRename: (oldName: string, newName: string) => void;
   onDuplicate: (name: string) => void;
@@ -32,10 +32,10 @@ interface PatternPaneProps {
 }
 
 /**
- * Left pane - Folder/Pattern list with navigation
+ * Left pane - Folder/Scenario list with navigation
  * Width: resizable
  */
-export function PatternPane({
+export function ScenarioPane({
   width,
   folders,
   currentFolder,
@@ -46,15 +46,15 @@ export function PatternPane({
   onFolderDownload,
   onFolderUpload,
   onFolderDelete,
-  patterns,
-  currentPattern,
+  scenarios,
+  currentScenario,
   onSelect,
   onCreate,
   onRename,
   onDuplicate,
   onDelete,
-}: PatternPaneProps) {
-  // Pattern modal/dialog state
+}: ScenarioPaneProps) {
+  // Scenario modal/dialog state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -64,12 +64,12 @@ export function PatternPane({
   const [folderRenameTarget, setFolderRenameTarget] = useState<string | null>(null);
   const [folderDeleteTarget, setFolderDeleteTarget] = useState<string | null>(null);
 
-  // Filter patterns for current folder
-  const filteredPatterns = useMemo(() => {
+  // Filter scenarios for current folder
+  const filteredScenarios = useMemo(() => {
     if (!currentFolder) return [];
     const prefix = `${currentFolder}/`;
-    return patterns.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
-  }, [patterns, currentFolder]);
+    return scenarios.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
+  }, [scenarios, currentFolder]);
 
   const handleFolderZipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,13 +79,13 @@ export function PatternPane({
     }
   };
 
-  const handlePatternRename = (newName: string) => {
+  const handleScenarioRename = (newName: string) => {
     if (renameTarget) {
       onRename(renameTarget, newName);
     }
   };
 
-  const handlePatternDelete = () => {
+  const handleScenarioDelete = () => {
     if (deleteTarget) {
       onDelete(deleteTarget);
     }
@@ -106,31 +106,85 @@ export function PatternPane({
   return (
     <Flex w={`${width}px`} bg="gray.50" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
       {/* Header */}
-      <Box p={2} borderBottom="1px" borderColor="gray.200" bg="gray.100">
+      <Flex
+        p={2}
+        borderBottom="1px"
+        borderColor="gray.200"
+        bg="gray.100"
+        alignItems="center"
+        justifyContent="space-between"
+      >
         {currentFolder === null ? (
-          <Text fontWeight="600" fontSize="sm" color="gray.700">
-            Folders
-          </Text>
+          <>
+            <Text fontWeight="600" fontSize="sm" color="gray.700">
+              Folders
+            </Text>
+            <Flex gap={1}>
+              <Button
+                variant="ghost"
+                size="xs"
+                p={1}
+                minW="24px"
+                h="24px"
+                color="gray.500"
+                onClick={() => setIsFolderModalOpen(true)}
+                _hover={{ color: "accent.600", bg: "gray.200" }}
+                title="New Folder"
+              >
+                <LuFolderPlus size={16} />
+              </Button>
+              <Button
+                as="label"
+                variant="ghost"
+                size="xs"
+                p={1}
+                minW="24px"
+                h="24px"
+                color="gray.500"
+                cursor="pointer"
+                _hover={{ color: "accent.600", bg: "gray.200" }}
+                title="Import Folder ZIP"
+              >
+                <LuUpload size={16} />
+                <input type="file" accept=".zip" onChange={handleFolderZipUpload} hidden />
+              </Button>
+            </Flex>
+          </>
         ) : (
-          <Flex alignItems="center" gap={1}>
+          <>
+            <Flex alignItems="center" gap={1} flex={1} minW={0}>
+              <Button
+                variant="ghost"
+                size="sm"
+                px={2}
+                minW="28px"
+                h="24px"
+                onClick={onFolderBack}
+                _hover={{ bg: "gray.200" }}
+                aria-label="Back to folders"
+              >
+                <LuChevronLeft size={18} />
+              </Button>
+              <Text fontWeight="600" fontSize="sm" color="gray.700" truncate>
+                {currentFolder}
+              </Text>
+            </Flex>
             <Button
               variant="ghost"
-              size="sm"
-              px={2}
-              minW="32px"
-              h="28px"
-              onClick={onFolderBack}
-              _hover={{ bg: "gray.200" }}
-              aria-label="Back to folders"
+              size="xs"
+              p={1}
+              minW="24px"
+              h="24px"
+              color="gray.500"
+              onClick={() => setIsModalOpen(true)}
+              _hover={{ color: "accent.600", bg: "gray.200" }}
+              title="New Scenario"
             >
-              <LuChevronLeft size={20} />
+              <LuPlus size={16} />
             </Button>
-            <Text fontWeight="600" fontSize="sm" color="gray.700" truncate>
-              {currentFolder}
-            </Text>
-          </Flex>
+          </>
         )}
-      </Box>
+      </Flex>
 
       {/* List */}
       <Box flex={1} overflowY="auto">
@@ -165,7 +219,7 @@ export function PatternPane({
                     {folder.name}
                   </Text>
                   <Text fontSize="xs" color="gray.500">
-                    ({folder.patternsCount})
+                    ({folder.scenariosCount})
                   </Text>
                 </Button>
                 <Box pr={1}>
@@ -179,23 +233,23 @@ export function PatternPane({
               </Flex>
             ))
           )
-        ) : // Pattern list
-        filteredPatterns.length === 0 ? (
+        ) : // Scenario list
+        filteredScenarios.length === 0 ? (
           <Text p={3} fontSize="xs" color="gray.500" textAlign="center">
-            No patterns
+            No scenarios
           </Text>
         ) : (
-          filteredPatterns.map((pattern) => {
-            const fullName = `${currentFolder}/${pattern}`;
-            const isSelected = currentPattern === fullName;
+          filteredScenarios.map((scenario) => {
+            const fullName = `${currentFolder}/${scenario}`;
+            const isSelected = currentScenario === fullName;
             return (
               <Flex
-                key={pattern}
+                key={scenario}
                 alignItems="center"
-                bg={isSelected ? "accent.50" : undefined}
-                borderLeft="2px"
-                borderColor={isSelected ? "accent.500" : "transparent"}
-                _hover={{ bg: isSelected ? "accent.50" : "gray.100" }}
+                bg={isSelected ? "accent.100" : undefined}
+                borderLeft={isSelected ? "4px solid" : "4px solid transparent"}
+                borderLeftColor={isSelected ? "accent.500" : "transparent"}
+                _hover={{ bg: isSelected ? "accent.100" : "gray.100" }}
                 transition="all 0.15s ease"
               >
                 <Button
@@ -207,7 +261,7 @@ export function PatternPane({
                   h="auto"
                   justifyContent="flex-start"
                   fontSize="sm"
-                  fontWeight="normal"
+                  fontWeight={isSelected ? "semibold" : "normal"}
                   color={isSelected ? "accent.700" : "gray.700"}
                   onClick={() => onSelect(fullName)}
                   title={fullName}
@@ -215,12 +269,12 @@ export function PatternPane({
                   _hover={{ bg: "transparent" }}
                   gap={2}
                 >
-                  <LuBox color="#06b6d4" size={16} />
-                  <Text truncate>{pattern}</Text>
+                  <LuBox color={isSelected ? "#10b981" : "#06b6d4"} size={16} />
+                  <Text truncate>{scenario}</Text>
                 </Button>
                 <Box pr={1}>
-                  <PatternMenu
-                    patternName={pattern}
+                  <ScenarioMenu
+                    scenarioName={scenario}
                     onRename={() => setRenameTarget(fullName)}
                     onDuplicate={() => onDuplicate(fullName)}
                     onDelete={() => setDeleteTarget(fullName)}
@@ -232,64 +286,24 @@ export function PatternPane({
         )}
       </Box>
 
-      {/* Bottom actions */}
-      <VStack p={2} borderTop="1px" borderColor="gray.200" gap={1}>
-        <Button
-          size="xs"
-          bg="accent.500"
-          color="white"
-          w="full"
-          onClick={() => (currentFolder === null ? setIsFolderModalOpen(true) : setIsModalOpen(true))}
-          _hover={{ bg: "accent.600" }}
-          transition="all 0.15s ease"
-          gap={1}
-        >
-          {currentFolder === null ? (
-            <>
-              <LuFolder size={14} /> New Folder
-            </>
-          ) : (
-            <>
-              <LuBox size={14} /> New Pattern
-            </>
-          )}
-        </Button>
-        {currentFolder === null && (
-          <Button
-            as="label"
-            size="xs"
-            bg="gray.200"
-            color="gray.700"
-            w="full"
-            cursor="pointer"
-            _hover={{ bg: "gray.300" }}
-            transition="all 0.15s ease"
-            gap={1}
-          >
-            <LuUpload size={14} /> Import Folder ZIP
-            <input type="file" accept=".zip" onChange={handleFolderZipUpload} hidden />
-          </Button>
-        )}
-      </VStack>
-
-      {/* Pattern modals/dialogs */}
-      <CreatePatternModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />
+      {/* Scenario modals/dialogs */}
+      <CreateScenarioModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />
 
       <RenameDialog
         isOpen={renameTarget !== null}
         currentName={renameTarget?.split("/").pop() || ""}
-        title="Rename Pattern"
+        title="Rename Scenario"
         onClose={() => setRenameTarget(null)}
-        onSubmit={handlePatternRename}
+        onSubmit={handleScenarioRename}
       />
 
       <ConfirmDialog
         isOpen={deleteTarget !== null}
-        title="Delete Pattern"
-        message={`Delete pattern "${deleteTarget?.split("/").pop()}"? This action cannot be undone.`}
+        title="Delete Scenario"
+        message={`Delete scenario "${deleteTarget?.split("/").pop()}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handlePatternDelete}
+        onConfirm={handleScenarioDelete}
       />
 
       {/* Folder modals/dialogs */}
@@ -310,7 +324,7 @@ export function PatternPane({
       <ConfirmDialog
         isOpen={folderDeleteTarget !== null}
         title="Delete Folder"
-        message={`Delete folder "${folderDeleteTarget}" and all patterns inside? This action cannot be undone.`}
+        message={`Delete folder "${folderDeleteTarget}" and all scenarios inside? This action cannot be undone.`}
         confirmLabel="Delete"
         onClose={() => setFolderDeleteTarget(null)}
         onConfirm={handleFolderDelete}

@@ -16,18 +16,20 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
   const method = c.req.method;
   const url = new URL(c.req.url);
   const path = url.pathname;
-  const pattern = state.getPattern();
+  const scenario = state.getScenario();
 
-  if (!pattern) {
-    logger.warn(`${method} ${path} → no pattern selected`);
+  if (!scenario) {
+    logger.warn(`${method} ${path} → no scenario selected`);
     return c.json(
       {
-        error: "No pattern selected",
-        message: "Please select a pattern first",
+        error: "No scenario selected",
+        message: "Please select a scenario first",
       },
       400,
     );
   }
+
+  const startTime = Date.now();
 
   // Parse query parameters
   const queryParams = parseQueryParams(url);
@@ -37,7 +39,7 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
 
   // Search for file with parameter matching
   const result = await storage.findMatchingFile(
-    pattern,
+    scenario,
     method,
     match.matchedRoute,
     match.pathParams,
@@ -57,7 +59,7 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
     // Fallback: proxy and record
     if (fallback === "proxy&record") {
       logger.info(`${method} ${path} → mock fallback → proxy&record`);
-      return handleRecord(c, match);
+      return handleRecord(c, match, config);
     }
 
     // Fallback: return 404 (default)
@@ -74,7 +76,15 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
     );
   }
 
-  logger.info(`${method} ${path} → mock → ${result.filePath} (${result.fileData.response.status})`);
+  const elapsed = Date.now() - startTime;
+  logger.request({
+    method,
+    path,
+    action: "mock",
+    status: result.fileData.response.status,
+    filePath: result.filePath,
+    duration: elapsed,
+  });
 
   // Return response (304/204 have no body)
   const status = result.fileData.response.status;

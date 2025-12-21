@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { ApiConfig } from "../types/config.js";
-import { extractPathParams, findMatchingApi, parseRoutePattern } from "./matcher.js";
+import { extractPathParams, findMatchingApi, parseRoute } from "./matcher.js";
 
-describe("parseRoutePattern", () => {
+describe("parseRoute", () => {
   it("パスパラメータなしのパターンをパースする", () => {
-    const result = parseRoutePattern("/api/users");
+    const result = parseRoute("/api/users");
     expect(result.method).toBeNull();
     expect(result.path).toBe("/api/users");
     expect(result.paramNames).toEqual([]);
@@ -13,7 +13,7 @@ describe("parseRoutePattern", () => {
   });
 
   it("単一のパスパラメータをパースする", () => {
-    const result = parseRoutePattern("/api/users/:id");
+    const result = parseRoute("/api/users/:id");
     expect(result.method).toBeNull();
     expect(result.path).toBe("/api/users/:id");
     expect(result.paramNames).toEqual(["id"]);
@@ -22,28 +22,28 @@ describe("parseRoutePattern", () => {
   });
 
   it("複数のパスパラメータをパースする", () => {
-    const result = parseRoutePattern("/api/users/:userId/orders/:orderId");
+    const result = parseRoute("/api/users/:userId/orders/:orderId");
     expect(result.paramNames).toEqual(["userId", "orderId"]);
     expect("/api/users/123/orders/456".match(result.regex)).not.toBeNull();
     expect("/api/users/123/orders".match(result.regex)).toBeNull();
   });
 
   it("メソッド指定付きパターンをパースする", () => {
-    const result = parseRoutePattern("GET /api/users/:id");
+    const result = parseRoute("GET /api/users/:id");
     expect(result.method).toBe("GET");
     expect(result.path).toBe("/api/users/:id");
     expect(result.paramNames).toEqual(["id"]);
   });
 
   it("小文字のメソッドも大文字に正規化する", () => {
-    const result = parseRoutePattern("get /api/users");
+    const result = parseRoute("get /api/users");
     expect(result.method).toBe("GET");
   });
 
   it("全HTTPメソッドを認識する", () => {
     const methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
     for (const method of methods) {
-      const result = parseRoutePattern(`${method} /api/test`);
+      const result = parseRoute(`${method} /api/test`);
       expect(result.method).toBe(method);
     }
   });
@@ -51,31 +51,31 @@ describe("parseRoutePattern", () => {
 
 describe("extractPathParams", () => {
   it("単一のパスパラメータを抽出する", () => {
-    const parsed = parseRoutePattern("/api/users/:id");
+    const parsed = parseRoute("/api/users/:id");
     const params = extractPathParams("/api/users/123", parsed);
     expect(params).toEqual({ id: "123" });
   });
 
   it("複数のパスパラメータを抽出する", () => {
-    const parsed = parseRoutePattern("/api/users/:userId/orders/:orderId");
+    const parsed = parseRoute("/api/users/:userId/orders/:orderId");
     const params = extractPathParams("/api/users/123/orders/456", parsed);
     expect(params).toEqual({ userId: "123", orderId: "456" });
   });
 
   it("マッチしない場合はnullを返す", () => {
-    const parsed = parseRoutePattern("/api/users/:id");
+    const parsed = parseRoute("/api/users/:id");
     const params = extractPathParams("/api/orders/123", parsed);
     expect(params).toBeNull();
   });
 
   it("パスパラメータなしの場合は空オブジェクトを返す", () => {
-    const parsed = parseRoutePattern("/api/users");
+    const parsed = parseRoute("/api/users");
     const params = extractPathParams("/api/users", parsed);
     expect(params).toEqual({});
   });
 
   it("特殊文字を含むパラメータ値を抽出する", () => {
-    const parsed = parseRoutePattern("/api/users/:id");
+    const parsed = parseRoute("/api/users/:id");
     const params = extractPathParams("/api/users/user-123_abc", parsed);
     expect(params).toEqual({ id: "user-123_abc" });
   });

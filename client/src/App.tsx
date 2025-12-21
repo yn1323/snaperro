@@ -1,22 +1,24 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { ConfirmDialog } from "./components/dialogs/ConfirmDialog";
+import { ModeHelpDialog } from "./components/dialogs/ModeHelpDialog";
 import { EditorPane } from "./components/EditorPane";
 import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
-import { PatternPane } from "./components/PatternPane";
+import { LogPanel } from "./components/LogPanel";
+import { ScenarioPane } from "./components/ScenarioPane";
 import { TopBar } from "./components/TopBar";
 import { Toaster } from "./components/ui/toaster";
 import { useFavicon } from "./hooks/useFavicon";
 import { useFileEditor } from "./hooks/useFileEditor";
-import { usePatternNavigation } from "./hooks/usePatternNavigation";
+import { useScenarioNavigation } from "./hooks/useScenarioNavigation";
 import { useSnaperroAPI } from "./hooks/useSnaperroAPI";
 import { useSnaperroSSE } from "./hooks/useSnaperroSSE";
 import type { Mode } from "./types";
 import { withErrorHandling } from "./utils/error-handler";
 
 export default function App() {
-  const { state, connected } = useSnaperroSSE();
+  const { state, connected, registerRequestLogHandler } = useSnaperroSSE();
   const api = useSnaperroAPI();
 
   // Dynamic favicon based on connection and mode
@@ -26,24 +28,27 @@ export default function App() {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Mode help dialog state
+  const [isModeHelpOpen, setIsModeHelpOpen] = useState(false);
+
   // File editor hook
   const fileEditor = useFileEditor({
     api,
-    currentPattern: state.currentPattern,
+    currentScenario: state.currentScenario,
   });
 
-  // Pattern navigation hook
-  const navigation = usePatternNavigation({
+  // Scenario navigation hook
+  const navigation = useScenarioNavigation({
     api,
-    onPatternDeselect: fileEditor.resetFileSelection,
+    onScenarioDeselect: fileEditor.resetFileSelection,
   });
 
-  // Reset file selection when pattern changes
+  // Reset file selection when scenario changes
   useEffect(() => {
-    if (state.currentPattern !== undefined) {
+    if (state.currentScenario !== undefined) {
       fileEditor.resetFileSelection();
     }
-  }, [state.currentPattern, fileEditor.resetFileSelection]);
+  }, [state.currentScenario, fileEditor.resetFileSelection]);
 
   // ============================================================
   // Mode handler
@@ -56,33 +61,33 @@ export default function App() {
   );
 
   // ============================================================
-  // Pattern CRUD handlers
+  // Scenario CRUD handlers
   // ============================================================
-  const handlePatternCreate = useCallback(
+  const handleScenarioCreate = useCallback(
     async (name: string) => {
       const fullName = navigation.currentFolder ? `${navigation.currentFolder}/${name}` : name;
-      await withErrorHandling(() => api.createPattern(fullName), "Pattern create error");
+      await withErrorHandling(() => api.createScenario(fullName), "Scenario create error");
     },
     [api, navigation.currentFolder],
   );
 
-  const handlePatternRename = useCallback(
+  const handleScenarioRename = useCallback(
     async (oldName: string, newName: string) => {
-      await withErrorHandling(() => api.renamePattern(oldName, newName), "Pattern rename error");
+      await withErrorHandling(() => api.renameScenario(oldName, newName), "Scenario rename error");
     },
     [api],
   );
 
-  const handlePatternDuplicate = useCallback(
+  const handleScenarioDuplicate = useCallback(
     async (name: string) => {
-      await withErrorHandling(() => api.duplicatePattern(name, `${name}_copy`), "Pattern duplicate error");
+      await withErrorHandling(() => api.duplicateScenario(name, `${name}_copy`), "Scenario duplicate error");
     },
     [api],
   );
 
-  const handlePatternDelete = useCallback(
+  const handleScenarioDelete = useCallback(
     async (name: string) => {
-      await withErrorHandling(() => api.deletePattern(name), "Pattern delete error");
+      await withErrorHandling(() => api.deleteScenario(name), "Scenario delete error");
     },
     [api],
   );
@@ -143,12 +148,13 @@ export default function App() {
             version={state.version}
             mode={state.mode}
             connected={connected}
-            currentPattern={state.currentPattern}
+            currentScenario={state.currentScenario}
             onModeChange={handleModeChange}
+            onHelpClick={() => setIsModeHelpOpen(true)}
           />
         }
-        patternPane={(width) => (
-          <PatternPane
+        scenarioPane={(width) => (
+          <ScenarioPane
             width={width}
             folders={state.folders}
             currentFolder={navigation.currentFolder}
@@ -159,13 +165,13 @@ export default function App() {
             onFolderDownload={handleFolderDownload}
             onFolderUpload={handleFolderUpload}
             onFolderDelete={handleFolderDelete}
-            patterns={state.patterns}
-            currentPattern={state.currentPattern}
-            onSelect={navigation.handlePatternSelect}
-            onCreate={handlePatternCreate}
-            onRename={handlePatternRename}
-            onDuplicate={handlePatternDuplicate}
-            onDelete={handlePatternDelete}
+            scenarios={state.scenarios}
+            currentScenario={state.currentScenario}
+            onSelect={navigation.handleScenarioSelect}
+            onCreate={handleScenarioCreate}
+            onRename={handleScenarioRename}
+            onDuplicate={handleScenarioDuplicate}
+            onDelete={handleScenarioDelete}
           />
         )}
         filePane={(width) => (
@@ -176,7 +182,7 @@ export default function App() {
             onSelect={fileEditor.setSelectedFile}
             onUpload={fileEditor.handleFileUpload}
             onDownload={fileEditor.handleFileDownload}
-            pattern={state.currentPattern}
+            scenario={state.currentScenario}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
           />
@@ -191,6 +197,7 @@ export default function App() {
             searchQuery={searchQuery}
           />
         }
+        logPanel={<LogPanel registerRequestLogHandler={registerRequestLogHandler} />}
       />
 
       {/* File delete confirmation dialog */}
@@ -202,6 +209,9 @@ export default function App() {
         onClose={fileEditor.closeDeleteConfirm}
         onConfirm={fileEditor.handleFileDeleteConfirm}
       />
+
+      {/* Mode help dialog */}
+      <ModeHelpDialog isOpen={isModeHelpOpen} onClose={() => setIsModeHelpOpen(false)} />
 
       <Toaster />
     </>

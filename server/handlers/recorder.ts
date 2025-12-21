@@ -2,37 +2,40 @@ import path from "node:path";
 import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
 import { logger } from "../core/logger.js";
-import { maskHeaders } from "../core/mask.js";
+import { getMergedMaskHeaders, maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
 import { copyRequestHeaders, parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
+import type { SnaperroConfig } from "../types/config.js";
 import type { FileData, HttpMethod } from "../types/file.js";
 
 /**
  * Record mode handler
  * Forward requests to actual API, save responses, and return them
  */
-export async function handleRecord(c: Context, match: MatchResult): Promise<Response> {
+export async function handleRecord(c: Context, match: MatchResult, config: SnaperroConfig): Promise<Response> {
   const method = c.req.method;
   const url = new URL(c.req.url);
   const requestPath = url.pathname;
-  const pattern = state.getPattern();
+  const scenario = state.getScenario();
   const targetUrl = `${match.apiConfig.target}${url.pathname}${url.search}`;
 
-  if (!pattern) {
-    logger.warn(`${method} ${requestPath} → no pattern selected`);
+  if (!scenario) {
+    logger.warn(`${method} ${requestPath} → no scenario selected`);
     return c.json(
       {
-        error: "No pattern selected",
-        message: "Please select a pattern first",
+        error: "No scenario selected",
+        message: "Please select a scenario first",
       },
       400,
     );
   }
 
-  logger.info(`${method} ${requestPath} → record`);
+  logger.debug(`${method} ${requestPath} → record`);
+
+  const startTime = Date.now();
 
   try {
     // Get request body
@@ -69,7 +72,10 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
     for (const [key, value] of c.req.raw.headers.entries()) {
       rawRequestHeaders[key] = value;
     }
-    const requestHeaders = maskHeaders(rawRequestHeaders, match.apiConfig.maskRequestHeaders);
+    const requestHeaders = maskHeaders(
+      rawRequestHeaders,
+      getMergedMaskHeaders(config.maskRequestHeaders, match.apiConfig.maskRequestHeaders),
+    );
 
     // 5. Convert response headers for recording
     const responseHeaders: Record<string, string> = {};
@@ -96,7 +102,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
 
     // 7. Determine file path and save atomically (prevents race conditions)
     const { filePath, isNew } = await storage.findAndWriteAtomic(
-      pattern,
+      scenario,
       method,
       match.matchedRoute,
       match.pathParams,
@@ -107,15 +113,21 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
 
     // 9. Emit SSE event
     eventBus.emitSSE(isNew ? "file_created" : "file_updated", {
-      pattern,
+      scenario,
       filename: path.basename(filePath),
       endpoint: match.matchedRoute,
       method,
     });
 
-    const fileSize = JSON.stringify(fileData).length;
-    const action = isNew ? "saved" : "updated";
-    logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
+    const elapsed = Date.now() - startTime;
+    logger.request({
+      method,
+      path: requestPath,
+      action: "record",
+      status: response.status,
+      filePath: path.basename(filePath),
+      duration: elapsed,
+    });
 
     // 10. Return response (304/204 have no body)
     if (response.status === 304 || response.status === 204) {

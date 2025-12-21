@@ -3,7 +3,7 @@ import path from "node:path";
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { state } from "../core/state.js";
-import type { PatternMetadata } from "../core/storage.js";
+import type { ScenarioMetadata } from "../core/storage.js";
 import { storage } from "../core/storage.js";
 import { controlApi } from "./control-api.js";
 
@@ -12,9 +12,9 @@ const app = new Hono();
 app.route("/__snaperro__", controlApi);
 
 const TEST_FOLDER = "__test_folder__";
-const TEST_PATTERN_NAME = "__test_pattern__";
-const TEST_PATTERN = `${TEST_FOLDER}/${TEST_PATTERN_NAME}`;
-const TEST_PATTERN_ENCODED = encodeURIComponent(TEST_PATTERN);
+const TEST_SCENARIO_NAME = "__test_scenario__";
+const TEST_SCENARIO = `${TEST_FOLDER}/${TEST_SCENARIO_NAME}`;
+const TEST_SCENARIO_ENCODED = encodeURIComponent(TEST_SCENARIO);
 const BASE_DIR = ".snaperro/files";
 
 // テストデータ
@@ -29,11 +29,11 @@ describe("control-api", () => {
   beforeEach(async () => {
     // 状態をリセット
     state.reset();
-    // テスト用フォルダとパターンを作成
+    // テスト用フォルダとシナリオを作成
     await storage.createFolder(TEST_FOLDER);
-    await storage.createPattern(TEST_PATTERN);
-    // パターンとして認識されるようにファイルを作成
-    await fs.writeFile(path.join(BASE_DIR, TEST_PATTERN, "api_test_001.json"), JSON.stringify(testFileData, null, 2));
+    await storage.createScenario(TEST_SCENARIO);
+    // シナリオとして認識されるようにファイルを作成
+    await fs.writeFile(path.join(BASE_DIR, TEST_SCENARIO, "api_test_001.json"), JSON.stringify(testFileData, null, 2));
   });
 
   afterEach(async () => {
@@ -52,20 +52,20 @@ describe("control-api", () => {
   describe("GET /status", () => {
     it("現在の状態を返す", async () => {
       await state.setMode("mock");
-      await state.setPattern(TEST_PATTERN);
+      await state.setScenario(TEST_SCENARIO);
 
       const res = await app.request("/__snaperro__/status");
       const body = (await res.json()) as {
         mode: string;
-        currentPattern: string;
-        patterns: string[];
+        currentScenario: string;
+        scenarios: string[];
         filesCount: number;
       };
 
       expect(res.status).toBe(200);
       expect(body.mode).toBe("mock");
-      expect(body.currentPattern).toBe(TEST_PATTERN);
-      expect(Array.isArray(body.patterns)).toBe(true);
+      expect(body.currentScenario).toBe(TEST_SCENARIO);
+      expect(Array.isArray(body.scenarios)).toBe(true);
       expect(typeof body.filesCount).toBe("number");
     });
 
@@ -73,14 +73,14 @@ describe("control-api", () => {
       const res = await app.request("/__snaperro__/status");
       const body = (await res.json()) as {
         mode: string;
-        currentPattern: string | null;
-        patterns: string[];
+        currentScenario: string | null;
+        scenarios: string[];
         filesCount: number;
       };
 
       expect(res.status).toBe(200);
-      expect(body.mode).toBe("proxy");
-      expect(body.currentPattern).toBeNull();
+      expect(body.mode).toBe("smart");
+      expect(body.currentScenario).toBeNull();
       expect(body.filesCount).toBe(0);
     });
   });
@@ -126,7 +126,7 @@ describe("control-api", () => {
 
       expect(res.status).toBe(400);
       expect(body.error).toBe("Invalid mode");
-      expect(body.validModes).toEqual(["proxy", "record", "mock"]);
+      expect(body.validModes).toEqual(["proxy", "record", "mock", "smart"]);
     });
 
     it("大文字小文字を区別しない", async () => {
@@ -143,114 +143,114 @@ describe("control-api", () => {
   });
 
   // ============================================================
-  // パターン操作
+  // シナリオ操作
   // ============================================================
 
-  describe("GET /patterns", () => {
-    it("パターン一覧をメタデータ付きで取得できる", async () => {
-      const res = await app.request("/__snaperro__/patterns");
-      const body = (await res.json()) as { patterns: PatternMetadata[] };
+  describe("GET /scenarios", () => {
+    it("シナリオ一覧をメタデータ付きで取得できる", async () => {
+      const res = await app.request("/__snaperro__/scenarios");
+      const body = (await res.json()) as { scenarios: ScenarioMetadata[] };
 
       expect(res.status).toBe(200);
-      expect(Array.isArray(body.patterns)).toBe(true);
+      expect(Array.isArray(body.scenarios)).toBe(true);
 
-      const testPattern = body.patterns.find((p) => p.name === TEST_PATTERN);
-      expect(testPattern).toBeDefined();
-      expect(testPattern?.filesCount).toBe(1); // We created one file in beforeEach
-      expect(testPattern?.createdAt).toBeDefined();
-      expect(testPattern?.updatedAt).toBeDefined();
+      const testScenario = body.scenarios.find((p) => p.name === TEST_SCENARIO);
+      expect(testScenario).toBeDefined();
+      expect(testScenario?.filesCount).toBe(1); // We created one file in beforeEach
+      expect(testScenario?.createdAt).toBeDefined();
+      expect(testScenario?.updatedAt).toBeDefined();
     });
   });
 
-  describe("GET /patterns/current", () => {
-    it("現在のパターンを返す", async () => {
-      await state.setPattern(TEST_PATTERN);
+  describe("GET /scenarios/current", () => {
+    it("現在のシナリオを返す", async () => {
+      await state.setScenario(TEST_SCENARIO);
 
-      const res = await app.request("/__snaperro__/patterns/current");
-      const body = (await res.json()) as { currentPattern: string };
+      const res = await app.request("/__snaperro__/scenarios/current");
+      const body = (await res.json()) as { currentScenario: string };
 
       expect(res.status).toBe(200);
-      expect(body.currentPattern).toBe(TEST_PATTERN);
+      expect(body.currentScenario).toBe(TEST_SCENARIO);
     });
 
-    it("パターン未選択時はnullを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/current");
-      const body = (await res.json()) as { currentPattern: string | null };
+    it("シナリオ未選択時はnullを返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/current");
+      const body = (await res.json()) as { currentScenario: string | null };
 
       expect(res.status).toBe(200);
-      expect(body.currentPattern).toBeNull();
+      expect(body.currentScenario).toBeNull();
     });
   });
 
-  describe("PUT /patterns/current", () => {
-    it("パターンを切り替えできる", async () => {
-      const res = await app.request("/__snaperro__/patterns/current", {
+  describe("PUT /scenarios/current", () => {
+    it("シナリオを切り替えできる", async () => {
+      const res = await app.request("/__snaperro__/scenarios/current", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pattern: TEST_PATTERN }),
+        body: JSON.stringify({ scenario: TEST_SCENARIO }),
       });
-      const body = (await res.json()) as { currentPattern: string; message: string };
+      const body = (await res.json()) as { currentScenario: string; message: string };
 
       expect(res.status).toBe(200);
-      expect(body.currentPattern).toBe(TEST_PATTERN);
-      expect(body.message).toBe(`Pattern changed to ${TEST_PATTERN}`);
-      expect(state.getPattern()).toBe(TEST_PATTERN);
+      expect(body.currentScenario).toBe(TEST_SCENARIO);
+      expect(body.message).toBe(`Scenario changed to ${TEST_SCENARIO}`);
+      expect(state.getScenario()).toBe(TEST_SCENARIO);
     });
 
-    it("存在しないパターンはエラーを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/current", {
+    it("存在しないシナリオはエラーを返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/current", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pattern: "nonexistent" }),
+        body: JSON.stringify({ scenario: "nonexistent" }),
       });
 
       expect(res.status).toBe(404);
     });
 
-    it("空のパターンでも設定可能", async () => {
-      const res = await app.request("/__snaperro__/patterns/current", {
+    it("空のシナリオでも設定可能", async () => {
+      const res = await app.request("/__snaperro__/scenarios/current", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pattern: "" }),
+        body: JSON.stringify({ scenario: "" }),
       });
 
-      // Empty string is treated as a valid pattern path (base directory)
+      // Empty string is treated as a valid scenario path (base directory)
       expect(res.status).toBe(200);
     });
   });
 
-  describe("POST /patterns", () => {
-    it("パターンを作成できる", async () => {
-      const newPattern = "__test_new_pattern__";
-      const res = await app.request("/__snaperro__/patterns", {
+  describe("POST /scenarios", () => {
+    it("シナリオを作成できる", async () => {
+      const newScenario = "__test_new_scenario__";
+      const res = await app.request("/__snaperro__/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newPattern }),
+        body: JSON.stringify({ name: newScenario }),
       });
       const body = (await res.json()) as { name: string; message: string };
 
       expect(res.status).toBe(201);
-      expect(body.name).toBe(newPattern);
-      expect(body.message).toBe("Pattern created");
+      expect(body.name).toBe(newScenario);
+      expect(body.message).toBe("Scenario created");
 
       // クリーンアップ
-      await fs.rm(path.join(BASE_DIR, newPattern), { recursive: true, force: true });
+      await fs.rm(path.join(BASE_DIR, newScenario), { recursive: true, force: true });
     });
 
-    it("既存パターンはエラーを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns", {
+    it("既存シナリオはエラーを返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: TEST_PATTERN }),
+        body: JSON.stringify({ name: TEST_SCENARIO }),
       });
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(409);
-      expect(body.error).toBe("Pattern already exists");
+      expect(body.error).toBe("Scenario already exists");
     });
 
     it("名前がない場合はエラーを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns", {
+      const res = await app.request("/__snaperro__/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -260,10 +260,10 @@ describe("control-api", () => {
     });
   });
 
-  describe("POST /patterns/:name/duplicate", () => {
-    it("パターンを複製できる", async () => {
+  describe("POST /scenarios/:name/duplicate", () => {
+    it("シナリオを複製できる", async () => {
       const newName = "__test_duplicated__";
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/duplicate`, {
+      const res = await app.request(`/__snaperro__/scenarios/${TEST_SCENARIO_ENCODED}/duplicate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName }),
@@ -271,16 +271,16 @@ describe("control-api", () => {
       const body = (await res.json()) as { source: string; destination: string; message: string };
 
       expect(res.status).toBe(200);
-      expect(body.source).toBe(TEST_PATTERN);
+      expect(body.source).toBe(TEST_SCENARIO);
       expect(body.destination).toBe(newName);
-      expect(body.message).toBe("Pattern duplicated");
+      expect(body.message).toBe("Scenario duplicated");
 
       // クリーンアップ
       await fs.rm(path.join(BASE_DIR, newName), { recursive: true, force: true });
     });
 
-    it("存在しないパターンはエラーを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/duplicate", {
+    it("存在しないシナリオはエラーを返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/nonexistent/duplicate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName: "copy" }),
@@ -290,13 +290,13 @@ describe("control-api", () => {
     });
   });
 
-  describe("PUT /patterns/:name/rename", () => {
-    it("パターン名を変更できる", async () => {
+  describe("PUT /scenarios/:name/rename", () => {
+    it("シナリオ名を変更できる", async () => {
       const oldName = "__test_rename_source__";
       const newName = "__test_rename_dest__";
-      await storage.createPattern(oldName);
+      await storage.createScenario(oldName);
 
-      const res = await app.request(`/__snaperro__/patterns/${oldName}/rename`, {
+      const res = await app.request(`/__snaperro__/scenarios/${oldName}/rename`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName }),
@@ -306,59 +306,83 @@ describe("control-api", () => {
       expect(res.status).toBe(200);
       expect(body.oldName).toBe(oldName);
       expect(body.newName).toBe(newName);
-      expect(body.message).toBe("Pattern renamed");
+      expect(body.message).toBe("Scenario renamed");
 
       // クリーンアップ
       await fs.rm(path.join(BASE_DIR, newName), { recursive: true, force: true });
     });
 
-    it("現在選択中のパターンをリネームするとstateも更新される", async () => {
+    it("現在選択中のシナリオをリネームするとstateも更新される", async () => {
       const oldName = "__test_current_rename__";
       const newName = "__test_current_renamed__";
-      await storage.createPattern(oldName);
-      await state.setPattern(oldName);
+      await storage.createScenario(oldName);
+      await state.setScenario(oldName);
 
-      const res = await app.request(`/__snaperro__/patterns/${oldName}/rename`, {
+      const res = await app.request(`/__snaperro__/scenarios/${oldName}/rename`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newName }),
       });
 
       expect(res.status).toBe(200);
-      expect(state.getPattern()).toBe(newName);
+      expect(state.getScenario()).toBe(newName);
 
       // クリーンアップ
       await fs.rm(path.join(BASE_DIR, newName), { recursive: true, force: true });
     });
+
+    it("フォルダ内のシナリオをリネームするとフォルダパスが維持される", async () => {
+      const folder = "__test_folder_rename__";
+      const oldScenario = "original";
+      const newScenario = "renamed";
+      const oldName = `${folder}/${oldScenario}`;
+      const expectedNewName = `${folder}/${newScenario}`;
+
+      await storage.createFolder(folder);
+      await storage.createScenario(oldName);
+
+      const res = await app.request(`/__snaperro__/scenarios/${encodeURIComponent(oldName)}/rename`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName: newScenario }), // シナリオ名のみ送信
+      });
+      const body = (await res.json()) as { oldName: string; newName: string; message: string };
+
+      expect(res.status).toBe(200);
+      expect(body.newName).toBe(expectedNewName); // フォルダパスが維持される
+
+      // クリーンアップ
+      await storage.deleteFolder(folder);
+    });
   });
 
-  describe("DELETE /patterns/:name", () => {
-    it("パターンを削除できる", async () => {
-      const deletePattern = "__test_delete__";
-      await storage.createPattern(deletePattern);
+  describe("DELETE /scenarios/:name", () => {
+    it("シナリオを削除できる", async () => {
+      const deleteScenario = "__test_delete__";
+      await storage.createScenario(deleteScenario);
 
-      const res = await app.request(`/__snaperro__/patterns/${deletePattern}`, {
+      const res = await app.request(`/__snaperro__/scenarios/${deleteScenario}`, {
         method: "DELETE",
       });
       const body = (await res.json()) as { name: string; message: string };
 
       expect(res.status).toBe(200);
-      expect(body.name).toBe(deletePattern);
-      expect(body.message).toBe("Pattern deleted");
+      expect(body.name).toBe(deleteScenario);
+      expect(body.message).toBe("Scenario deleted");
     });
 
-    it("現在選択中のパターンも削除できる", async () => {
-      await state.setPattern(TEST_PATTERN);
+    it("現在選択中のシナリオも削除できる", async () => {
+      await state.setScenario(TEST_SCENARIO);
 
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}`, {
+      const res = await app.request(`/__snaperro__/scenarios/${TEST_SCENARIO_ENCODED}`, {
         method: "DELETE",
       });
 
       expect(res.status).toBe(200);
     });
 
-    it("存在しないパターンはエラーを返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent", {
+    it("存在しないシナリオはエラーを返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/nonexistent", {
         method: "DELETE",
       });
 
@@ -367,41 +391,41 @@ describe("control-api", () => {
   });
 
   // ============================================================
-  // 記録データ操作（RESTful: パターンをURLに含める）
+  // 記録データ操作（RESTful: シナリオをURLに含める）
   // ============================================================
 
-  describe("GET /patterns/:pattern/files", () => {
-    it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/files");
+  describe("GET /scenarios/:scenario/files", () => {
+    it("存在しないシナリオは404を返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/nonexistent/files");
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
       expect(body.error).toBe("Not found");
-      expect(body.resource).toBe("pattern");
+      expect(body.resource).toBe("scenario");
     });
 
     it("記録ファイル一覧を取得できる", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files`);
-      const body = (await res.json()) as { pattern: string; files: unknown[] };
+      const res = await app.request(`/__snaperro__/scenarios/${TEST_SCENARIO_ENCODED}/files`);
+      const body = (await res.json()) as { scenario: string; files: unknown[] };
 
       expect(res.status).toBe(200);
-      expect(body.pattern).toBe(TEST_PATTERN);
+      expect(body.scenario).toBe(TEST_SCENARIO);
       expect(Array.isArray(body.files)).toBe(true);
     });
   });
 
-  describe("GET /patterns/:pattern/files/:filename", () => {
-    it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/files/test.json");
+  describe("GET /scenarios/:scenario/files/:filename", () => {
+    it("存在しないシナリオは404を返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/nonexistent/files/test.json");
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
       expect(body.error).toBe("Not found");
-      expect(body.resource).toBe("pattern");
+      expect(body.resource).toBe("scenario");
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files/nonexistent.json`);
+      const res = await app.request(`/__snaperro__/scenarios/${TEST_SCENARIO_ENCODED}/files/nonexistent.json`);
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
@@ -410,20 +434,20 @@ describe("control-api", () => {
     });
   });
 
-  describe("DELETE /patterns/:pattern/files/:filename", () => {
-    it("存在しないパターンは404を返す", async () => {
-      const res = await app.request("/__snaperro__/patterns/nonexistent/files/test.json", {
+  describe("DELETE /scenarios/:scenario/files/:filename", () => {
+    it("存在しないシナリオは404を返す", async () => {
+      const res = await app.request("/__snaperro__/scenarios/nonexistent/files/test.json", {
         method: "DELETE",
       });
 
       expect(res.status).toBe(404);
       const body = (await res.json()) as { error: string; resource: string };
       expect(body.error).toBe("Not found");
-      expect(body.resource).toBe("pattern");
+      expect(body.resource).toBe("scenario");
     });
 
     it("存在しないファイルは404を返す", async () => {
-      const res = await app.request(`/__snaperro__/patterns/${TEST_PATTERN_ENCODED}/files/nonexistent.json`, {
+      const res = await app.request(`/__snaperro__/scenarios/${TEST_SCENARIO_ENCODED}/files/nonexistent.json`, {
         method: "DELETE",
       });
 

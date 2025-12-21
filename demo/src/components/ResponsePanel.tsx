@@ -17,6 +17,7 @@ type ResponsePanelProps = {
 };
 
 const modeConfig: Record<Mode, { label: string; icon: string }> = {
+  smart: { label: "Smart", icon: "★" },
   proxy: { label: "Proxy", icon: "→" },
   record: { label: "Record", icon: "●" },
   mock: { label: "Mock", icon: "◆" },

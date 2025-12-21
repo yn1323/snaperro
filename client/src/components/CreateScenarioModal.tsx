@@ -1,20 +1,20 @@
 import { CreateModal } from "./dialogs/CreateModal";
 
-interface CreatePatternModalProps {
+interface CreateScenarioModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: (name: string) => void;
 }
 
 /**
- * New pattern creation modal
+ * New scenario creation modal
  */
-export function CreatePatternModal({ isOpen, onClose, onCreate }: CreatePatternModalProps) {
+export function CreateScenarioModal({ isOpen, onClose, onCreate }: CreateScenarioModalProps) {
   return (
     <CreateModal
       isOpen={isOpen}
-      title="Create New Pattern"
-      placeholder="Enter pattern name"
+      title="Create New Scenario"
+      placeholder="Enter scenario name"
       onClose={onClose}
       onCreate={onCreate}
     />

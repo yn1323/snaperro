@@ -14,9 +14,9 @@
 
 ## 特徴
 
-- **3つのモード**: Proxy（透過）/ Record（録画）/ Mock（再生）
+- **4つのモード**: Proxy（透過）/ Record（録画）/ Mock（再生）/ Smart（自動）
 - **パラメータマッチング**: パスパラメータ・クエリパラメータで正確にマッチング
-- **状態の永続化**: モード・パターンをサーバー再起動後も保持
+- **状態の永続化**: モード・シナリオをサーバー再起動後も保持
 - **TypeScript設定**: 型安全な設定ファイル
 
 ## なぜ snaperro？
@@ -66,7 +66,17 @@ npx snaperro demo
 | Query String | `/posts?userId=1` でクエリごとに異なるレスポンスを保存・返却 |
 | Nested Resource | `/posts/:id/comments` でネストしたリソースの取得 |
 
-詳細な管理（パターン/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
+詳細な管理（シナリオ/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
+
+### 組み込みAPI
+
+以下のAPIは設定なしで利用可能です：
+
+| API | ターゲット | ルート |
+|-----|--------|--------|
+| jsonPlaceholder | https://jsonplaceholder.typicode.com | /users, /posts, /comments 等 |
+
+これらはデモページで使用されており、必要に応じて設定で上書きできます。
 
 ### Web GUI
 
@@ -89,7 +99,7 @@ http://localhost:3333/__snaperro__/client
 | 機能 | 説明 |
 |-----|------|
 | モード切替 | Proxy/Record/Mockをワンクリックで切替 |
-| パターン管理 | パターンの作成・削除・複製・リネーム |
+| シナリオ管理 | シナリオの作成・削除・複製・リネーム |
 | ファイル管理 | 記録されたJSONファイルの一覧・削除 |
 | JSONエディタ | レスポンスの確認・編集 |
 | リアルタイム更新 | SSEで状態変更を即座に反映 |
@@ -145,6 +155,7 @@ API_KEY=your-api-key-here
 | `port` | number | サーバーポート（デフォルト: 3333） |
 | `filesDir` | string | ファイル保存ディレクトリ（デフォルト: `.snaperro/files`） |
 | `mockFallback` | string | モックファイルが見つからない場合の動作（デフォルト: `"404"`） |
+| `maskRequestHeaders` | string[] | 記録時にマスクするヘッダー（全API共通） |
 | `apis` | object | API定義のオブジェクト |
 
 #### API定義
@@ -214,13 +225,14 @@ export NO_PROXY=localhost,127.0.0.1
 | `-e, --env <path>` | 環境変数ファイルのパスを指定（デフォルト: 設定ファイルと同じディレクトリの`.env`） |
 | `-v, --verbose` | 詳細ログを表示 |
 
-### 3つのモード
+### 4つのモード
 
 | モード | 本物のAPI | JSON保存 | 返すもの |
 |-------|----------|---------|---------|
 | **Proxy** | アクセスする | しない | 本物のレスポンス |
 | **Record** | アクセスする | する | 本物のレスポンス |
 | **Mock** | アクセスしない | しない | 保存済みJSON |
+| **Smart** | 条件付き | 条件付き | mockまたは本物 |
 
 #### Proxyモード
 
@@ -251,6 +263,25 @@ export NO_PROXY=localhost,127.0.0.1
 リクエスト → snaperro → JSONファイルを検索 → レスポンス
 ```
 
+#### Smartモード
+
+既存のmockデータがあれば自動的にそれを返し、なければ実サーバーにプロキシしてレスポンスを記録します。
+
+```
+リクエスト → snaperro → mockファイルを検索
+                ↓
+         見つかった？ → Yes → mockを返す（API接続なし）
+                ↓ No
+         実際のAPIにプロキシ & 記録
+                ↓
+         レスポンスを返す
+```
+
+日常の開発ではこのモードを推奨します：
+- mockデータが既にある場合は無駄なAPI接続を防ぐ
+- 新しいエンドポイントは自動的に記録される
+- APIレート制限の心配を軽減
+
 #### Mockフォールバック動作
 
 モックファイルが見つからない場合の動作を `mockFallback` で設定できます:
@@ -268,26 +299,26 @@ export default defineConfig({
 })
 ```
 
-### パターンとは
+### シナリオとは
 
-「パターン」はモックデータのセットを管理するフォルダです。
+「シナリオ」はモックデータのセットを管理するフォルダです。
 
 ```
 .snaperro/
-├── state.json              ← サーバー状態（モード、パターン）
+├── state.json              ← サーバー状態（モード、シナリオ）
 └── files/
-    ├── 正常系フル/           ← パターン「正常系フル」
+    ├── 正常系フル/           ← シナリオ「正常系フル」
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
     │   └── api_orders_001.json
-    ├── 空データ/             ← パターン「空データ」
+    ├── 空データ/             ← シナリオ「空データ」
     │   └── api_users_001.json
-    └── エラー系/             ← パターン「エラー系」
+    └── エラー系/             ← シナリオ「エラー系」
         └── api_users_001.json
 ```
 
-パターンを切り替えると、異なるモックデータを使い分けられます。
-サーバーを再起動しても、前回のモードとパターンが復元されます。
+シナリオを切り替えると、異なるモックデータを使い分けられます。
+サーバーを再起動しても、前回のモードとシナリオが復元されます。
 
 ### ルート定義とマッチング
 
@@ -371,13 +402,13 @@ es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 |---------|------|
 | `connected` | 接続完了（初期状態を含む） |
 | `mode_changed` | モード変更 |
-| `pattern_changed` | パターン切替 |
+| `scenario_changed` | シナリオ切替 |
 | `file_created` | ファイル作成（記録時） |
 | `file_updated` | ファイル更新 |
 | `file_deleted` | ファイル削除 |
-| `pattern_created` | パターン作成 |
-| `pattern_deleted` | パターン削除 |
-| `pattern_renamed` | パターン名変更 |
+| `scenario_created` | シナリオ作成 |
+| `scenario_deleted` | シナリオ削除 |
+| `scenario_renamed` | シナリオ名変更 |
 
 ---
 

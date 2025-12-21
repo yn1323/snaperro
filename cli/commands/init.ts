@@ -14,6 +14,9 @@ export default defineConfig({
   // "proxy&record" - Forward to real server and record response
   mockFallback: "404",
 
+  // Request headers to mask when recording (applied to all APIs)
+  // maskRequestHeaders: ["Authorization", "Cookie"],
+
   // Upstream proxy (for corporate networks)
   // upstreamProxy: {
   //   url: "http://proxy.company.com:8080",
@@ -21,6 +24,8 @@ export default defineConfig({
 
   apis: {
     // JSON Placeholder API (sample)
+    // This is a built-in API - you can remove this section if you don't need it.
+    // It will still be available for demo purposes.
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",
@@ -394,9 +399,9 @@ const SAMPLE_DATA: Record<string, Record<string, FileData>> = {
  * Write sample files
  */
 async function writeSampleFiles(filesDir: string): Promise<void> {
-  for (const [pattern, files] of Object.entries(SAMPLE_DATA)) {
+  for (const [scenario, files] of Object.entries(SAMPLE_DATA)) {
     for (const [filePath, data] of Object.entries(files)) {
-      const fullPath = path.join(filesDir, pattern, filePath);
+      const fullPath = path.join(filesDir, scenario, filePath);
       await fs.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.writeFile(fullPath, JSON.stringify(data, null, 2), "utf-8");
     }
@@ -421,7 +426,7 @@ export async function initCommand(): Promise<void> {
 
   // 2. Place sample data
   await writeSampleFiles(filesDir);
-  consola.success("Placed sample patterns (demo, demo-empty, demo-error)");
+  consola.success("Placed sample scenarios (demo, demo-empty, demo-error)");
 
   // 3. Create snaperro.config.ts (if not exists)
   const configPath = path.join(cwd, "snaperro.config.ts");
@@ -452,14 +457,14 @@ export async function initCommand(): Promise<void> {
   consola.box({
     title: "snaperro initialization complete 🐕",
     message: [
-      "Sample patterns:",
+      "Sample scenarios:",
       "  - demo (success cases)",
       "  - demo-empty (empty data)",
       "  - demo-error (error cases)",
       "",
       "Next steps:",
       "1. Start server with: npx snaperro start",
-      "2. Switch patterns in GUI to verify operation",
+      "2. Switch scenarios in GUI to verify operation",
       "3. Try demo page: http://localhost:3333/__snaperro__/demo",
     ].join("\n"),
   });

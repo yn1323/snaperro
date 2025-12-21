@@ -35,7 +35,7 @@ describe("SSEEventBus", () => {
       unsubscribers.push(unsubscribe);
 
       const before = new Date().toISOString();
-      eventBus.emitSSE("pattern_changed", { pattern: "test" });
+      eventBus.emitSSE("scenario_changed", { scenario: "test" });
       const after = new Date().toISOString();
 
       const event = callback.mock.calls[0][0];
@@ -61,7 +61,7 @@ describe("SSEEventBus", () => {
       const unsubscribe2 = eventBus.subscribe(callback2);
       unsubscribers.push(unsubscribe1, unsubscribe2);
 
-      eventBus.emitSSE("file_created", { pattern: "test", filename: "test.json" });
+      eventBus.emitSSE("file_created", { scenario: "test", filename: "test.json" });
 
       expect(callback1).toHaveBeenCalledTimes(1);
       expect(callback2).toHaveBeenCalledTimes(1);
@@ -76,7 +76,7 @@ describe("SSEEventBus", () => {
 
       unsubscribe1();
 
-      eventBus.emitSSE("pattern_deleted", { name: "test" });
+      eventBus.emitSSE("scenario_deleted", { name: "test" });
 
       expect(callback1).not.toHaveBeenCalled();
       expect(callback2).toHaveBeenCalledTimes(1);
@@ -91,8 +91,8 @@ describe("SSEEventBus", () => {
 
       eventBus.emitSSE("connected", {
         mode: "proxy",
-        currentPattern: null,
-        patterns: [],
+        currentScenario: null,
+        scenarios: [],
         folders: [],
         files: [],
       });
@@ -102,7 +102,7 @@ describe("SSEEventBus", () => {
           type: "connected",
           data: expect.objectContaining({
             mode: "proxy",
-            currentPattern: null,
+            currentScenario: null,
           }),
         }),
       );
@@ -114,7 +114,7 @@ describe("SSEEventBus", () => {
       unsubscribers.push(unsubscribe);
 
       eventBus.emitSSE("file_created", {
-        pattern: "test-pattern",
+        scenario: "test-scenario",
         filename: "GET_users.json",
         endpoint: "/users",
         method: "GET",
@@ -124,7 +124,7 @@ describe("SSEEventBus", () => {
         expect.objectContaining({
           type: "file_created",
           data: {
-            pattern: "test-pattern",
+            scenario: "test-scenario",
             filename: "GET_users.json",
             endpoint: "/users",
             method: "GET",
@@ -139,7 +139,7 @@ describe("SSEEventBus", () => {
       unsubscribers.push(unsubscribe);
 
       eventBus.emitSSE("file_updated", {
-        pattern: "test-pattern",
+        scenario: "test-scenario",
         filename: "POST_users.json",
         endpoint: "/users",
         method: "POST",
@@ -149,7 +149,7 @@ describe("SSEEventBus", () => {
         expect.objectContaining({
           type: "file_updated",
           data: {
-            pattern: "test-pattern",
+            scenario: "test-scenario",
             filename: "POST_users.json",
             endpoint: "/users",
             method: "POST",
@@ -158,17 +158,17 @@ describe("SSEEventBus", () => {
       );
     });
 
-    it("emits pattern_created event", () => {
+    it("emits scenario_created event", () => {
       const callback = vi.fn();
       const unsubscribe = eventBus.subscribe(callback);
       unsubscribers.push(unsubscribe);
 
-      eventBus.emitSSE("pattern_created", { name: "new-pattern" });
+      eventBus.emitSSE("scenario_created", { name: "new-scenario" });
 
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: "pattern_created",
-          data: { name: "new-pattern" },
+          type: "scenario_created",
+          data: { name: "new-scenario" },
         }),
       );
     });
@@ -195,10 +195,10 @@ describe("SSEEventBus", () => {
       unsubscribers.push(unsubscribe);
 
       eventBus.emitSSE("mode_changed", { mode: "record" });
-      eventBus.emitSSE("pattern_changed", { pattern: "test" });
-      eventBus.emitSSE("file_created", { pattern: "test", filename: "test.json" });
+      eventBus.emitSSE("scenario_changed", { scenario: "test" });
+      eventBus.emitSSE("file_created", { scenario: "test", filename: "test.json" });
 
-      expect(events).toEqual(["mode_changed", "pattern_changed", "file_created"]);
+      expect(events).toEqual(["mode_changed", "scenario_changed", "file_created"]);
     });
   });
 });

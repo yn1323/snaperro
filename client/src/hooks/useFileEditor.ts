@@ -5,7 +5,7 @@ import type { useSnaperroAPI } from "./useSnaperroAPI";
 
 interface UseFileEditorProps {
   api: ReturnType<typeof useSnaperroAPI>;
-  currentPattern: string | null;
+  currentScenario: string | null;
 }
 
 interface UseFileEditorReturn {
@@ -26,7 +26,7 @@ interface UseFileEditorReturn {
 /**
  * Hook for managing file editor state and operations
  */
-export function useFileEditor({ api, currentPattern }: UseFileEditorProps): UseFileEditorReturn {
+export function useFileEditor({ api, currentScenario }: UseFileEditorProps): UseFileEditorReturn {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileData, setFileData] = useState<FileData | null>(null);
   const [isLoadingFile, setIsLoadingFile] = useState(false);
@@ -34,30 +34,30 @@ export function useFileEditor({ api, currentPattern }: UseFileEditorProps): UseF
 
   // Load content when file is selected
   useEffect(() => {
-    if (!currentPattern || !selectedFile) {
+    if (!currentScenario || !selectedFile) {
       setFileData(null);
       return;
     }
 
     const loadFile = async () => {
       setIsLoadingFile(true);
-      const data = await withErrorHandling(() => api.getFile(currentPattern, selectedFile), "File load error");
+      const data = await withErrorHandling(() => api.getFile(currentScenario, selectedFile), "File load error");
       setFileData(data ?? null);
       setIsLoadingFile(false);
     };
 
     loadFile();
-  }, [currentPattern, selectedFile, api]);
+  }, [currentScenario, selectedFile, api]);
 
   const handleFileSave = useCallback(
     async (data: FileData) => {
-      if (!currentPattern || !selectedFile) return;
+      if (!currentScenario || !selectedFile) return;
       await withErrorHandling(async () => {
-        await api.updateFile(currentPattern, selectedFile, data);
+        await api.updateFile(currentScenario, selectedFile, data);
         setFileData(data);
       }, "File save error");
     },
-    [api, currentPattern, selectedFile],
+    [api, currentScenario, selectedFile],
   );
 
   const handleFileDelete = useCallback(() => {
@@ -67,29 +67,29 @@ export function useFileEditor({ api, currentPattern }: UseFileEditorProps): UseF
   }, [selectedFile]);
 
   const handleFileDeleteConfirm = useCallback(async () => {
-    if (!deleteFileTarget || !currentPattern) return;
+    if (!deleteFileTarget || !currentScenario) return;
     await withErrorHandling(async () => {
-      await api.deleteFile(currentPattern, deleteFileTarget);
+      await api.deleteFile(currentScenario, deleteFileTarget);
       setSelectedFile(null);
       setFileData(null);
     }, "File delete error");
     setDeleteFileTarget(null);
-  }, [api, currentPattern, deleteFileTarget]);
+  }, [api, currentScenario, deleteFileTarget]);
 
   const handleFileUpload = useCallback(
     async (file: File) => {
-      if (!currentPattern) return;
-      await withErrorHandling(() => api.uploadFile(currentPattern, file), "File upload error");
+      if (!currentScenario) return;
+      await withErrorHandling(() => api.uploadFile(currentScenario, file), "File upload error");
     },
-    [api, currentPattern],
+    [api, currentScenario],
   );
 
   const handleFileDownload = useCallback(
     async (filename: string) => {
-      if (!currentPattern) return;
-      await withErrorHandling(() => api.downloadFile(currentPattern, filename), "File download error");
+      if (!currentScenario) return;
+      await withErrorHandling(() => api.downloadFile(currentScenario, filename), "File download error");
     },
-    [api, currentPattern],
+    [api, currentScenario],
   );
 
   const resetFileSelection = useCallback(() => {

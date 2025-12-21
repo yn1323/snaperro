@@ -5,26 +5,27 @@ import { ResizeHandle } from "./ResizeHandle";
 
 interface LayoutProps {
   topBar: ReactNode;
-  patternPane: (width: number) => ReactNode;
+  scenarioPane: (width: number) => ReactNode;
   filePane: (width: number) => ReactNode;
   editorPane: ReactNode;
+  logPanel: ReactNode;
 }
 
 /**
  * 3-pane layout with resizable sidebars
  * - TopBar: Mode switching
- * - Left pane: Pattern list (resizable)
+ * - Left pane: Scenario list (resizable)
  * - Center pane: File list (resizable)
  * - Right pane: Editor (remaining width)
  */
-export function Layout({ topBar, patternPane, filePane, editorPane }: LayoutProps) {
-  const { patternWidth, fileWidth, setPatternWidth, setFileWidth } = usePaneWidths();
+export function Layout({ topBar, scenarioPane, filePane, editorPane, logPanel }: LayoutProps) {
+  const { scenarioWidth, fileWidth, setScenarioWidth, setFileWidth } = usePaneWidths();
 
-  const handlePatternResize = useCallback(
+  const handleScenarioResize = useCallback(
     (delta: number) => {
-      setPatternWidth(patternWidth + delta);
+      setScenarioWidth(scenarioWidth + delta);
     },
-    [patternWidth, setPatternWidth],
+    [scenarioWidth, setScenarioWidth],
   );
 
   const handleFileResize = useCallback(
@@ -35,15 +36,16 @@ export function Layout({ topBar, patternPane, filePane, editorPane }: LayoutProp
   );
 
   return (
-    <Flex direction="column" h="100vh" bg="gray.50">
+    <Flex direction="column" h="100vh" bg="gray.50" overflow="hidden">
       {topBar}
       <Flex flex={1} overflow="hidden" minW={0}>
-        {patternPane(patternWidth)}
-        <ResizeHandle onResize={handlePatternResize} />
+        {scenarioPane(scenarioWidth)}
+        <ResizeHandle onResize={handleScenarioResize} />
         {filePane(fileWidth)}
         <ResizeHandle onResize={handleFileResize} />
         {editorPane}
       </Flex>
+      {logPanel}
     </Flex>
   );
 }

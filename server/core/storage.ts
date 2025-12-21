@@ -63,15 +63,15 @@ export function endpointToFileName(endpoint: string): string {
 /**
  * ファイルパスを構築（新命名規則）
  *
- * @param pattern パターン名
+ * @param scenario シナリオ名
  * @param endpoint エンドポイントパターン（例: "/api/users/:id"）
  * @param sequence 連番（3桁0埋め）
  * @returns ファイルパス（例: "正常系/api_users_{id}_001.json"）
  */
-export function buildFilePath(pattern: string, endpoint: string, sequence: number): string {
+export function buildFilePath(scenario: string, endpoint: string, sequence: number): string {
   const fileName = endpointToFileName(endpoint);
   const paddedSequence = String(sequence).padStart(3, "0");
-  return path.join(pattern, `${fileName}_${paddedSequence}.json`);
+  return path.join(scenario, `${fileName}_${paddedSequence}.json`);
 }
 
 /**
@@ -87,9 +87,9 @@ export interface FileInfo {
 }
 
 /**
- * パターンメタデータ
+ * シナリオメタデータ
  */
-export interface PatternMetadata {
+export interface ScenarioMetadata {
   name: string;
   filesCount: number;
   createdAt: string;
@@ -101,7 +101,7 @@ export interface PatternMetadata {
  */
 export interface FolderInfo {
   name: string;
-  patternsCount: number;
+  scenariosCount: number;
 }
 
 /**
@@ -113,7 +113,7 @@ export interface MatchingFileResult {
 }
 
 /**
- * Search result for pattern file search
+ * Search result for scenario file search
  */
 export interface SearchResult {
   filename: string;
@@ -129,27 +129,13 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
 }
 
 /**
- * ディレクトリがフォルダかどうかを判定
- * フォルダ = 直下に.jsonファイルがない（空ディレクトリも含む）
+ * ディレクトリがシナリオかどうかを判定
+ * シナリオ = サブディレクトリを持たない（空でもOK）
  */
-async function isFolder(dirPath: string): Promise<boolean> {
+async function isScenario(dirPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    const hasJsonFiles = entries.some((e) => e.isFile() && e.name.endsWith(".json"));
-    return !hasJsonFiles;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * ディレクトリがパターンかどうかを判定
- * パターン = 直下に.jsonファイルがある
- */
-async function isPattern(dirPath: string): Promise<boolean> {
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.some((e) => e.isFile() && e.name.endsWith(".json"));
+    return !entries.some((e) => e.isDirectory());
   } catch {
     return false;
   }
@@ -193,16 +179,16 @@ export const storage = {
   /**
    * 次の連番を取得
    *
-   * @param pattern パターン名
+   * @param scenario シナリオ名
    * @param endpoint エンドポイントパターン（例: "/api/users/:id"）
    * @returns 次の連番（1始まり）
    */
-  async findNextSequence(pattern: string, endpoint: string): Promise<number> {
+  async findNextSequence(scenario: string, endpoint: string): Promise<number> {
     const fileName = endpointToFileName(endpoint);
-    const patternDir = path.join(BASE_DIR, pattern);
+    const scenarioDir = path.join(BASE_DIR, scenario);
 
     try {
-      const files = await fs.readdir(patternDir);
+      const files = await fs.readdir(scenarioDir);
       const matchingFiles = files.filter((f) => f.startsWith(`${fileName}_`) && f.endsWith(".json"));
 
       if (matchingFiles.length === 0) {
@@ -226,7 +212,7 @@ export const storage = {
   /**
    * パラメータマッチングでファイルを検索（Mockモード用）
    *
-   * @param pattern パターン名
+   * @param scenario シナリオ名
    * @param method HTTPメソッド
    * @param endpoint エンドポイントパターン
    * @param pathParams パスパラメータ
@@ -234,7 +220,7 @@ export const storage = {
    * @returns マッチしたファイル情報、なければnull
    */
   async findMatchingFile(
-    pattern: string,
+    scenario: string,
     method: string,
     endpoint: string,
     pathParams: Record<string, string>,
@@ -242,14 +228,14 @@ export const storage = {
     requestBody?: unknown,
   ): Promise<MatchingFileResult | null> {
     const fileName = endpointToFileName(endpoint);
-    const patternDir = path.join(BASE_DIR, pattern);
+    const scenarioDir = path.join(BASE_DIR, scenario);
 
     try {
-      const files = await fs.readdir(patternDir);
+      const files = await fs.readdir(scenarioDir);
       const matchingFiles = files.filter((f) => f.startsWith(`${fileName}_`) && f.endsWith(".json")).sort();
 
       for (const file of matchingFiles) {
-        const filePath = path.join(pattern, file);
+        const filePath = path.join(scenario, file);
         const data = await storage.read(filePath);
 
         // メソッドチェック
@@ -288,7 +274,7 @@ export const storage = {
    * 同一パラメータなら上書き、新規パラメータなら新ファイル
    */
   async findOrCreateFile(
-    pattern: string,
+    scenario: string,
     method: string,
     endpoint: string,
     pathParams: Record<string, string>,
@@ -296,71 +282,66 @@ export const storage = {
     requestBody?: unknown,
   ): Promise<{ filePath: string; isNew: boolean }> {
     // 既存ファイルを検索
-    const existing = await storage.findMatchingFile(pattern, method, endpoint, pathParams, queryParams, requestBody);
+    const existing = await storage.findMatchingFile(scenario, method, endpoint, pathParams, queryParams, requestBody);
 
     if (existing) {
       return { filePath: existing.filePath, isNew: false };
     }
 
     // 新規ファイル
-    const sequence = await storage.findNextSequence(pattern, endpoint);
-    const filePath = buildFilePath(pattern, endpoint, sequence);
+    const sequence = await storage.findNextSequence(scenario, endpoint);
+    const filePath = buildFilePath(scenario, endpoint, sequence);
     return { filePath, isNew: true };
   },
 
   /**
-   * パターン一覧を取得（folder/pattern形式）
-   * 全フォルダ内の全パターンを "folder/pattern" 形式で返す
+   * シナリオ一覧を取得（folder/scenario形式）
+   * 全フォルダ内の全シナリオを "folder/scenario" 形式で返す
    */
-  async listPatterns(): Promise<string[]> {
+  async listScenarios(): Promise<string[]> {
     try {
       const entries = await fs.readdir(BASE_DIR, { withFileTypes: true });
-      const patterns: string[] = [];
+      const scenarios: string[] = [];
 
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
-        const dirPath = path.join(BASE_DIR, entry.name);
-
-        // フォルダの場合、中のパターンを取得
-        if (await isFolder(dirPath)) {
-          const subPatterns = await storage.listPatternsInFolder(entry.name);
-          for (const subPattern of subPatterns) {
-            patterns.push(`${entry.name}/${subPattern}`);
-          }
+        const subScenarios = await storage.listScenariosInFolder(entry.name);
+        for (const subScenario of subScenarios) {
+          scenarios.push(`${entry.name}/${subScenario}`);
         }
       }
 
-      return patterns;
+      return scenarios;
     } catch {
       return [];
     }
   },
 
   /**
-   * 新規パターンを作成
-   * @param name パターン名（"folder/pattern" 形式）
+   * 新規シナリオを作成
+   * @param name シナリオ名（"folder/scenario" 形式）
    */
-  async createPattern(name: string): Promise<void> {
-    // folder/pattern形式を処理
+  async createScenario(name: string): Promise<void> {
+    // folder/scenario形式を処理
     const dir = path.join(BASE_DIR, name);
     await fs.mkdir(dir, { recursive: true });
-    eventBus.emitSSE("pattern_created", { name });
+    eventBus.emitSSE("scenario_created", { name });
   },
 
   /**
-   * パターン内のファイル一覧を取得
+   * シナリオ内のファイル一覧を取得
    */
-  async getPatternFiles(pattern: string): Promise<FileInfo[]> {
+  async getScenarioFiles(scenario: string): Promise<FileInfo[]> {
     const files: FileInfo[] = [];
-    const patternDir = path.join(BASE_DIR, pattern);
+    const scenarioDir = path.join(BASE_DIR, scenario);
 
     try {
-      const entries = await fs.readdir(patternDir);
+      const entries = await fs.readdir(scenarioDir);
       for (const entry of entries) {
         if (!entry.endsWith(".json")) continue;
 
-        const filePath = path.join(patternDir, entry);
+        const filePath = path.join(scenarioDir, entry);
         try {
           const content = await fs.readFile(filePath, "utf-8");
           const data = JSON.parse(content) as FileData;
@@ -386,22 +367,22 @@ export const storage = {
   },
 
   /**
-   * Search files in a pattern by text content
-   * @param pattern Pattern name
+   * Search files in a scenario by text content
+   * @param scenario Scenario name
    * @param query Search query (case-insensitive)
    * @returns Matching files
    */
-  async searchPatternFiles(pattern: string, query: string): Promise<SearchResult[]> {
+  async searchScenarioFiles(scenario: string, query: string): Promise<SearchResult[]> {
     const results: SearchResult[] = [];
-    const patternDir = path.join(BASE_DIR, pattern);
+    const scenarioDir = path.join(BASE_DIR, scenario);
     const lowerQuery = query.toLowerCase();
 
     try {
-      const entries = await fs.readdir(patternDir);
+      const entries = await fs.readdir(scenarioDir);
       for (const entry of entries) {
         if (!entry.endsWith(".json")) continue;
 
-        const filePath = path.join(patternDir, entry);
+        const filePath = path.join(scenarioDir, entry);
         try {
           const content = await fs.readFile(filePath, "utf-8");
 
@@ -450,9 +431,9 @@ export const storage = {
   },
 
   /**
-   * パターンが存在するかチェック
+   * シナリオが存在するかチェック
    */
-  async patternExists(name: string): Promise<boolean> {
+  async scenarioExists(name: string): Promise<boolean> {
     const dir = path.join(BASE_DIR, name);
     try {
       const stat = await fs.stat(dir);
@@ -463,9 +444,9 @@ export const storage = {
   },
 
   /**
-   * パターンのメタデータを取得
+   * シナリオのメタデータを取得
    */
-  async getPatternMetadata(name: string): Promise<PatternMetadata | null> {
+  async getScenarioMetadata(name: string): Promise<ScenarioMetadata | null> {
     const dir = path.join(BASE_DIR, name);
     try {
       const stat = await fs.stat(dir);
@@ -473,7 +454,7 @@ export const storage = {
         return null;
       }
 
-      const files = await storage.getPatternFiles(name);
+      const files = await storage.getScenarioFiles(name);
       const latestUpdated =
         files.length > 0
           ? files.reduce((latest, f) => (f.updatedAt > latest ? f.updatedAt : latest), files[0].updatedAt)
@@ -491,15 +472,15 @@ export const storage = {
   },
 
   /**
-   * パターンを複製
+   * シナリオを複製
    */
-  async duplicatePattern(source: string, destination: string): Promise<void> {
+  async duplicateScenario(source: string, destination: string): Promise<void> {
     const sourceDir = path.join(BASE_DIR, source);
     const destDir = path.join(BASE_DIR, destination);
 
     // 宛先が既に存在する場合はエラー
-    if (await storage.patternExists(destination)) {
-      throw new Error(`Pattern already exists: ${destination}`);
+    if (await storage.scenarioExists(destination)) {
+      throw new Error(`Scenario already exists: ${destination}`);
     }
 
     // 宛先ディレクトリを作成
@@ -513,32 +494,32 @@ export const storage = {
       await fs.copyFile(srcPath, destPath);
     }
 
-    eventBus.emitSSE("pattern_created", { name: destination });
+    eventBus.emitSSE("scenario_created", { name: destination });
   },
 
   /**
-   * パターン名を変更
+   * シナリオ名を変更
    */
-  async renamePattern(oldName: string, newName: string): Promise<void> {
+  async renameScenario(oldName: string, newName: string): Promise<void> {
     const oldDir = path.join(BASE_DIR, oldName);
     const newDir = path.join(BASE_DIR, newName);
 
     // 新名が既に存在する場合はエラー
-    if (await storage.patternExists(newName)) {
-      throw new Error(`Pattern already exists: ${newName}`);
+    if (await storage.scenarioExists(newName)) {
+      throw new Error(`Scenario already exists: ${newName}`);
     }
 
     await fs.rename(oldDir, newDir);
-    eventBus.emitSSE("pattern_renamed", { oldName, newName });
+    eventBus.emitSSE("scenario_renamed", { oldName, newName });
   },
 
   /**
-   * パターンを削除
+   * シナリオを削除
    */
-  async deletePattern(name: string): Promise<void> {
+  async deleteScenario(name: string): Promise<void> {
     const dir = path.join(BASE_DIR, name);
     await fs.rm(dir, { recursive: true, force: true });
-    eventBus.emitSSE("pattern_deleted", { name });
+    eventBus.emitSSE("scenario_deleted", { name });
   },
 
   // ============================================================
@@ -556,14 +537,11 @@ export const storage = {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
-        const dirPath = path.join(BASE_DIR, entry.name);
-        if (await isFolder(dirPath)) {
-          const patterns = await storage.listPatternsInFolder(entry.name);
-          folders.push({
-            name: entry.name,
-            patternsCount: patterns.length,
-          });
-        }
+        const scenarios = await storage.listScenariosInFolder(entry.name);
+        folders.push({
+          name: entry.name,
+          scenariosCount: scenarios.length,
+        });
       }
 
       return folders;
@@ -573,24 +551,24 @@ export const storage = {
   },
 
   /**
-   * フォルダ内のパターン一覧を取得
+   * フォルダ内のシナリオ一覧を取得
    */
-  async listPatternsInFolder(folder: string): Promise<string[]> {
+  async listScenariosInFolder(folder: string): Promise<string[]> {
     const folderDir = path.join(BASE_DIR, folder);
     try {
       const entries = await fs.readdir(folderDir, { withFileTypes: true });
-      const patterns: string[] = [];
+      const scenarios: string[] = [];
 
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
         const dirPath = path.join(folderDir, entry.name);
-        if (await isPattern(dirPath)) {
-          patterns.push(entry.name);
+        if (await isScenario(dirPath)) {
+          scenarios.push(entry.name);
         }
       }
 
-      return patterns;
+      return scenarios;
     } catch {
       return [];
     }
@@ -603,8 +581,7 @@ export const storage = {
     const dir = path.join(BASE_DIR, name);
     try {
       const stat = await fs.stat(dir);
-      if (!stat.isDirectory()) return false;
-      return await isFolder(dir);
+      return stat.isDirectory();
     } catch {
       return false;
     }
@@ -645,46 +622,6 @@ export const storage = {
   },
 
   /**
-   * ルート直下の旧パターンをフォルダ構成に移行
-   * 例: demo -> _demo/demo
-   * 冪等性あり（再実行しても安全）
-   */
-  async migrateRootPatterns(): Promise<void> {
-    try {
-      const entries = await fs.readdir(BASE_DIR, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const dirPath = path.join(BASE_DIR, entry.name);
-
-        // 直下に.jsonファイルがある = 旧パターン（移行対象）
-        if (await isPattern(dirPath)) {
-          const oldName = entry.name;
-          const newFolderName = `_${oldName}`;
-          const newPatternPath = path.join(BASE_DIR, newFolderName, oldName);
-
-          // 移行先が既に存在する場合はスキップ（冪等性）
-          try {
-            await fs.access(newPatternPath);
-            continue; // 既に移行済み
-          } catch {
-            // 存在しない = 移行が必要
-          }
-
-          // 新フォルダを作成
-          await fs.mkdir(path.join(BASE_DIR, newFolderName), { recursive: true });
-
-          // パターンを移動
-          await fs.rename(dirPath, newPatternPath);
-        }
-      }
-    } catch {
-      // BASE_DIRが存在しない場合など
-    }
-  },
-
-  /**
    * フォーマットされたファイルサイズを取得
    */
   formatSize,
@@ -718,12 +655,12 @@ export const storage = {
    *
    * @param zipBuffer zipファイルのBuffer
    * @param folderName フォルダ名
-   * @returns 作成されたフォルダ名と展開したパターン数
+   * @returns 作成されたフォルダ名と展開したシナリオ数
    */
   async extractZipToFolder(
     zipBuffer: Buffer,
     folderName: string,
-  ): Promise<{ actualFolderName: string; patternsCount: number }> {
+  ): Promise<{ actualFolderName: string; scenariosCount: number }> {
     // ユニークなフォルダ名を生成
     let actualFolderName = folderName;
     let suffix = 1;
@@ -741,7 +678,7 @@ export const storage = {
     const tempZipPath = path.join(BASE_DIR, `_temp_${Date.now()}.zip`);
     await fs.writeFile(tempZipPath, zipBuffer);
 
-    const patternNames = new Set<string>();
+    const scenarioNames = new Set<string>();
 
     try {
       const directory = await unzipper.Open.file(tempZipPath);
@@ -753,27 +690,27 @@ export const storage = {
         // JSONファイルのみ展開
         if (!file.path.endsWith(".json")) continue;
 
-        // パス構造を保持（pattern/file.json）
+        // パス構造を保持（scenario/file.json）
         const destPath = path.join(folderDir, file.path);
         await fs.mkdir(path.dirname(destPath), { recursive: true });
 
         const content = await file.buffer();
         await fs.writeFile(destPath, content);
 
-        // パターン名を収集（最初のディレクトリ部分）
-        const patternName = file.path.split("/")[0];
-        if (patternName) {
-          patternNames.add(patternName);
+        // シナリオ名を収集（最初のディレクトリ部分）
+        const scenarioName = file.path.split("/")[0];
+        if (scenarioName) {
+          scenarioNames.add(scenarioName);
         }
       }
 
-      const patternFullNames = Array.from(patternNames).map((p) => `${actualFolderName}/${p}`);
+      const scenarioFullNames = Array.from(scenarioNames).map((p) => `${actualFolderName}/${p}`);
       eventBus.emitSSE("folder_created", {
         name: actualFolderName,
-        patternsCount: patternNames.size,
-        patterns: patternFullNames,
+        scenariosCount: scenarioNames.size,
+        scenarios: scenarioFullNames,
       });
-      return { actualFolderName, patternsCount: patternNames.size };
+      return { actualFolderName, scenariosCount: scenarioNames.size };
     } finally {
       // 一時ファイルを削除
       await fs.unlink(tempZipPath).catch(() => {});
@@ -785,7 +722,7 @@ export const storage = {
    * Prevents race conditions by holding a mutex during sequence number lookup and file write
    */
   async findAndWriteAtomic(
-    pattern: string,
+    scenario: string,
     method: string,
     endpoint: string,
     pathParams: Record<string, string>,
@@ -796,7 +733,7 @@ export const storage = {
     const release = await writeMutex.acquire();
     try {
       const { filePath, isNew } = await storage.findOrCreateFile(
-        pattern,
+        scenario,
         method,
         endpoint,
         pathParams,

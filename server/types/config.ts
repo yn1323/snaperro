@@ -54,6 +54,8 @@ export const SnaperroConfigSchema = z.object({
   upstreamProxy: UpstreamProxySchema.optional(),
   /** Fallback behavior when mock file is not found (default: "404") */
   mockFallback: MockFallbackSchema.optional().default("404"),
+  /** 記録時にマスクするリクエストヘッダー名（大文字小文字区別なし、全API共通） */
+  maskRequestHeaders: z.array(z.string()).optional(),
   /** API設定 */
   apis: z.record(z.string(), ApiConfigSchema),
 });

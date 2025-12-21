@@ -14,9 +14,9 @@ A mock proxy server that records and replays responses from multiple APIs to str
 
 ## Features
 
-- **3 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback)
+- **4 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback) / Smart (auto)
 - **Parameter Matching**: Accurate matching by path parameters and query parameters
-- **State Persistence**: Mode and pattern settings persist across server restarts
+- **State Persistence**: Mode and scenario settings persist across server restarts
 - **TypeScript Configuration**: Type-safe configuration files
 
 ## Why snaperro?
@@ -66,7 +66,17 @@ Your browser will open `http://localhost:3333/__snaperro__/demo`.
 | Query String | Save and return different responses for each query with `/posts?userId=1` |
 | Nested Resource | Fetch nested resources with `/posts/:id/comments` |
 
-For detailed management (patterns/files/JSON editing), use the GUI (`/__snaperro__/client`).
+For detailed management (scenarios/files/JSON editing), use the GUI (`/__snaperro__/client`).
+
+### Built-in APIs
+
+The following APIs are available without configuration:
+
+| API | Target | Routes |
+|-----|--------|--------|
+| jsonPlaceholder | https://jsonplaceholder.typicode.com | /users, /posts, /comments, etc. |
+
+These are used by the demo page and can be overridden in your config if needed.
 
 ### Web GUI
 
@@ -89,7 +99,7 @@ The browser opens automatically when the server starts.
 | Feature | Description |
 |---------|-------------|
 | Mode Switch | Switch between Proxy/Record/Mock with one click |
-| Pattern Management | Create, delete, duplicate, and rename patterns |
+| Scenario Management | Create, delete, duplicate, and rename scenarios |
 | File Management | List and delete recorded JSON files |
 | JSON Editor | View and edit responses |
 | Real-time Updates | Instantly reflect state changes via SSE |
@@ -145,6 +155,7 @@ API_KEY=your-api-key-here
 | `port` | number | Server port (default: 3333) |
 | `filesDir` | string | File storage directory (default: `.snaperro/files`) |
 | `mockFallback` | string | Fallback behavior when mock file is not found (default: `"404"`) |
+| `maskRequestHeaders` | string[] | Headers to mask when recording (applied to all APIs) |
 | `apis` | object | API definitions object |
 
 #### API Definition
@@ -214,13 +225,14 @@ export NO_PROXY=localhost,127.0.0.1
 | `-e, --env <path>` | Specify env file path (default: `.env` in config directory) |
 | `-v, --verbose` | Show detailed logs |
 
-### 3 Modes
+### 4 Modes
 
 | Mode | Real API | Save JSON | Returns |
 |------|----------|-----------|---------|
 | **Proxy** | Access | No | Real response |
 | **Record** | Access | Yes | Real response |
 | **Mock** | No access | No | Saved JSON |
+| **Smart** | Conditional | Conditional | Mock or Real |
 
 #### Proxy Mode
 
@@ -251,6 +263,25 @@ Returns responses from saved JSON files. Does not access the actual API.
 Request → snaperro → Search JSON files → Response
 ```
 
+#### Smart Mode
+
+Automatically returns mock data if it exists, otherwise proxies to the real server and records the response.
+
+```
+Request → snaperro → Search mock files
+                ↓
+         Found? → Yes → Return mock (no API access)
+                ↓ No
+         Proxy to real API & Record
+                ↓
+         Return response
+```
+
+This is the recommended mode for daily development:
+- Prevents unnecessary API calls when mock data already exists
+- Automatically records new endpoints
+- Reduces API rate limit concerns
+
 #### Mock Fallback Behavior
 
 When a mock file is not found, you can configure the fallback behavior with `mockFallback`:
@@ -268,26 +299,26 @@ export default defineConfig({
 })
 ```
 
-### What is a Pattern?
+### What is a Scenario?
 
-A "pattern" is a folder that manages a set of mock data.
+A "scenario" is a folder that manages a set of mock data.
 
 ```
 .snaperro/
-├── state.json              ← Server state (mode, pattern)
+├── state.json              ← Server state (mode, scenario)
 └── files/
-    ├── normal-full/           ← Pattern "normal-full"
+    ├── normal-full/           ← Scenario "normal-full"
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
     │   └── api_orders_001.json
-    ├── empty-data/             ← Pattern "empty-data"
+    ├── empty-data/             ← Scenario "empty-data"
     │   └── api_users_001.json
-    └── error-cases/             ← Pattern "error-cases"
+    └── error-cases/             ← Scenario "error-cases"
         └── api_users_001.json
 ```
 
-By switching patterns, you can use different mock data sets.
-The previous mode and pattern are restored even after server restart.
+By switching scenarios, you can use different mock data sets.
+The previous mode and scenario are restored even after server restart.
 
 ### Route Definition and Matching
 
@@ -371,13 +402,13 @@ es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 |-------|-------------|
 | `connected` | Connection complete (includes initial state) |
 | `mode_changed` | Mode changed |
-| `pattern_changed` | Pattern switched |
+| `scenario_changed` | Scenario switched |
 | `file_created` | File created (during recording) |
 | `file_updated` | File updated |
 | `file_deleted` | File deleted |
-| `pattern_created` | Pattern created |
-| `pattern_deleted` | Pattern deleted |
-| `pattern_renamed` | Pattern renamed |
+| `scenario_created` | Scenario created |
+| `scenario_deleted` | Scenario deleted |
+| `scenario_renamed` | Scenario renamed |
 
 ---
 

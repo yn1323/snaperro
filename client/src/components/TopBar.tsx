@@ -1,4 +1,5 @@
-import { Box, Button, Flex, HStack, Spacer, Text } from "@chakra-ui/react";
+import { Box, Button, Flex, HStack, IconButton, Spacer, Text } from "@chakra-ui/react";
+import { LuInfo } from "react-icons/lu";
 import type { Mode } from "../types";
 import { toaster } from "./ui/toaster";
 
@@ -6,11 +7,13 @@ interface TopBarProps {
   version: string;
   mode: Mode;
   connected: boolean;
-  currentPattern: string | null;
+  currentScenario: string | null;
   onModeChange: (mode: Mode) => void;
+  onHelpClick: () => void;
 }
 
 const modes: { value: Mode; label: string; icon: string }[] = [
+  { value: "smart", label: "Smart", icon: "★" },
   { value: "proxy", label: "Proxy", icon: "→" },
   { value: "record", label: "Record", icon: "●" },
   { value: "mock", label: "Mock", icon: "◆" },
@@ -20,15 +23,15 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
+export function TopBar({ version, mode, connected, currentScenario, onModeChange, onHelpClick }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    if (targetMode === "record" && !currentPattern) {
+    // record, smart, mock はシナリオ選択が必要
+    if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentScenario) {
       toaster.create({
         type: "warning",
-        title: "No pattern selected",
-        description: "Please select a pattern first.",
+        title: "No scenario selected",
+        description: "Please select a scenario first.",
       });
-      return;
     }
     onModeChange(targetMode);
   };
@@ -66,6 +69,7 @@ export function TopBar({ version, mode, connected, currentPattern, onModeChange 
           const getColor = () => {
             if (isRecording) return "recording";
             if (isMock) return "mock";
+            if (value === "smart" && isActive) return "smart";
             return "accent";
           };
           const color = getColor();
@@ -93,6 +97,17 @@ export function TopBar({ version, mode, connected, currentPattern, onModeChange 
           );
         })}
       </HStack>
+
+      <IconButton
+        aria-label="Mode help"
+        variant="ghost"
+        size="sm"
+        color="gray.400"
+        _hover={{ color: "white", bg: "gray.800" }}
+        onClick={onHelpClick}
+      >
+        <LuInfo />
+      </IconButton>
 
       <Spacer />
 

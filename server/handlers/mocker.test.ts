@@ -5,8 +5,8 @@ import type { FileData } from "../types/file.js";
 import { handleMock } from "./mocker.js";
 
 // Create hoisted mock functions
-const { mockGetPattern, mockFindMatchingFile } = vi.hoisted(() => ({
-  mockGetPattern: vi.fn(),
+const { mockGetScenario, mockFindMatchingFile } = vi.hoisted(() => ({
+  mockGetScenario: vi.fn(),
   mockFindMatchingFile: vi.fn(),
 }));
 
@@ -17,18 +17,19 @@ vi.mock("../core/logger.js", () => ({
     warn: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
+    request: vi.fn(),
   },
 }));
 
 // Mock state module
 vi.mock("../core/state.js", () => ({
   state: {
-    getPattern: mockGetPattern,
+    getScenario: mockGetScenario,
     getMode: vi.fn().mockReturnValue("mock"),
-    setPattern: vi.fn(),
+    setScenario: vi.fn(),
     setMode: vi.fn(),
     reset: vi.fn(),
-    getStatus: vi.fn().mockReturnValue({ mode: "mock", pattern: null }),
+    getStatus: vi.fn().mockReturnValue({ mode: "mock", scenario: null }),
   },
 }));
 
@@ -36,7 +37,7 @@ vi.mock("../core/state.js", () => ({
 vi.mock("../core/storage.js", () => ({
   storage: {
     findMatchingFile: mockFindMatchingFile,
-    getPatternFiles: vi.fn().mockResolvedValue([]),
+    getScenarioFiles: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -57,7 +58,7 @@ describe("handleMock", () => {
   let app: Hono;
 
   beforeEach(() => {
-    mockGetPattern.mockReturnValue(null);
+    mockGetScenario.mockReturnValue(null);
     mockFindMatchingFile.mockReset();
 
     app = new Hono();
@@ -76,19 +77,19 @@ describe("handleMock", () => {
     vi.resetAllMocks();
   });
 
-  describe("no pattern selected", () => {
-    it("returns 400 when no pattern is selected", async () => {
+  describe("no scenario selected", () => {
+    it("returns 400 when no scenario is selected", async () => {
       const res = await app.request("/api/users/123");
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(400);
-      expect(body.error).toBe("No pattern selected");
+      expect(body.error).toBe("No scenario selected");
     });
   });
 
-  describe("with pattern selected", () => {
+  describe("with scenario selected", () => {
     beforeEach(() => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("returns mock response when file is found", async () => {
@@ -225,7 +226,7 @@ describe("handleMock", () => {
 
       expect(res.status).toBe(200);
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users",
         {},
@@ -251,7 +252,7 @@ describe("handleMock", () => {
       await usersApp.request("/api/users?tag=a&tag=b&tag=c");
 
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users",
         {},
@@ -270,7 +271,7 @@ describe("handleMock", () => {
       });
 
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "POST",
         "/api/users/:id",
         { id: "123" },
@@ -289,7 +290,7 @@ describe("handleMock", () => {
       });
 
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "POST",
         "/api/users/:id",
         { id: "123" },
@@ -304,7 +305,7 @@ describe("handleMock", () => {
       await app.request("/api/users/123", { method: "GET" });
 
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users/:id",
         { id: "123" },
@@ -319,7 +320,7 @@ describe("handleMock", () => {
       await app.request("/api/users/123", { method: "HEAD" });
 
       expect(mockFindMatchingFile).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "HEAD",
         "/api/users/:id",
         { id: "123" },
@@ -331,7 +332,7 @@ describe("handleMock", () => {
 
   describe("fallback modes", () => {
     beforeEach(() => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("returns 404 response details in body when fallback is 404", async () => {

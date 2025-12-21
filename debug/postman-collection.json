@@ -30,7 +30,7 @@
                   "host": ["{{baseUrl}}"],
                   "path": ["__snaperro__", "status"]
                 },
-                "description": "サーバーステータス取得（モード、パターン、ファイル数）"
+                "description": "サーバーステータス取得（モード、シナリオ、ファイル数）"
               }
             },
             {
@@ -88,42 +88,42 @@
                   "host": ["{{baseUrl}}"],
                   "path": ["__snaperro__", "events"]
                 },
-                "description": "SSEイベントストリーム - リアルタイムで状態変更を受信\n\n⚠️ **注意**: PostmanはSSEをネイティブでサポートしていません。\n\n### 確認方法\n\n**curl:**\n```bash\ncurl -N http://localhost:3333/__snaperro__/events\n```\n\n**ブラウザコンソール:**\n```javascript\nconst es = new EventSource('http://localhost:3333/__snaperro__/events');\nes.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));\n```\n\n### イベント種別\n- connected: 接続完了（初期状態）\n- mode_changed: モード変更\n- pattern_changed: パターン切替\n- file_created: ファイル作成（記録時）\n- file_updated: ファイル更新\n- file_deleted: ファイル削除\n- pattern_created/deleted/renamed: パターン操作"
+                "description": "SSEイベントストリーム - リアルタイムで状態変更を受信\n\n⚠️ **注意**: PostmanはSSEをネイティブでサポートしていません。\n\n### 確認方法\n\n**curl:**\n```bash\ncurl -N http://localhost:3333/__snaperro__/events\n```\n\n**ブラウザコンソール:**\n```javascript\nconst es = new EventSource('http://localhost:3333/__snaperro__/events');\nes.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));\n```\n\n### イベント種別\n- connected: 接続完了（初期状態）\n- mode_changed: モード変更\n- scenario_changed: シナリオ切替\n- file_created: ファイル作成（記録時）\n- file_updated: ファイル更新\n- file_deleted: ファイル削除\n- scenario_created/deleted/renamed: シナリオ操作"
               }
             }
           ]
         },
         {
-          "name": "Patterns",
+          "name": "Scenarios",
           "item": [
             {
-              "name": "List All Patterns",
+              "name": "List All Scenarios",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns"]
+                  "path": ["__snaperro__", "scenarios"]
                 },
-                "description": "パターン一覧取得"
+                "description": "シナリオ一覧取得"
               }
             },
             {
-              "name": "Get Current Pattern",
+              "name": "Get Current Scenario",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/current",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/current",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", "current"]
+                  "path": ["__snaperro__", "scenarios", "current"]
                 },
-                "description": "現在選択中のパターン取得"
+                "description": "現在選択中のシナリオ取得"
               }
             },
             {
-              "name": "Switch Pattern",
+              "name": "Switch Scenario",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -134,7 +134,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"pattern\": \"demo\"\n}",
+                  "raw": "{\n  \"scenario\": \"demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -142,15 +142,15 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/current",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/current",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", "current"]
+                  "path": ["__snaperro__", "scenarios", "current"]
                 },
-                "description": "パターン切替"
+                "description": "シナリオ切替"
               }
             },
             {
-              "name": "Create Pattern",
+              "name": "Create Scenario",
               "request": {
                 "method": "POST",
                 "header": [
@@ -161,7 +161,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"新規パターン\"\n}",
+                  "raw": "{\n  \"name\": \"新規シナリオ\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -169,15 +169,15 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns"]
+                  "path": ["__snaperro__", "scenarios"]
                 },
-                "description": "新規パターン作成"
+                "description": "新規シナリオ作成"
               }
             },
             {
-              "name": "Duplicate Pattern",
+              "name": "Duplicate Scenario",
               "request": {
                 "method": "POST",
                 "header": [
@@ -196,22 +196,22 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/duplicate",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:name/duplicate",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":name", "duplicate"],
+                  "path": ["__snaperro__", "scenarios", ":name", "duplicate"],
                   "variable": [
                     {
                       "key": "name",
                       "value": "demo",
-                      "description": "複製元のパターン名"
+                      "description": "複製元のシナリオ名"
                     }
                   ]
                 },
-                "description": "既存パターンを複製"
+                "description": "既存シナリオを複製"
               }
             },
             {
-              "name": "Rename Pattern",
+              "name": "Rename Scenario",
               "request": {
                 "method": "PUT",
                 "header": [
@@ -222,7 +222,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"newName\": \"新しいパターン名\"\n}",
+                  "raw": "{\n  \"newName\": \"新しいシナリオ名\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -230,29 +230,29 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/rename",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:name/rename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":name", "rename"],
+                  "path": ["__snaperro__", "scenarios", ":name", "rename"],
                   "variable": [
                     {
                       "key": "name",
                       "value": "demo",
-                      "description": "変更前のパターン名"
+                      "description": "変更前のシナリオ名"
                     }
                   ]
                 },
-                "description": "パターン名変更"
+                "description": "シナリオ名変更"
               }
             },
             {
-              "name": "Delete Pattern",
+              "name": "Delete Scenario",
               "request": {
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:name",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":name"],
+                  "path": ["__snaperro__", "scenarios", ":name"],
                   "variable": [
                     {
                       "key": "name",
@@ -261,31 +261,31 @@
                     }
                   ]
                 },
-                "description": "パターン削除"
+                "description": "シナリオ削除"
               }
             },
             {
-              "name": "Download Pattern as ZIP",
+              "name": "Download Scenario as ZIP",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:name/download",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:name/download",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":name", "download"],
+                  "path": ["__snaperro__", "scenarios", ":name", "download"],
                   "variable": [
                     {
                       "key": "name",
                       "value": "demo",
-                      "description": "ダウンロードするパターン名"
+                      "description": "ダウンロードするシナリオ名"
                     }
                   ]
                 },
-                "description": "パターンをZIP形式でダウンロード"
+                "description": "シナリオをZIP形式でダウンロード"
               }
             },
             {
-              "name": "Upload Pattern from ZIP",
+              "name": "Upload Scenario from ZIP",
               "request": {
                 "method": "POST",
                 "header": [],
@@ -301,18 +301,18 @@
                   ]
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/upload",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/upload",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", "upload"]
+                  "path": ["__snaperro__", "scenarios", "upload"]
                 },
-                "description": "ZIPファイルからパターンをアップロード"
+                "description": "ZIPファイルからシナリオをアップロード"
               }
             }
           ]
         },
         {
           "name": "Files",
-          "description": "RESTful: パターンをURLに含める",
+          "description": "RESTful: シナリオをURLに含める",
           "item": [
             {
               "name": "List All Files",
@@ -320,18 +320,18 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     }
                   ]
                 },
-                "description": "指定パターン内のファイル一覧取得"
+                "description": "指定シナリオ内のファイル一覧取得"
               }
             },
             {
@@ -340,14 +340,14 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files", ":filename"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     },
                     {
                       "key": "filename",
@@ -365,14 +365,14 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename/download",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files/:filename/download",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename", "download"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files", ":filename", "download"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     },
                     {
                       "key": "filename",
@@ -401,14 +401,14 @@
                   ]
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/upload",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files/upload",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files", "upload"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files", "upload"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     }
                   ]
                 },
@@ -435,14 +435,14 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files", ":filename"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     },
                     {
                       "key": "filename",
@@ -460,14 +460,14 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/__snaperro__/patterns/:pattern/files/:filename",
+                  "raw": "{{baseUrl}}/__snaperro__/scenarios/:scenario/files/:filename",
                   "host": ["{{baseUrl}}"],
-                  "path": ["__snaperro__", "patterns", ":pattern", "files", ":filename"],
+                  "path": ["__snaperro__", "scenarios", ":scenario", "files", ":filename"],
                   "variable": [
                     {
-                      "key": "pattern",
+                      "key": "scenario",
                       "value": "demo",
-                      "description": "パターン名"
+                      "description": "シナリオ名"
                     },
                     {
                       "key": "filename",

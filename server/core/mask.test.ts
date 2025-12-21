@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { maskHeaders, maskValue } from "./mask.js";
+import { getMergedMaskHeaders, maskHeaders, maskValue } from "./mask.js";
 
 describe("maskValue", () => {
   it("masks values longer than 4 characters", () => {
@@ -117,5 +117,46 @@ describe("maskHeaders", () => {
   it("handles empty headers object", () => {
     const result = maskHeaders({}, ["authorization"]);
     expect(result).toEqual({});
+  });
+});
+
+describe("getMergedMaskHeaders", () => {
+  it("returns undefined when both are undefined", () => {
+    expect(getMergedMaskHeaders(undefined, undefined)).toBeUndefined();
+  });
+
+  it("returns root mask when API mask is undefined", () => {
+    expect(getMergedMaskHeaders(["authorization"], undefined)).toEqual(["authorization"]);
+  });
+
+  it("returns API mask when root mask is undefined", () => {
+    expect(getMergedMaskHeaders(undefined, ["x-api-key"])).toEqual(["x-api-key"]);
+  });
+
+  it("merges both arrays", () => {
+    const result = getMergedMaskHeaders(["authorization"], ["x-api-key"]);
+    expect(result).toContain("authorization");
+    expect(result).toContain("x-api-key");
+    expect(result).toHaveLength(2);
+  });
+
+  it("deduplicates case-insensitively", () => {
+    const result = getMergedMaskHeaders(["Authorization"], ["authorization"]);
+    expect(result).toHaveLength(1);
+    expect(result).toContain("authorization");
+  });
+
+  it("handles mixed case in both arrays", () => {
+    const result = getMergedMaskHeaders(["Authorization", "Cookie"], ["AUTHORIZATION", "X-Api-Key"]);
+    expect(result).toHaveLength(3);
+    expect(result).toContain("authorization");
+    expect(result).toContain("cookie");
+    expect(result).toContain("x-api-key");
+  });
+
+  it("handles empty arrays", () => {
+    expect(getMergedMaskHeaders([], [])).toEqual([]);
+    expect(getMergedMaskHeaders(["auth"], [])).toEqual(["auth"]);
+    expect(getMergedMaskHeaders([], ["auth"])).toEqual(["auth"]);
   });
 });

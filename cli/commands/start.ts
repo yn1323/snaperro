@@ -3,6 +3,7 @@ import type { ServerType } from "@hono/node-server";
 import { consola } from "consola";
 import { config as dotenvConfig } from "dotenv";
 import open from "open";
+import { mergeWithBuiltinApis } from "../../server/core/builtin-apis.js";
 import { loadConfig } from "../../server/core/config.js";
 import { ConfigWatcher } from "../../server/core/watcher.js";
 import { shutdownServer, startServer } from "../../server/handlers/index.js";
@@ -64,7 +65,8 @@ export async function startCommand(options: StartOptions): Promise<void> {
       consola.start("Loading config file...");
 
       // Load config with cache disabled for reload
-      const config = await loadConfig(configPath, !isInitial);
+      const rawConfig = await loadConfig(configPath, !isInitial);
+      const config = mergeWithBuiltinApis(rawConfig);
 
       // Override with command line options
       if (options.port) {

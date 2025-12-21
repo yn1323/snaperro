@@ -11,10 +11,10 @@ interface TopBarProps {
 }
 
 const modes: { value: Mode; label: string; icon: string }[] = [
+  { value: "smart", label: "Smart", icon: "★" },
   { value: "proxy", label: "Proxy", icon: "→" },
   { value: "record", label: "Record", icon: "●" },
   { value: "mock", label: "Mock", icon: "◆" },
-  { value: "smart", label: "Smart", icon: "⚡" },
 ];
 
 /**

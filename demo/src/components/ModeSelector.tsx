@@ -9,6 +9,11 @@ type ModeSelectorProps = {
 };
 
 const modeConfig: Record<Mode, { label: string; icon: string; description: string }> = {
+  smart: {
+    label: "Smart",
+    icon: "⚡",
+    description: "Return mock if exists, otherwise record",
+  },
   proxy: {
     label: "Proxy",
     icon: "→",
@@ -23,11 +28,6 @@ const modeConfig: Record<Mode, { label: string; icon: string; description: strin
     label: "Mock",
     icon: "◆",
     description: "Return saved responses",
-  },
-  smart: {
-    label: "Smart",
-    icon: "⚡",
-    description: "Return mock if exists, otherwise record",
   },
 };
 

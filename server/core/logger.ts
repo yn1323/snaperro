@@ -1,5 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { consola } from "consola/basic";
 import pc from "picocolors";
+import type { RequestLogEventData } from "../types/sse.js";
+import { eventBus } from "./event-bus.js";
 
 let isVerbose = false;
 
@@ -93,5 +96,46 @@ export const logger = {
       title: "snaperro",
       message: lines.join("\n"),
     });
+  },
+
+  /**
+   * Request log (console + SSE event)
+   */
+  request(options: {
+    method: string;
+    path: string;
+    action: "proxy" | "record" | "mock" | "smart";
+    subAction?: "mock" | "record";
+    status: number;
+    filePath?: string;
+    duration: number;
+  }) {
+    const time = new Date().toLocaleTimeString("ja-JP");
+
+    // Build console message
+    let message = `${options.method} ${options.path} → ${options.action}`;
+    if (options.subAction) {
+      message += ` → ${options.subAction}`;
+    }
+    message += ` → ${options.status} (${options.duration}ms)`;
+    if (options.filePath) {
+      message += ` [${options.filePath}]`;
+    }
+    console.log(`${pc.cyan("REQ")}   [${time}] ${message}`);
+
+    // Emit SSE event
+    const eventData: RequestLogEventData = {
+      id: randomUUID(),
+      timestamp: new Date().toISOString(),
+      method: options.method,
+      path: options.path,
+      action: options.action,
+      subAction: options.subAction,
+      status: options.status,
+      filePath: options.filePath,
+      duration: options.duration,
+    };
+
+    eventBus.emitSSE("request_log", eventData);
   },
 };

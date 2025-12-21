@@ -19,6 +19,7 @@ export type {
   HttpMethod,
   Mode,
   ModeChangedEventData,
+  RequestLogEventData,
   ScenarioChangedEventData,
   ScenarioCreatedEventData,
   ScenarioDeletedEventData,

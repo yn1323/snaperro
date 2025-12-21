@@ -29,6 +29,8 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
     );
   }
 
+  const startTime = Date.now();
+
   // Parse query parameters
   const queryParams = parseQueryParams(url);
 
@@ -74,7 +76,15 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
     );
   }
 
-  logger.info(`${method} ${path} → mock → ${result.filePath} (${result.fileData.response.status})`);
+  const elapsed = Date.now() - startTime;
+  logger.request({
+    method,
+    path,
+    action: "mock",
+    status: result.fileData.response.status,
+    filePath: result.filePath,
+    duration: elapsed,
+  });
 
   // Return response (304/204 have no body)
   const status = result.fileData.response.status;

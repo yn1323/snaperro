@@ -15,7 +15,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
 
   const targetUrl = `${apiConfig.target}${path}`;
 
-  logger.info(`${method} ${path} → proxy → ${targetUrl}`);
+  logger.debug(`${method} ${path} → proxy → ${targetUrl}`);
 
   const startTime = Date.now();
 
@@ -37,7 +37,13 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     });
 
     const elapsed = Date.now() - startTime;
-    logger.info(`  → ${response.status} (${elapsed}ms)`);
+    logger.request({
+      method,
+      path,
+      action: "proxy",
+      status: response.status,
+      duration: elapsed,
+    });
 
     // Copy headers (excluding problematic headers)
     // Content-Encoding: Already decompressed by response.text() but gzip remains causing browser re-decompression error

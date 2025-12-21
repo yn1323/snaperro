@@ -9,6 +9,7 @@ import type {
   FolderRenamedEventData,
   Mode,
   ModeChangedEventData,
+  RequestLogEventData,
   ScenarioChangedEventData,
   ScenarioCreatedEventData,
   ScenarioDeletedEventData,
@@ -23,6 +24,7 @@ const SSE_ENDPOINT = "/__snaperro__/events";
 interface UseSnaperroSSEReturn {
   state: SnaperroState;
   connected: boolean;
+  registerRequestLogHandler: (handler: (log: RequestLogEventData) => void) => () => void;
 }
 
 const initialState: SnaperroState = {
@@ -43,6 +45,25 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   const [connected, setConnected] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
+
+  // Request log handlers (external subscribers)
+  const requestLogHandlersRef = useRef<Set<(log: RequestLogEventData) => void>>(new Set());
+
+  // Handler for request_log events
+  const handleRequestLog = useCallback((data: RequestLogEventData) => {
+    // Notify all registered handlers (does not update App state)
+    for (const handler of requestLogHandlersRef.current) {
+      handler(data);
+    }
+  }, []);
+
+  // Register a request log handler (returns unsubscribe function)
+  const registerRequestLogHandler = useCallback((handler: (log: RequestLogEventData) => void) => {
+    requestLogHandlersRef.current.add(handler);
+    return () => {
+      requestLogHandlersRef.current.delete(handler);
+    };
+  }, []);
 
   // イベントハンドラ
   const handleConnected = useCallback((data: ConnectedEventData) => {
@@ -202,6 +223,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
       "file_created",
       "file_updated",
       "file_deleted",
+      "request_log",
     ];
 
     for (const eventType of eventTypes) {
@@ -245,6 +267,9 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
             case "file_deleted":
               handleFileDeleted(data);
               break;
+            case "request_log":
+              handleRequestLog(data);
+              break;
           }
         } catch (err) {
           console.error(`SSEイベントのパースに失敗: ${eventType}`, err);
@@ -277,6 +302,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     handleFileCreated,
     handleFileUpdated,
     handleFileDeleted,
+    handleRequestLog,
   ]);
 
   // 初期接続とクリーンアップ
@@ -293,5 +319,5 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     };
   }, [connect]);
 
-  return { state, connected };
+  return { state, connected, registerRequestLogHandler };
 }

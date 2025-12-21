@@ -29,6 +29,8 @@ export async function handleSmart(c: Context, match: MatchResult, config: Snaper
     );
   }
 
+  const startTime = Date.now();
+
   // 2. Parse query parameters and request body
   const queryParams = parseQueryParams(url);
   const requestBody = await parseRequestBody(method, () => c.req.text());
@@ -45,7 +47,16 @@ export async function handleSmart(c: Context, match: MatchResult, config: Snaper
 
   // 4. If mock exists, return it
   if (result) {
-    logger.info(`${method} ${path} → smart → mock → ${result.filePath} (${result.fileData.response.status})`);
+    const elapsed = Date.now() - startTime;
+    logger.request({
+      method,
+      path,
+      action: "smart",
+      subAction: "mock",
+      status: result.fileData.response.status,
+      filePath: result.filePath,
+      duration: elapsed,
+    });
 
     const status = result.fileData.response.status;
     if (status === 304 || status === 204) {
@@ -54,7 +65,7 @@ export async function handleSmart(c: Context, match: MatchResult, config: Snaper
     return c.json(result.fileData.response.body as object, status as never);
   }
 
-  // 5. If no mock, proxy & record
-  logger.info(`${method} ${path} → smart → record`);
+  // 5. If no mock, proxy & record (handleRecord will log the request)
+  logger.debug(`${method} ${path} → smart → record (delegating to recorder)`);
   return handleRecord(c, match, config);
 }

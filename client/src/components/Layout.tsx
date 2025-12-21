@@ -8,6 +8,7 @@ interface LayoutProps {
   scenarioPane: (width: number) => ReactNode;
   filePane: (width: number) => ReactNode;
   editorPane: ReactNode;
+  logPanel: ReactNode;
 }
 
 /**
@@ -17,7 +18,7 @@ interface LayoutProps {
  * - Center pane: File list (resizable)
  * - Right pane: Editor (remaining width)
  */
-export function Layout({ topBar, scenarioPane, filePane, editorPane }: LayoutProps) {
+export function Layout({ topBar, scenarioPane, filePane, editorPane, logPanel }: LayoutProps) {
   const { scenarioWidth, fileWidth, setScenarioWidth, setFileWidth } = usePaneWidths();
 
   const handleScenarioResize = useCallback(
@@ -35,7 +36,7 @@ export function Layout({ topBar, scenarioPane, filePane, editorPane }: LayoutPro
   );
 
   return (
-    <Flex direction="column" h="100vh" bg="gray.50">
+    <Flex direction="column" h="100vh" bg="gray.50" overflow="hidden">
       {topBar}
       <Flex flex={1} overflow="hidden" minW={0}>
         {scenarioPane(scenarioWidth)}
@@ -44,6 +45,7 @@ export function Layout({ topBar, scenarioPane, filePane, editorPane }: LayoutPro
         <ResizeHandle onResize={handleFileResize} />
         {editorPane}
       </Flex>
+      {logPanel}
     </Flex>
   );
 }

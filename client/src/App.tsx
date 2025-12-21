@@ -5,6 +5,7 @@ import { ModeHelpDialog } from "./components/dialogs/ModeHelpDialog";
 import { EditorPane } from "./components/EditorPane";
 import { FilePane } from "./components/FilePane";
 import { Layout } from "./components/Layout";
+import { LogPanel } from "./components/LogPanel";
 import { ScenarioPane } from "./components/ScenarioPane";
 import { TopBar } from "./components/TopBar";
 import { Toaster } from "./components/ui/toaster";
@@ -17,7 +18,7 @@ import type { Mode } from "./types";
 import { withErrorHandling } from "./utils/error-handler";
 
 export default function App() {
-  const { state, connected } = useSnaperroSSE();
+  const { state, connected, registerRequestLogHandler } = useSnaperroSSE();
   const api = useSnaperroAPI();
 
   // Dynamic favicon based on connection and mode
@@ -196,6 +197,7 @@ export default function App() {
             searchQuery={searchQuery}
           />
         }
+        logPanel={<LogPanel registerRequestLogHandler={registerRequestLogHandler} />}
       />
 
       {/* File delete confirmation dialog */}

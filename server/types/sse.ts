@@ -9,6 +9,7 @@ export type {
   FolderInfo,
   FolderRenamedEventData,
   ModeChangedEventData,
+  RequestLogEventData,
   ScenarioChangedEventData,
   ScenarioCreatedEventData,
   ScenarioDeletedEventData,

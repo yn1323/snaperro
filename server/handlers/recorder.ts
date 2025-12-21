@@ -33,7 +33,9 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
     );
   }
 
-  logger.info(`${method} ${requestPath} → record`);
+  logger.debug(`${method} ${requestPath} → record`);
+
+  const startTime = Date.now();
 
   try {
     // Get request body
@@ -117,9 +119,15 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
       method,
     });
 
-    const fileSize = JSON.stringify(fileData).length;
-    const action = isNew ? "saved" : "updated";
-    logger.info(`  → ${action} ${filePath} (${response.status}, ${storage.formatSize(fileSize)})`);
+    const elapsed = Date.now() - startTime;
+    logger.request({
+      method,
+      path: requestPath,
+      action: "record",
+      status: response.status,
+      filePath: path.basename(filePath),
+      duration: elapsed,
+    });
 
     // 10. Return response (304/204 have no body)
     if (response.status === 304 || response.status === 204) {

@@ -32,7 +32,8 @@ export type SSEEventType =
   | "folder_renamed" // Folder renamed
   | "file_created" // File created (during recording)
   | "file_updated" // File updated
-  | "file_deleted"; // File deleted
+  | "file_deleted" // File deleted
+  | "request_log"; // Request log entry
 
 /**
  * SSE event
@@ -132,4 +133,28 @@ export interface FileChangedEventData {
 export interface FileDeletedEventData {
   scenario: string;
   filename: string;
+}
+
+/**
+ * Request log event data
+ */
+export interface RequestLogEventData {
+  /** Unique identifier for the log entry */
+  id: string;
+  /** ISO 8601 timestamp */
+  timestamp: string;
+  /** HTTP method (GET, POST, PUT, DELETE, etc.) */
+  method: string;
+  /** Request path (e.g., /api/users) */
+  path: string;
+  /** Primary action taken */
+  action: "proxy" | "record" | "mock" | "smart";
+  /** Sub-action for smart mode (mock or record) */
+  subAction?: "mock" | "record";
+  /** HTTP status code */
+  status: number;
+  /** File path for record/mock actions */
+  filePath?: string;
+  /** Request duration in milliseconds */
+  duration: number;
 }

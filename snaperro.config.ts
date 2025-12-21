@@ -13,12 +13,12 @@ export default defineConfig({
   // - smart: Return mock if exists, otherwise proxy & record (recommended)
   apis: {
     // JSON Placeholder API（サンプル）
-    jsonPlaceholder: {
-      name: "JSON Placeholder",
-      target: "https://jsonplaceholder.typicode.com",
-      routes: ["/users", "/users/:id", "/posts", "/posts/:id", "/posts/:id/comments", "/comments"],
-      maskRequestHeaders: ["connection"],
-    },
+    // jsonPlaceholder: {
+    //   name: "JSON Placeholder",
+    //   target: "https://jsonplaceholder.typicode.com",
+    //   routes: ["/users", "/users/:id", "/posts", "/posts/:id", "/posts/:id/comments", "/comments"],
+    //   maskRequestHeaders: ["connection"],
+    // },
 
     // 例: カスタムAPI
     // userService: {
@@ -30,4 +30,4 @@ export default defineConfig({
     //   routes: ["/api/users", "/api/users/:id"],
     // },
   },
-});
+  });

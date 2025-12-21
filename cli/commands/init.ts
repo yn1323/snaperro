@@ -24,6 +24,8 @@ export default defineConfig({
 
   apis: {
     // JSON Placeholder API (sample)
+    // This is a built-in API - you can remove this section if you don't need it.
+    // It will still be available for demo purposes.
     jsonPlaceholder: {
       name: "JSON Placeholder",
       target: "https://jsonplaceholder.typicode.com",

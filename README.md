@@ -68,6 +68,16 @@ Your browser will open `http://localhost:3333/__snaperro__/demo`.
 
 For detailed management (scenarios/files/JSON editing), use the GUI (`/__snaperro__/client`).
 
+### Built-in APIs
+
+The following APIs are available without configuration:
+
+| API | Target | Routes |
+|-----|--------|--------|
+| jsonPlaceholder | https://jsonplaceholder.typicode.com | /users, /posts, /comments, etc. |
+
+These are used by the demo page and can be overridden in your config if needed.
+
 ### Web GUI
 
 Intuitively operate snaperro from your browser.

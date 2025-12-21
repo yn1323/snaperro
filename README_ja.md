@@ -68,6 +68,16 @@ npx snaperro demo
 
 詳細な管理（シナリオ/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
 
+### 組み込みAPI
+
+以下のAPIは設定なしで利用可能です：
+
+| API | ターゲット | ルート |
+|-----|--------|--------|
+| jsonPlaceholder | https://jsonplaceholder.typicode.com | /users, /posts, /comments 等 |
+
+これらはデモページで使用されており、必要に応じて設定で上書きできます。
+
 ### Web GUI
 
 ブラウザから直感的にsnaperroを操作できます。

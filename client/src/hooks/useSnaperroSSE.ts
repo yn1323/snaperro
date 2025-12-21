@@ -127,12 +127,17 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   }, []);
 
   const handleFolderRenamed = useCallback((data: FolderRenamedEventData) => {
-    setState((prev) => ({
-      ...prev,
-      folders: prev.folders
-        .map((f) => (f.name === data.oldName ? { ...f, name: data.newName } : f))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    }));
+    setState((prev) => {
+      const oldPrefix = `${data.oldName}/`;
+      const newPrefix = `${data.newName}/`;
+      return {
+        ...prev,
+        folders: prev.folders
+          .map((f) => (f.name === data.oldName ? { ...f, name: data.newName } : f))
+          .sort((a, b) => a.name.localeCompare(b.name)),
+        scenarios: prev.scenarios.map((s) => (s.startsWith(oldPrefix) ? newPrefix + s.substring(oldPrefix.length) : s)),
+      };
+    });
   }, []);
 
   const handleFileCreated = useCallback((data: FileChangedEventData) => {

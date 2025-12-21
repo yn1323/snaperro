@@ -330,6 +330,30 @@ describe("control-api", () => {
       // クリーンアップ
       await fs.rm(path.join(BASE_DIR, newName), { recursive: true, force: true });
     });
+
+    it("フォルダ内のシナリオをリネームするとフォルダパスが維持される", async () => {
+      const folder = "__test_folder_rename__";
+      const oldScenario = "original";
+      const newScenario = "renamed";
+      const oldName = `${folder}/${oldScenario}`;
+      const expectedNewName = `${folder}/${newScenario}`;
+
+      await storage.createFolder(folder);
+      await storage.createScenario(oldName);
+
+      const res = await app.request(`/__snaperro__/scenarios/${encodeURIComponent(oldName)}/rename`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName: newScenario }), // シナリオ名のみ送信
+      });
+      const body = (await res.json()) as { oldName: string; newName: string; message: string };
+
+      expect(res.status).toBe(200);
+      expect(body.newName).toBe(expectedNewName); // フォルダパスが維持される
+
+      // クリーンアップ
+      await storage.deleteFolder(folder);
+    });
   });
 
   describe("DELETE /scenarios/:name", () => {

@@ -293,17 +293,22 @@ controlApi.put("/scenarios/:name/rename", async (c) => {
     return c.json(notFoundError("scenario", name), 404);
   }
 
+  // oldNameからフォルダパスを抽出してnewNameに追加
+  const lastSlash = name.lastIndexOf("/");
+  const folder = lastSlash >= 0 ? name.substring(0, lastSlash + 1) : "";
+  const fullNewName = folder + newName;
+
   try {
-    await storage.renameScenario(name, newName);
+    await storage.renameScenario(name, fullNewName);
 
     // 現在のシナリオがリネームされた場合は更新
     if (state.getScenario() === name) {
-      await state.setScenario(newName);
+      await state.setScenario(fullNewName);
     }
 
     return c.json({
       oldName: name,
-      newName,
+      newName: fullNewName,
       message: "Scenario renamed",
     });
   } catch (err) {

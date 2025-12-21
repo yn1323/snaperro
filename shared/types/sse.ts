@@ -14,7 +14,7 @@ export interface FileInfo {
  */
 export interface FolderInfo {
   name: string;
-  patternsCount: number;
+  scenariosCount: number;
 }
 
 /**
@@ -23,10 +23,10 @@ export interface FolderInfo {
 export type SSEEventType =
   | "connected" // Connection established (initial state sent)
   | "mode_changed" // Mode changed
-  | "pattern_changed" // Current pattern changed
-  | "pattern_created" // Pattern created
-  | "pattern_deleted" // Pattern deleted
-  | "pattern_renamed" // Pattern renamed
+  | "scenario_changed" // Current scenario changed
+  | "scenario_created" // Scenario created
+  | "scenario_deleted" // Scenario deleted
+  | "scenario_renamed" // Scenario renamed
   | "folder_created" // Folder created
   | "folder_deleted" // Folder deleted
   | "folder_renamed" // Folder renamed
@@ -49,8 +49,8 @@ export interface SSEEvent {
 export interface ConnectedEventData {
   version: string;
   mode: Mode;
-  currentPattern: string | null;
-  patterns: string[];
+  currentScenario: string | null;
+  scenarios: string[];
   folders: FolderInfo[];
   files: FileInfo[];
 }
@@ -63,31 +63,31 @@ export interface ModeChangedEventData {
 }
 
 /**
- * Pattern changed event data
+ * Scenario changed event data
  */
-export interface PatternChangedEventData {
-  pattern: string | null;
+export interface ScenarioChangedEventData {
+  scenario: string | null;
   files: FileInfo[];
 }
 
 /**
- * Pattern created event data
+ * Scenario created event data
  */
-export interface PatternCreatedEventData {
+export interface ScenarioCreatedEventData {
   name: string;
 }
 
 /**
- * Pattern deleted event data
+ * Scenario deleted event data
  */
-export interface PatternDeletedEventData {
+export interface ScenarioDeletedEventData {
   name: string;
 }
 
 /**
- * Pattern renamed event data
+ * Scenario renamed event data
  */
-export interface PatternRenamedEventData {
+export interface ScenarioRenamedEventData {
   oldName: string;
   newName: string;
 }
@@ -97,8 +97,8 @@ export interface PatternRenamedEventData {
  */
 export interface FolderCreatedEventData {
   name: string;
-  patternsCount?: number;
-  patterns?: string[];
+  scenariosCount?: number;
+  scenarios?: string[];
 }
 
 /**
@@ -120,7 +120,7 @@ export interface FolderRenamedEventData {
  * File created/updated event data
  */
 export interface FileChangedEventData {
-  pattern: string;
+  scenario: string;
   filename: string;
   endpoint: string;
   method: string;
@@ -130,6 +130,6 @@ export interface FileChangedEventData {
  * File deleted event data
  */
 export interface FileDeletedEventData {
-  pattern: string;
+  scenario: string;
   filename: string;
 }

@@ -57,20 +57,20 @@ describe("createHandler", () => {
   });
 
   describe("Mockモード", () => {
-    it("パターン未設定の場合は400エラーを返す", async () => {
+    it("シナリオ未設定の場合は400エラーを返す", async () => {
       await state.setMode("mock");
-      // patternはnullのまま
+      // scenarioはnullのまま
 
       const res = await app.request("/api/users");
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(400);
-      expect(body.error).toBe("No pattern selected");
+      expect(body.error).toBe("No scenario selected");
     });
 
-    it("パターン設定済みでモックファイルがない場合は404を返す", async () => {
+    it("シナリオ設定済みでモックファイルがない場合は404を返す", async () => {
       await state.setMode("mock");
-      await state.setPattern("nonexistent");
+      await state.setScenario("nonexistent");
 
       const res = await app.request("/api/users");
       const body = (await res.json()) as { error: string };
@@ -82,15 +82,15 @@ describe("createHandler", () => {
   });
 
   describe("Smartモード", () => {
-    it("パターン未設定の場合は400エラーを返す", async () => {
+    it("シナリオ未設定の場合は400エラーを返す", async () => {
       await state.setMode("smart");
-      // patternはnullのまま
+      // scenarioはnullのまま
 
       const res = await app.request("/api/users");
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(400);
-      expect(body.error).toBe("No pattern selected");
+      expect(body.error).toBe("No scenario selected");
     });
   });
 });

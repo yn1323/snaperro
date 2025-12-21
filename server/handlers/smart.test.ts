@@ -7,7 +7,7 @@ import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
 import { createHandler } from "./handler.js";
 
-const TEST_PATTERN = "__test_smart__";
+const TEST_SCENARIO = "__test_smart__";
 const BASE_DIR = ".snaperro/files";
 
 const testConfig: SnaperroConfig = {
@@ -29,7 +29,7 @@ describe("handleSmart", () => {
   beforeEach(async () => {
     state.reset();
     await state.setMode("smart");
-    await storage.createPattern(TEST_PATTERN);
+    await storage.createScenario(TEST_SCENARIO);
 
     app = new Hono();
     const handler = createHandler(testConfig);
@@ -38,28 +38,28 @@ describe("handleSmart", () => {
 
   afterEach(async () => {
     try {
-      await fs.rm(path.join(BASE_DIR, TEST_PATTERN), { recursive: true, force: true });
+      await fs.rm(path.join(BASE_DIR, TEST_SCENARIO), { recursive: true, force: true });
     } catch {
       // ignore
     }
   });
 
-  describe("パターン未選択", () => {
-    it("パターン未選択時は400エラーを返す", async () => {
-      // パターンを未選択状態にする
-      await state.setPattern(null);
+  describe("シナリオ未選択", () => {
+    it("シナリオ未選択時は400エラーを返す", async () => {
+      // シナリオを未選択状態にする
+      await state.setScenario(null);
 
       const res = await app.request("/users");
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(400);
-      expect(body.error).toBe("No pattern selected");
+      expect(body.error).toBe("No scenario selected");
     });
   });
 
   describe("mockがある場合", () => {
     it("既存mockを返す（実サーバーにアクセスしない）", async () => {
-      await state.setPattern(TEST_PATTERN);
+      await state.setScenario(TEST_SCENARIO);
 
       // mockファイルを作成
       const mockData = {
@@ -68,7 +68,7 @@ describe("handleSmart", () => {
         request: { pathParams: {}, queryParams: {}, headers: {}, body: null },
         response: { status: 200, headers: {}, body: { id: 1, name: "Test User" } },
       };
-      await fs.writeFile(path.join(BASE_DIR, TEST_PATTERN, "users_001.json"), JSON.stringify(mockData, null, 2));
+      await fs.writeFile(path.join(BASE_DIR, TEST_SCENARIO, "users_001.json"), JSON.stringify(mockData, null, 2));
 
       const res = await app.request("/users");
       const body = (await res.json()) as { id: number; name: string };
@@ -80,7 +80,7 @@ describe("handleSmart", () => {
 
   describe("mockがない場合", () => {
     it("実サーバーにproxy&recordする", async () => {
-      await state.setPattern(TEST_PATTERN);
+      await state.setScenario(TEST_SCENARIO);
 
       // mockファイルなし → proxy&record
       const res = await app.request("/users");

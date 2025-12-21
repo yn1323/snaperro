@@ -3,13 +3,13 @@ import { useMemo, useState } from "react";
 import { LuBox, LuChevronLeft, LuFolder, LuUpload } from "react-icons/lu";
 import type { FolderInfo } from "../types";
 import { CreateFolderModal } from "./CreateFolderModal";
-import { CreatePatternModal } from "./CreatePatternModal";
+import { CreateScenarioModal } from "./CreateScenarioModal";
 import { ConfirmDialog } from "./dialogs/ConfirmDialog";
 import { RenameDialog } from "./dialogs/RenameDialog";
 import { FolderMenu } from "./FolderMenu";
-import { PatternMenu } from "./PatternMenu";
+import { ScenarioMenu } from "./ScenarioMenu";
 
-interface PatternPaneProps {
+interface ScenarioPaneProps {
   width: number;
   // Folder
   folders: FolderInfo[];
@@ -21,10 +21,10 @@ interface PatternPaneProps {
   onFolderDownload: (name: string) => void;
   onFolderUpload: (file: File) => void;
   onFolderDelete: (name: string) => void;
-  // Pattern
-  patterns: string[];
-  currentPattern: string | null;
-  onSelect: (pattern: string) => void;
+  // Scenario
+  scenarios: string[];
+  currentScenario: string | null;
+  onSelect: (scenario: string) => void;
   onCreate: (name: string) => void;
   onRename: (oldName: string, newName: string) => void;
   onDuplicate: (name: string) => void;
@@ -32,10 +32,10 @@ interface PatternPaneProps {
 }
 
 /**
- * Left pane - Folder/Pattern list with navigation
+ * Left pane - Folder/Scenario list with navigation
  * Width: resizable
  */
-export function PatternPane({
+export function ScenarioPane({
   width,
   folders,
   currentFolder,
@@ -46,15 +46,15 @@ export function PatternPane({
   onFolderDownload,
   onFolderUpload,
   onFolderDelete,
-  patterns,
-  currentPattern,
+  scenarios,
+  currentScenario,
   onSelect,
   onCreate,
   onRename,
   onDuplicate,
   onDelete,
-}: PatternPaneProps) {
-  // Pattern modal/dialog state
+}: ScenarioPaneProps) {
+  // Scenario modal/dialog state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -64,12 +64,12 @@ export function PatternPane({
   const [folderRenameTarget, setFolderRenameTarget] = useState<string | null>(null);
   const [folderDeleteTarget, setFolderDeleteTarget] = useState<string | null>(null);
 
-  // Filter patterns for current folder
-  const filteredPatterns = useMemo(() => {
+  // Filter scenarios for current folder
+  const filteredScenarios = useMemo(() => {
     if (!currentFolder) return [];
     const prefix = `${currentFolder}/`;
-    return patterns.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
-  }, [patterns, currentFolder]);
+    return scenarios.filter((p) => p.startsWith(prefix)).map((p) => p.substring(prefix.length));
+  }, [scenarios, currentFolder]);
 
   const handleFolderZipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -79,13 +79,13 @@ export function PatternPane({
     }
   };
 
-  const handlePatternRename = (newName: string) => {
+  const handleScenarioRename = (newName: string) => {
     if (renameTarget) {
       onRename(renameTarget, newName);
     }
   };
 
-  const handlePatternDelete = () => {
+  const handleScenarioDelete = () => {
     if (deleteTarget) {
       onDelete(deleteTarget);
     }
@@ -165,7 +165,7 @@ export function PatternPane({
                     {folder.name}
                   </Text>
                   <Text fontSize="xs" color="gray.500">
-                    ({folder.patternsCount})
+                    ({folder.scenariosCount})
                   </Text>
                 </Button>
                 <Box pr={1}>
@@ -179,18 +179,18 @@ export function PatternPane({
               </Flex>
             ))
           )
-        ) : // Pattern list
-        filteredPatterns.length === 0 ? (
+        ) : // Scenario list
+        filteredScenarios.length === 0 ? (
           <Text p={3} fontSize="xs" color="gray.500" textAlign="center">
-            No patterns
+            No scenarios
           </Text>
         ) : (
-          filteredPatterns.map((pattern) => {
-            const fullName = `${currentFolder}/${pattern}`;
-            const isSelected = currentPattern === fullName;
+          filteredScenarios.map((scenario) => {
+            const fullName = `${currentFolder}/${scenario}`;
+            const isSelected = currentScenario === fullName;
             return (
               <Flex
-                key={pattern}
+                key={scenario}
                 alignItems="center"
                 bg={isSelected ? "accent.50" : undefined}
                 borderLeft="2px"
@@ -216,11 +216,11 @@ export function PatternPane({
                   gap={2}
                 >
                   <LuBox color="#06b6d4" size={16} />
-                  <Text truncate>{pattern}</Text>
+                  <Text truncate>{scenario}</Text>
                 </Button>
                 <Box pr={1}>
-                  <PatternMenu
-                    patternName={pattern}
+                  <ScenarioMenu
+                    scenarioName={scenario}
                     onRename={() => setRenameTarget(fullName)}
                     onDuplicate={() => onDuplicate(fullName)}
                     onDelete={() => setDeleteTarget(fullName)}
@@ -250,7 +250,7 @@ export function PatternPane({
             </>
           ) : (
             <>
-              <LuBox size={14} /> New Pattern
+              <LuBox size={14} /> New Scenario
             </>
           )}
         </Button>
@@ -272,24 +272,24 @@ export function PatternPane({
         )}
       </VStack>
 
-      {/* Pattern modals/dialogs */}
-      <CreatePatternModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />
+      {/* Scenario modals/dialogs */}
+      <CreateScenarioModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onCreate={onCreate} />
 
       <RenameDialog
         isOpen={renameTarget !== null}
         currentName={renameTarget?.split("/").pop() || ""}
-        title="Rename Pattern"
+        title="Rename Scenario"
         onClose={() => setRenameTarget(null)}
-        onSubmit={handlePatternRename}
+        onSubmit={handleScenarioRename}
       />
 
       <ConfirmDialog
         isOpen={deleteTarget !== null}
-        title="Delete Pattern"
-        message={`Delete pattern "${deleteTarget?.split("/").pop()}"? This action cannot be undone.`}
+        title="Delete Scenario"
+        message={`Delete scenario "${deleteTarget?.split("/").pop()}"? This action cannot be undone.`}
         confirmLabel="Delete"
         onClose={() => setDeleteTarget(null)}
-        onConfirm={handlePatternDelete}
+        onConfirm={handleScenarioDelete}
       />
 
       {/* Folder modals/dialogs */}
@@ -310,7 +310,7 @@ export function PatternPane({
       <ConfirmDialog
         isOpen={folderDeleteTarget !== null}
         title="Delete Folder"
-        message={`Delete folder "${folderDeleteTarget}" and all patterns inside? This action cannot be undone.`}
+        message={`Delete folder "${folderDeleteTarget}" and all scenarios inside? This action cannot be undone.`}
         confirmLabel="Delete"
         onClose={() => setFolderDeleteTarget(null)}
         onConfirm={handleFolderDelete}

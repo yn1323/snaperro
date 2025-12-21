@@ -21,7 +21,7 @@ interface FilePaneProps {
   onSelect: (filename: string) => void;
   onUpload: (file: File) => void;
   onDownload: (filename: string) => void;
-  pattern: string | null;
+  scenario: string | null;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
 }
@@ -37,7 +37,7 @@ export function FilePane({
   onSelect,
   onUpload,
   onDownload,
-  pattern,
+  scenario,
   searchQuery,
   onSearchQueryChange,
 }: FilePaneProps) {
@@ -46,7 +46,7 @@ export function FilePane({
   const [isSearching, setIsSearching] = useState(false);
   const api = useSnaperroAPI();
 
-  // Reset accordion when pattern changes
+  // Reset accordion when scenario changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reset when files change
   useEffect(() => {
     setExpandedGroups(new Set());
@@ -54,7 +54,7 @@ export function FilePane({
 
   // Debounced server search
   useEffect(() => {
-    if (!searchQuery.trim() || !pattern) {
+    if (!searchQuery.trim() || !scenario) {
       setSearchResults(null);
       return;
     }
@@ -62,7 +62,7 @@ export function FilePane({
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await api.searchFiles(pattern, searchQuery);
+        const results = await api.searchFiles(scenario, searchQuery);
         setSearchResults(results);
       } catch {
         setSearchResults(null);
@@ -72,7 +72,7 @@ export function FilePane({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, pattern, api]);
+  }, [searchQuery, scenario, api]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

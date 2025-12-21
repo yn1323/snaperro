@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { conflictError, internalError, notFoundError, validationError } from "./api-response.js";
 
 describe("notFoundError", () => {
-  it("creates error for pattern", () => {
-    expect(notFoundError("pattern", "test-pattern")).toEqual({
+  it("creates error for scenario", () => {
+    expect(notFoundError("scenario", "test-scenario")).toEqual({
       error: "Not found",
-      resource: "pattern",
-      name: "test-pattern",
+      resource: "scenario",
+      name: "test-scenario",
     });
   });
 
@@ -44,10 +44,10 @@ describe("validationError", () => {
 });
 
 describe("conflictError", () => {
-  it("creates error for pattern", () => {
-    expect(conflictError("pattern", "existing-pattern")).toEqual({
-      error: "Pattern already exists",
-      name: "existing-pattern",
+  it("creates error for scenario", () => {
+    expect(conflictError("scenario", "existing-scenario")).toEqual({
+      error: "Scenario already exists",
+      name: "existing-scenario",
     });
   });
 

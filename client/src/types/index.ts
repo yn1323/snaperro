@@ -19,10 +19,10 @@ export type {
   HttpMethod,
   Mode,
   ModeChangedEventData,
-  PatternChangedEventData,
-  PatternCreatedEventData,
-  PatternDeletedEventData,
-  PatternRenamedEventData,
+  ScenarioChangedEventData,
+  ScenarioCreatedEventData,
+  ScenarioDeletedEventData,
+  ScenarioRenamedEventData,
   SSEEvent,
   SSEEventType,
 } from "@snaperro/shared/types/index.js";
@@ -35,9 +35,9 @@ import type { FileInfo, FolderInfo, Mode } from "@snaperro/shared/types/index.js
 // ============================================================
 
 /**
- * Pattern information
+ * Scenario information
  */
-export interface PatternInfo {
+export interface ScenarioInfo {
   name: string;
   filesCount: number;
   createdAt: string;
@@ -50,8 +50,8 @@ export interface PatternInfo {
 export interface SnaperroState {
   version: string;
   mode: Mode;
-  currentPattern: string | null;
-  patterns: string[];
+  currentScenario: string | null;
+  scenarios: string[];
   folders: FolderInfo[];
   files: FileInfo[];
 }

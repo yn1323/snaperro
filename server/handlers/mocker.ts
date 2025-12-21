@@ -16,14 +16,14 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
   const method = c.req.method;
   const url = new URL(c.req.url);
   const path = url.pathname;
-  const pattern = state.getPattern();
+  const scenario = state.getScenario();
 
-  if (!pattern) {
-    logger.warn(`${method} ${path} → no pattern selected`);
+  if (!scenario) {
+    logger.warn(`${method} ${path} → no scenario selected`);
     return c.json(
       {
-        error: "No pattern selected",
-        message: "Please select a pattern first",
+        error: "No scenario selected",
+        message: "Please select a scenario first",
       },
       400,
     );
@@ -37,7 +37,7 @@ export async function handleMock(c: Context, match: MatchResult, config: Snaperr
 
   // Search for file with parameter matching
   const result = await storage.findMatchingFile(
-    pattern,
+    scenario,
     method,
     match.matchedRoute,
     match.pathParams,

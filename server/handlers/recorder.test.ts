@@ -4,8 +4,8 @@ import type { ApiConfig } from "../types/config.js";
 import { handleRecord } from "./recorder.js";
 
 // Create hoisted mock functions
-const { mockGetPattern, mockFindAndWriteAtomic, mockEmitSSE, mockFetch } = vi.hoisted(() => ({
-  mockGetPattern: vi.fn(),
+const { mockGetScenario, mockFindAndWriteAtomic, mockEmitSSE, mockFetch } = vi.hoisted(() => ({
+  mockGetScenario: vi.fn(),
   mockFindAndWriteAtomic: vi.fn(),
   mockEmitSSE: vi.fn(),
   mockFetch: vi.fn(),
@@ -17,12 +17,12 @@ vi.stubGlobal("fetch", mockFetch);
 // Mock state module
 vi.mock("../core/state.js", () => ({
   state: {
-    getPattern: mockGetPattern,
+    getScenario: mockGetScenario,
     getMode: vi.fn().mockReturnValue("record"),
-    setPattern: vi.fn(),
+    setScenario: vi.fn(),
     setMode: vi.fn(),
     reset: vi.fn(),
-    getStatus: vi.fn().mockReturnValue({ mode: "record", pattern: null }),
+    getStatus: vi.fn().mockReturnValue({ mode: "record", scenario: null }),
   },
 }));
 
@@ -31,7 +31,7 @@ vi.mock("../core/storage.js", () => ({
   storage: {
     findAndWriteAtomic: mockFindAndWriteAtomic,
     formatSize: vi.fn((size: number) => `${size}B`),
-    getPatternFiles: vi.fn().mockResolvedValue([]),
+    getScenarioFiles: vi.fn().mockResolvedValue([]),
   },
 }));
 
@@ -74,7 +74,7 @@ describe("handleRecord", () => {
   let app: Hono;
 
   beforeEach(() => {
-    mockGetPattern.mockReturnValue(null);
+    mockGetScenario.mockReturnValue(null);
     mockFetch.mockReset();
     mockFindAndWriteAtomic.mockReset();
     mockEmitSSE.mockReset();
@@ -89,20 +89,20 @@ describe("handleRecord", () => {
     vi.resetAllMocks();
   });
 
-  describe("no pattern selected", () => {
-    it("returns 400 when no pattern is selected", async () => {
+  describe("no scenario selected", () => {
+    it("returns 400 when no scenario is selected", async () => {
       const res = await app.request("/api/users/123");
       const body = (await res.json()) as { error: string };
 
       expect(res.status).toBe(400);
-      expect(body.error).toBe("No pattern selected");
+      expect(body.error).toBe("No scenario selected");
       expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 
-  describe("with pattern selected", () => {
+  describe("with scenario selected", () => {
     beforeEach(() => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("records GET request and returns response", async () => {
@@ -113,7 +113,7 @@ describe("handleRecord", () => {
         }),
       );
       mockFindAndWriteAtomic.mockResolvedValue({
-        filePath: ".snaperro/files/test-pattern/GET_api_users_{id}.json",
+        filePath: ".snaperro/files/test-scenario/GET_api_users_{id}.json",
         isNew: true,
       });
 
@@ -140,7 +140,7 @@ describe("handleRecord", () => {
       await app.request("/api/users/123");
 
       expect(mockFindAndWriteAtomic).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users/:id",
         { id: "123" },
@@ -163,14 +163,14 @@ describe("handleRecord", () => {
     it("emits file_created event for new file", async () => {
       mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
       mockFindAndWriteAtomic.mockResolvedValue({
-        filePath: ".snaperro/files/test-pattern/GET_api_users.json",
+        filePath: ".snaperro/files/test-scenario/GET_api_users.json",
         isNew: true,
       });
 
       await app.request("/api/users/123");
 
       expect(mockEmitSSE).toHaveBeenCalledWith("file_created", {
-        pattern: "test-pattern",
+        scenario: "test-scenario",
         filename: "GET_api_users.json",
         endpoint: "/api/users/:id",
         method: "GET",
@@ -180,14 +180,14 @@ describe("handleRecord", () => {
     it("emits file_updated event for existing file", async () => {
       mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
       mockFindAndWriteAtomic.mockResolvedValue({
-        filePath: ".snaperro/files/test-pattern/GET_api_users.json",
+        filePath: ".snaperro/files/test-scenario/GET_api_users.json",
         isNew: false,
       });
 
       await app.request("/api/users/123");
 
       expect(mockEmitSSE).toHaveBeenCalledWith("file_updated", {
-        pattern: "test-pattern",
+        scenario: "test-scenario",
         filename: "GET_api_users.json",
         endpoint: "/api/users/:id",
         method: "GET",
@@ -214,7 +214,7 @@ describe("handleRecord", () => {
 
       expect(res.status).toBe(201);
       expect(mockFindAndWriteAtomic).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "POST",
         "/api/users/:id",
         { id: "123" },
@@ -249,7 +249,7 @@ describe("handleRecord", () => {
       await usersApp.request("/api/users?page=1&limit=10");
 
       expect(mockFindAndWriteAtomic).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users",
         {},
@@ -282,7 +282,7 @@ describe("handleRecord", () => {
       await usersApp.request("/api/users?tag=a&tag=b");
 
       expect(mockFindAndWriteAtomic).toHaveBeenCalledWith(
-        "test-pattern",
+        "test-scenario",
         "GET",
         "/api/users",
         {},
@@ -399,7 +399,7 @@ describe("handleRecord", () => {
 
   describe("header masking", () => {
     beforeEach(async () => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("masks request headers when maskRequestHeaders is configured", async () => {
@@ -437,7 +437,7 @@ describe("handleRecord", () => {
 
   describe("error handling", () => {
     beforeEach(async () => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("returns 502 Bad Gateway on network error", async () => {
@@ -472,7 +472,7 @@ describe("handleRecord", () => {
 
   describe("with config headers", () => {
     beforeEach(async () => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("adds headers from apiConfig to request", async () => {
@@ -507,7 +507,7 @@ describe("handleRecord", () => {
 
   describe("HTTP methods", () => {
     beforeEach(async () => {
-      mockGetPattern.mockReturnValue("test-pattern");
+      mockGetScenario.mockReturnValue("test-scenario");
     });
 
     it("handles PUT request", async () => {

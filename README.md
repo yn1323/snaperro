@@ -16,7 +16,7 @@ A mock proxy server that records and replays responses from multiple APIs to str
 
 - **4 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback) / Smart (auto)
 - **Parameter Matching**: Accurate matching by path parameters and query parameters
-- **State Persistence**: Mode and pattern settings persist across server restarts
+- **State Persistence**: Mode and scenario settings persist across server restarts
 - **TypeScript Configuration**: Type-safe configuration files
 
 ## Why snaperro?
@@ -66,7 +66,7 @@ Your browser will open `http://localhost:3333/__snaperro__/demo`.
 | Query String | Save and return different responses for each query with `/posts?userId=1` |
 | Nested Resource | Fetch nested resources with `/posts/:id/comments` |
 
-For detailed management (patterns/files/JSON editing), use the GUI (`/__snaperro__/client`).
+For detailed management (scenarios/files/JSON editing), use the GUI (`/__snaperro__/client`).
 
 ### Web GUI
 
@@ -89,7 +89,7 @@ The browser opens automatically when the server starts.
 | Feature | Description |
 |---------|-------------|
 | Mode Switch | Switch between Proxy/Record/Mock with one click |
-| Pattern Management | Create, delete, duplicate, and rename patterns |
+| Scenario Management | Create, delete, duplicate, and rename scenarios |
 | File Management | List and delete recorded JSON files |
 | JSON Editor | View and edit responses |
 | Real-time Updates | Instantly reflect state changes via SSE |
@@ -288,26 +288,26 @@ export default defineConfig({
 })
 ```
 
-### What is a Pattern?
+### What is a Scenario?
 
-A "pattern" is a folder that manages a set of mock data.
+A "scenario" is a folder that manages a set of mock data.
 
 ```
 .snaperro/
-├── state.json              ← Server state (mode, pattern)
+├── state.json              ← Server state (mode, scenario)
 └── files/
-    ├── normal-full/           ← Pattern "normal-full"
+    ├── normal-full/           ← Scenario "normal-full"
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
     │   └── api_orders_001.json
-    ├── empty-data/             ← Pattern "empty-data"
+    ├── empty-data/             ← Scenario "empty-data"
     │   └── api_users_001.json
-    └── error-cases/             ← Pattern "error-cases"
+    └── error-cases/             ← Scenario "error-cases"
         └── api_users_001.json
 ```
 
-By switching patterns, you can use different mock data sets.
-The previous mode and pattern are restored even after server restart.
+By switching scenarios, you can use different mock data sets.
+The previous mode and scenario are restored even after server restart.
 
 ### Route Definition and Matching
 
@@ -391,13 +391,13 @@ es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 |-------|-------------|
 | `connected` | Connection complete (includes initial state) |
 | `mode_changed` | Mode changed |
-| `pattern_changed` | Pattern switched |
+| `scenario_changed` | Scenario switched |
 | `file_created` | File created (during recording) |
 | `file_updated` | File updated |
 | `file_deleted` | File deleted |
-| `pattern_created` | Pattern created |
-| `pattern_deleted` | Pattern deleted |
-| `pattern_renamed` | Pattern renamed |
+| `scenario_created` | Scenario created |
+| `scenario_deleted` | Scenario deleted |
+| `scenario_renamed` | Scenario renamed |
 
 ---
 

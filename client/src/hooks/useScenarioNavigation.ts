@@ -2,26 +2,26 @@ import { useCallback, useState } from "react";
 import { withErrorHandling } from "../utils/error-handler";
 import type { useSnaperroAPI } from "./useSnaperroAPI";
 
-interface UsePatternNavigationProps {
+interface UseScenarioNavigationProps {
   api: ReturnType<typeof useSnaperroAPI>;
-  onPatternDeselect?: () => void;
+  onScenarioDeselect?: () => void;
 }
 
-interface UsePatternNavigationReturn {
+interface UseScenarioNavigationReturn {
   currentFolder: string | null;
   setCurrentFolder: (folder: string | null) => void;
   handleFolderSelect: (folder: string) => void;
   handleFolderBack: () => Promise<void>;
-  handlePatternSelect: (pattern: string) => Promise<void>;
+  handleScenarioSelect: (scenario: string) => Promise<void>;
 }
 
 /**
- * Hook for managing folder/pattern navigation state
+ * Hook for managing folder/scenario navigation state
  */
-export function usePatternNavigation({
+export function useScenarioNavigation({
   api,
-  onPatternDeselect,
-}: UsePatternNavigationProps): UsePatternNavigationReturn {
+  onScenarioDeselect,
+}: UseScenarioNavigationProps): UseScenarioNavigationReturn {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
 
   const handleFolderSelect = useCallback((folder: string) => {
@@ -30,13 +30,13 @@ export function usePatternNavigation({
 
   const handleFolderBack = useCallback(async () => {
     setCurrentFolder(null);
-    onPatternDeselect?.();
-    await withErrorHandling(() => api.setCurrentPattern(null), "Pattern deselect error");
-  }, [api, onPatternDeselect]);
+    onScenarioDeselect?.();
+    await withErrorHandling(() => api.setCurrentScenario(null), "Scenario deselect error");
+  }, [api, onScenarioDeselect]);
 
-  const handlePatternSelect = useCallback(
-    async (pattern: string) => {
-      await withErrorHandling(() => api.setCurrentPattern(pattern), "Pattern select error");
+  const handleScenarioSelect = useCallback(
+    async (scenario: string) => {
+      await withErrorHandling(() => api.setCurrentScenario(scenario), "Scenario select error");
     },
     [api],
   );
@@ -46,6 +46,6 @@ export function usePatternNavigation({
     setCurrentFolder,
     handleFolderSelect,
     handleFolderBack,
-    handlePatternSelect,
+    handleScenarioSelect,
   };
 }

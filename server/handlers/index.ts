@@ -86,10 +86,10 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       // Initialize storage
       await storage.ensureBaseDir();
 
-      // Migrate root patterns to folder structure
-      await storage.migrateRootPatterns();
+      // Migrate root scenarios to folder structure
+      await storage.migrateRootScenarios();
 
-      // Load persisted state (mode and pattern)
+      // Load persisted state (mode and scenario)
       await state.load();
 
       // Create Hono application

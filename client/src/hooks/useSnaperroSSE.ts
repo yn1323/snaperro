@@ -9,10 +9,10 @@ import type {
   FolderRenamedEventData,
   Mode,
   ModeChangedEventData,
-  PatternChangedEventData,
-  PatternCreatedEventData,
-  PatternDeletedEventData,
-  PatternRenamedEventData,
+  ScenarioChangedEventData,
+  ScenarioCreatedEventData,
+  ScenarioDeletedEventData,
+  ScenarioRenamedEventData,
   SnaperroState,
   SSEEventType,
 } from "../types";
@@ -28,8 +28,8 @@ interface UseSnaperroSSEReturn {
 const initialState: SnaperroState = {
   version: "",
   mode: "proxy",
-  currentPattern: null,
-  patterns: [],
+  currentScenario: null,
+  scenarios: [],
   folders: [],
   files: [],
 };
@@ -49,8 +49,8 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     setState({
       version: data.version,
       mode: data.mode as Mode,
-      currentPattern: data.currentPattern,
-      patterns: data.patterns,
+      currentScenario: data.currentScenario,
+      scenarios: data.scenarios,
       folders: data.folders,
       files: data.files,
     });
@@ -61,61 +61,61 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     setState((prev) => ({ ...prev, mode: data.mode }));
   }, []);
 
-  const handlePatternChanged = useCallback((data: PatternChangedEventData) => {
+  const handleScenarioChanged = useCallback((data: ScenarioChangedEventData) => {
     setState((prev) => ({
       ...prev,
-      currentPattern: data.pattern,
+      currentScenario: data.scenario,
       files: data.files,
     }));
   }, []);
 
-  const handlePatternCreated = useCallback((data: PatternCreatedEventData) => {
+  const handleScenarioCreated = useCallback((data: ScenarioCreatedEventData) => {
     setState((prev) => {
-      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      // シナリオ名からフォルダ名を抽出（folder/scenario 形式）
       const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
       return {
         ...prev,
-        patterns: [...prev.patterns, data.name].sort(),
+        scenarios: [...prev.scenarios, data.name].sort(),
         // フォルダの件数をインクリメント
         folders: folderName
-          ? prev.folders.map((f) => (f.name === folderName ? { ...f, patternsCount: f.patternsCount + 1 } : f))
+          ? prev.folders.map((f) => (f.name === folderName ? { ...f, scenariosCount: f.scenariosCount + 1 } : f))
           : prev.folders,
       };
     });
   }, []);
 
-  const handlePatternDeleted = useCallback((data: PatternDeletedEventData) => {
+  const handleScenarioDeleted = useCallback((data: ScenarioDeletedEventData) => {
     setState((prev) => {
-      // パターン名からフォルダ名を抽出（folder/pattern 形式）
+      // シナリオ名からフォルダ名を抽出（folder/scenario 形式）
       const folderName = data.name.includes("/") ? data.name.split("/")[0] : null;
       return {
         ...prev,
-        patterns: prev.patterns.filter((p) => p !== data.name),
+        scenarios: prev.scenarios.filter((p) => p !== data.name),
         // フォルダの件数をデクリメント
         folders: folderName
           ? prev.folders.map((f) =>
-              f.name === folderName ? { ...f, patternsCount: Math.max(0, f.patternsCount - 1) } : f,
+              f.name === folderName ? { ...f, scenariosCount: Math.max(0, f.scenariosCount - 1) } : f,
             )
           : prev.folders,
       };
     });
   }, []);
 
-  const handlePatternRenamed = useCallback((data: PatternRenamedEventData) => {
+  const handleScenarioRenamed = useCallback((data: ScenarioRenamedEventData) => {
     setState((prev) => ({
       ...prev,
-      patterns: prev.patterns.map((p) => (p === data.oldName ? data.newName : p)).sort(),
-      currentPattern: prev.currentPattern === data.oldName ? data.newName : prev.currentPattern,
+      scenarios: prev.scenarios.map((p) => (p === data.oldName ? data.newName : p)).sort(),
+      currentScenario: prev.currentScenario === data.oldName ? data.newName : prev.currentScenario,
     }));
   }, []);
 
   const handleFolderCreated = useCallback((data: FolderCreatedEventData) => {
     setState((prev) => ({
       ...prev,
-      folders: [...prev.folders, { name: data.name, patternsCount: data.patternsCount ?? 0 }].sort((a, b) =>
+      folders: [...prev.folders, { name: data.name, scenariosCount: data.scenariosCount ?? 0 }].sort((a, b) =>
         a.name.localeCompare(b.name),
       ),
-      patterns: data.patterns ? [...prev.patterns, ...data.patterns].sort() : prev.patterns,
+      scenarios: data.scenarios ? [...prev.scenarios, ...data.scenarios].sort() : prev.scenarios,
     }));
   }, []);
 
@@ -137,8 +137,8 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
 
   const handleFileCreated = useCallback((data: FileChangedEventData) => {
     setState((prev) => {
-      // 現在のパターンのファイルのみ追加
-      if (prev.currentPattern !== data.pattern) return prev;
+      // 現在のシナリオのファイルのみ追加
+      if (prev.currentScenario !== data.scenario) return prev;
       const newFile: FileInfo = {
         filename: data.filename,
         endpoint: data.endpoint,
@@ -153,7 +153,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
 
   const handleFileUpdated = useCallback((data: FileChangedEventData) => {
     setState((prev) => {
-      if (prev.currentPattern !== data.pattern) return prev;
+      if (prev.currentScenario !== data.scenario) return prev;
       return {
         ...prev,
         files: prev.files.map((f) =>
@@ -165,7 +165,7 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
 
   const handleFileDeleted = useCallback((data: FileDeletedEventData) => {
     setState((prev) => {
-      if (prev.currentPattern !== data.pattern) return prev;
+      if (prev.currentScenario !== data.scenario) return prev;
       return {
         ...prev,
         files: prev.files.filter((f) => f.filename !== data.filename),
@@ -187,10 +187,10 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
     const eventTypes: SSEEventType[] = [
       "connected",
       "mode_changed",
-      "pattern_changed",
-      "pattern_created",
-      "pattern_deleted",
-      "pattern_renamed",
+      "scenario_changed",
+      "scenario_created",
+      "scenario_deleted",
+      "scenario_renamed",
       "folder_created",
       "folder_deleted",
       "folder_renamed",
@@ -210,17 +210,17 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
             case "mode_changed":
               handleModeChanged(data);
               break;
-            case "pattern_changed":
-              handlePatternChanged(data);
+            case "scenario_changed":
+              handleScenarioChanged(data);
               break;
-            case "pattern_created":
-              handlePatternCreated(data);
+            case "scenario_created":
+              handleScenarioCreated(data);
               break;
-            case "pattern_deleted":
-              handlePatternDeleted(data);
+            case "scenario_deleted":
+              handleScenarioDeleted(data);
               break;
-            case "pattern_renamed":
-              handlePatternRenamed(data);
+            case "scenario_renamed":
+              handleScenarioRenamed(data);
               break;
             case "folder_created":
               handleFolderCreated(data);
@@ -262,10 +262,10 @@ export function useSnaperroSSE(): UseSnaperroSSEReturn {
   }, [
     handleConnected,
     handleModeChanged,
-    handlePatternChanged,
-    handlePatternCreated,
-    handlePatternDeleted,
-    handlePatternRenamed,
+    handleScenarioChanged,
+    handleScenarioCreated,
+    handleScenarioDeleted,
+    handleScenarioRenamed,
     handleFolderCreated,
     handleFolderDeleted,
     handleFolderRenamed,

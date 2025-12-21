@@ -3,12 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 const STORAGE_KEY = "snaperro-pane-widths";
 
 interface PaneWidths {
-  pattern: number;
+  scenario: number;
   file: number;
 }
 
 const DEFAULT_WIDTHS: PaneWidths = {
-  pattern: 150,
+  scenario: 150,
   file: 250,
 };
 
@@ -18,7 +18,7 @@ function loadWidths(): PaneWidths {
     if (stored) {
       const parsed = JSON.parse(stored);
       return {
-        pattern: typeof parsed.pattern === "number" ? parsed.pattern : DEFAULT_WIDTHS.pattern,
+        scenario: typeof parsed.scenario === "number" ? parsed.scenario : DEFAULT_WIDTHS.scenario,
         file: typeof parsed.file === "number" ? parsed.file : DEFAULT_WIDTHS.file,
       };
     }
@@ -43,8 +43,8 @@ export function usePaneWidths() {
     saveWidths(widths);
   }, [widths]);
 
-  const setPatternWidth = useCallback((width: number) => {
-    setWidths((prev) => ({ ...prev, pattern: width }));
+  const setScenarioWidth = useCallback((width: number) => {
+    setWidths((prev) => ({ ...prev, scenario: width }));
   }, []);
 
   const setFileWidth = useCallback((width: number) => {
@@ -52,9 +52,9 @@ export function usePaneWidths() {
   }, []);
 
   return {
-    patternWidth: widths.pattern,
+    scenarioWidth: widths.scenario,
     fileWidth: widths.file,
-    setPatternWidth,
+    setScenarioWidth,
     setFileWidth,
   };
 }

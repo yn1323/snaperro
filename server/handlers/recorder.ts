@@ -18,15 +18,15 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
   const method = c.req.method;
   const url = new URL(c.req.url);
   const requestPath = url.pathname;
-  const pattern = state.getPattern();
+  const scenario = state.getScenario();
   const targetUrl = `${match.apiConfig.target}${url.pathname}${url.search}`;
 
-  if (!pattern) {
-    logger.warn(`${method} ${requestPath} → no pattern selected`);
+  if (!scenario) {
+    logger.warn(`${method} ${requestPath} → no scenario selected`);
     return c.json(
       {
-        error: "No pattern selected",
-        message: "Please select a pattern first",
+        error: "No scenario selected",
+        message: "Please select a scenario first",
       },
       400,
     );
@@ -96,7 +96,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
 
     // 7. Determine file path and save atomically (prevents race conditions)
     const { filePath, isNew } = await storage.findAndWriteAtomic(
-      pattern,
+      scenario,
       method,
       match.matchedRoute,
       match.pathParams,
@@ -107,7 +107,7 @@ export async function handleRecord(c: Context, match: MatchResult): Promise<Resp
 
     // 9. Emit SSE event
     eventBus.emitSSE(isNew ? "file_created" : "file_updated", {
-      pattern,
+      scenario,
       filename: path.basename(filePath),
       endpoint: match.matchedRoute,
       method,

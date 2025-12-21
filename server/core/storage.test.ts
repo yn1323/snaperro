@@ -5,7 +5,7 @@ import type { FileData } from "../types/file.js";
 import { buildFilePath, endpointToFileName, storage } from "./storage.js";
 
 const TEST_BASE_DIR = ".snaperro/files";
-const TEST_PATTERN = "__test_pattern__";
+const TEST_SCENARIO = "__test_scenario__";
 
 // テスト用の記録データ
 const testFileData: FileData = {
@@ -58,8 +58,8 @@ describe("buildFilePath", () => {
   });
 
   it("パスパラメータを含むパスを変換する", () => {
-    const result = buildFilePath("パターン", "/api/users/:id", 1);
-    expect(result).toBe(path.join("パターン", "api_users_{id}_001.json"));
+    const result = buildFilePath("シナリオ", "/api/users/:id", 1);
+    expect(result).toBe(path.join("シナリオ", "api_users_{id}_001.json"));
   });
 
   it("連番を3桁0埋めする", () => {
@@ -81,9 +81,9 @@ describe("storage", () => {
   });
 
   afterEach(async () => {
-    // テスト用パターンを削除
+    // テスト用シナリオを削除
     try {
-      await fs.rm(path.join(TEST_BASE_DIR, TEST_PATTERN), {
+      await fs.rm(path.join(TEST_BASE_DIR, TEST_SCENARIO), {
         recursive: true,
         force: true,
       });
@@ -94,7 +94,7 @@ describe("storage", () => {
 
   describe("write と read", () => {
     it("データを書き込んで読み込める", async () => {
-      const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
+      const filePath = buildFilePath(TEST_SCENARIO, "/api/users", 1);
 
       await storage.write(filePath, testFileData);
       const result = await storage.read(filePath);
@@ -111,7 +111,7 @@ describe("storage", () => {
           pathParams: { id: "123" },
         },
       };
-      const filePath = buildFilePath(TEST_PATTERN, "/api/users/:id", 1);
+      const filePath = buildFilePath(TEST_SCENARIO, "/api/users/:id", 1);
 
       await storage.write(filePath, data);
       const result = await storage.read(filePath);
@@ -123,7 +123,7 @@ describe("storage", () => {
 
   describe("exists", () => {
     it("存在するファイルはtrueを返す", async () => {
-      const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
+      const filePath = buildFilePath(TEST_SCENARIO, "/api/users", 1);
       await storage.write(filePath, testFileData);
 
       const result = await storage.exists(filePath);
@@ -131,33 +131,33 @@ describe("storage", () => {
     });
 
     it("存在しないファイルはfalseを返す", async () => {
-      const result = await storage.exists(buildFilePath(TEST_PATTERN, "/api/unknown", 999));
+      const result = await storage.exists(buildFilePath(TEST_SCENARIO, "/api/unknown", 999));
       expect(result).toBe(false);
     });
   });
 
   describe("findNextSequence", () => {
     it("ファイルがない場合は1を返す", async () => {
-      await storage.createPattern(TEST_PATTERN);
-      const seq = await storage.findNextSequence(TEST_PATTERN, "/api/unknown");
+      await storage.createScenario(TEST_SCENARIO);
+      const seq = await storage.findNextSequence(TEST_SCENARIO, "/api/unknown");
       expect(seq).toBe(1);
     });
 
     it("既存ファイルの次の連番を返す", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 2), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 2), testFileData);
 
-      const seq = await storage.findNextSequence(TEST_PATTERN, "/api/users");
+      const seq = await storage.findNextSequence(TEST_SCENARIO, "/api/users");
       expect(seq).toBe(3);
     });
 
     it("異なるエンドポイントは別々にカウントする", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 1), testFileData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 2), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/orders", 1), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/orders", 2), testFileData);
 
-      expect(await storage.findNextSequence(TEST_PATTERN, "/api/users")).toBe(2);
-      expect(await storage.findNextSequence(TEST_PATTERN, "/api/orders")).toBe(3);
+      expect(await storage.findNextSequence(TEST_SCENARIO, "/api/users")).toBe(2);
+      expect(await storage.findNextSequence(TEST_SCENARIO, "/api/orders")).toBe(3);
     });
 
     it("ディレクトリが存在しない場合は1を返す", async () => {
@@ -178,10 +178,10 @@ describe("storage", () => {
           queryParams: { include: "profile" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users/:id", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users/:id", 1), data);
 
       const result = await storage.findMatchingFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "GET",
         "/api/users/:id",
         { id: "123" },
@@ -202,10 +202,10 @@ describe("storage", () => {
           queryParams: {},
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users/:id", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users/:id", 1), data);
 
       const result = await storage.findMatchingFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "GET",
         "/api/users/:id",
         { id: "456" }, // 異なるID
@@ -221,9 +221,9 @@ describe("storage", () => {
         endpoint: "/api/users",
         method: "GET",
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
-      const result = await storage.findMatchingFile(TEST_PATTERN, "POST", "/api/users", {}, {});
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "POST", "/api/users", {}, {});
 
       expect(result).toBeNull();
     });
@@ -237,16 +237,16 @@ describe("storage", () => {
           queryParams: { status: "active" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
-      const result = await storage.findMatchingFile(TEST_PATTERN, "GET", "/api/users", {}, { status: "inactive" });
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "GET", "/api/users", {}, { status: "inactive" });
 
       expect(result).toBeNull();
     });
 
     it("ファイルがない場合はnullを返す", async () => {
-      await storage.createPattern(TEST_PATTERN);
-      const result = await storage.findMatchingFile(TEST_PATTERN, "GET", "/api/unknown", {}, {});
+      await storage.createScenario(TEST_SCENARIO);
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "GET", "/api/unknown", {}, {});
       expect(result).toBeNull();
     });
 
@@ -260,10 +260,10 @@ describe("storage", () => {
           body: { name: "test", email: "test@example.com" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
       const result = await storage.findMatchingFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "POST",
         "/api/users",
         {},
@@ -284,9 +284,9 @@ describe("storage", () => {
           body: { name: "user1" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
-      const result = await storage.findMatchingFile(TEST_PATTERN, "POST", "/api/users", {}, {}, { name: "user2" });
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "POST", "/api/users", {}, {}, { name: "user2" });
 
       expect(result).toBeNull();
     });
@@ -301,9 +301,9 @@ describe("storage", () => {
           body: null,
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
-      const result = await storage.findMatchingFile(TEST_PATTERN, "GET", "/api/users", {}, {}, null);
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "GET", "/api/users", {}, {}, null);
 
       expect(result).not.toBeNull();
     });
@@ -318,10 +318,10 @@ describe("storage", () => {
           body: { name: "test" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data);
 
       // requestBodyを渡さない場合はマッチする（Mockモード互換）
-      const result = await storage.findMatchingFile(TEST_PATTERN, "POST", "/api/users", {}, {});
+      const result = await storage.findMatchingFile(TEST_SCENARIO, "POST", "/api/users", {}, {});
 
       expect(result).not.toBeNull();
     });
@@ -339,18 +339,18 @@ describe("storage", () => {
           queryParams: {},
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users/:id", 1), data);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users/:id", 1), data);
 
-      const result = await storage.findOrCreateFile(TEST_PATTERN, "GET", "/api/users/:id", { id: "123" }, {});
+      const result = await storage.findOrCreateFile(TEST_SCENARIO, "GET", "/api/users/:id", { id: "123" }, {});
 
       expect(result.isNew).toBe(false);
       expect(result.filePath).toContain("_001.json");
     });
 
     it("既存ファイルがなければ isNew: true を返す", async () => {
-      await storage.createPattern(TEST_PATTERN);
+      await storage.createScenario(TEST_SCENARIO);
 
-      const result = await storage.findOrCreateFile(TEST_PATTERN, "GET", "/api/users/:id", { id: "999" }, {});
+      const result = await storage.findOrCreateFile(TEST_SCENARIO, "GET", "/api/users/:id", { id: "999" }, {});
 
       expect(result.isNew).toBe(true);
       expect(result.filePath).toContain("_001.json");
@@ -366,10 +366,10 @@ describe("storage", () => {
           queryParams: {},
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users/:id", 1), data1);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users/:id", 1), data1);
 
       const result = await storage.findOrCreateFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "GET",
         "/api/users/:id",
         { id: "2" }, // 異なるID
@@ -390,10 +390,10 @@ describe("storage", () => {
           body: { name: "user1" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data1);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data1);
 
       const result = await storage.findOrCreateFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "POST",
         "/api/users",
         {},
@@ -415,10 +415,10 @@ describe("storage", () => {
           body: { name: "user1" },
         },
       };
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), data1);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), data1);
 
       const result = await storage.findOrCreateFile(
-        TEST_PATTERN,
+        TEST_SCENARIO,
         "POST",
         "/api/users",
         {},
@@ -431,38 +431,38 @@ describe("storage", () => {
     });
   });
 
-  describe("listPatterns と createPattern", () => {
-    it("フォルダ内のパターンを一覧に表示される", async () => {
+  describe("listScenarios と createScenario", () => {
+    it("フォルダ内のシナリオを一覧に表示される", async () => {
       const testFolder = "__test_folder__";
-      const testPatternInFolder = `${testFolder}/${TEST_PATTERN}`;
+      const testScenarioInFolder = `${testFolder}/${TEST_SCENARIO}`;
 
-      // Create folder and pattern
+      // Create folder and scenario
       await storage.createFolder(testFolder);
-      await storage.createPattern(testPatternInFolder);
+      await storage.createScenario(testScenarioInFolder);
 
-      // Write a file to make it a recognized pattern
-      const filePath = buildFilePath(testPatternInFolder, "/api/users", 1);
+      // Write a file to make it a recognized scenario
+      const filePath = buildFilePath(testScenarioInFolder, "/api/users", 1);
       await storage.write(filePath, testFileData);
 
-      const patterns = await storage.listPatterns();
-      expect(patterns).toContain(testPatternInFolder);
+      const scenarios = await storage.listScenarios();
+      expect(scenarios).toContain(testScenarioInFolder);
 
       // Cleanup
       await fs.rm(path.join(TEST_BASE_DIR, testFolder), { recursive: true, force: true });
     });
   });
 
-  describe("getPatternFiles", () => {
-    it("パターン内のファイル一覧を取得できる", async () => {
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/users", 1), testFileData);
-      await storage.write(buildFilePath(TEST_PATTERN, "/api/orders", 1), {
+  describe("getScenarioFiles", () => {
+    it("シナリオ内のファイル一覧を取得できる", async () => {
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/users", 1), testFileData);
+      await storage.write(buildFilePath(TEST_SCENARIO, "/api/orders", 1), {
         ...testFileData,
         endpoint: "/api/orders",
         method: "POST",
         response: { ...testFileData.response, status: 201 },
       });
 
-      const files = await storage.getPatternFiles(TEST_PATTERN);
+      const files = await storage.getScenarioFiles(TEST_SCENARIO);
 
       expect(files).toHaveLength(2);
       expect(files.map((f) => f.method)).toContain("GET");
@@ -471,16 +471,16 @@ describe("storage", () => {
       expect(files.map((f) => f.endpoint)).toContain("/api/orders");
     });
 
-    it("空のパターンは空配列を返す", async () => {
-      await storage.createPattern(TEST_PATTERN);
-      const files = await storage.getPatternFiles(TEST_PATTERN);
+    it("空のシナリオは空配列を返す", async () => {
+      await storage.createScenario(TEST_SCENARIO);
+      const files = await storage.getScenarioFiles(TEST_SCENARIO);
       expect(files).toEqual([]);
     });
   });
 
   describe("deleteFile", () => {
     it("ファイルを削除できる", async () => {
-      const filePath = buildFilePath(TEST_PATTERN, "/api/users", 1);
+      const filePath = buildFilePath(TEST_SCENARIO, "/api/users", 1);
       await storage.write(filePath, testFileData);
       expect(await storage.exists(filePath)).toBe(true);
 

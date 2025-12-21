@@ -15,9 +15,9 @@ export interface MatchResult {
 }
 
 /**
- * パース済みルートパターン
+ * パース済みルート
  */
-interface ParsedPattern {
+interface ParsedRoute {
   /** HTTPメソッド（指定がない場合はnull） */
   method: string | null;
   /** パスパターン（メソッド部分を除く） */
@@ -29,12 +29,12 @@ interface ParsedPattern {
 }
 
 /**
- * ルートパターンをパースしてメソッド、パス、パラメータ名、正規表現を取得
- * @param pattern 例: "GET /api/users/:id" または "/api/users/:id"
+ * ルートをパースしてメソッド、パス、パラメータ名、正規表現を取得
+ * @param route 例: "GET /api/users/:id" または "/api/users/:id"
  */
-export function parseRoutePattern(pattern: string): ParsedPattern {
+export function parseRoute(route: string): ParsedRoute {
   const methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"];
-  const parts = pattern.split(" ");
+  const parts = route.split(" ");
 
   let method: string | null = null;
   let path: string;
@@ -43,7 +43,7 @@ export function parseRoutePattern(pattern: string): ParsedPattern {
     method = parts[0].toUpperCase();
     path = parts[1];
   } else {
-    path = pattern;
+    path = route;
   }
 
   // パスから :param を抽出してパラメータ名を収集
@@ -71,16 +71,16 @@ export function parseRoutePattern(pattern: string): ParsedPattern {
 /**
  * リクエストパスからパスパラメータを抽出
  * @param path リクエストパス（例: "/api/users/123"）
- * @param parsedPattern パース済みパターン
+ * @param parsedRoute パース済みルート
  * @returns パスパラメータ、マッチしない場合はnull
  */
-export function extractPathParams(path: string, parsedPattern: ParsedPattern): Record<string, string> | null {
-  const match = path.match(parsedPattern.regex);
+export function extractPathParams(path: string, parsedRoute: ParsedRoute): Record<string, string> | null {
+  const match = path.match(parsedRoute.regex);
   if (!match) return null;
 
   const params: Record<string, string> = {};
-  for (let i = 0; i < parsedPattern.paramNames.length; i++) {
-    params[parsedPattern.paramNames[i]] = match[i + 1]; // match[0]は全体マッチ
+  for (let i = 0; i < parsedRoute.paramNames.length; i++) {
+    params[parsedRoute.paramNames[i]] = match[i + 1]; // match[0]は全体マッチ
   }
   return params;
 }
@@ -96,7 +96,7 @@ export function extractPathParams(path: string, parsedPattern: ParsedPattern): R
 export function findMatchingApi(method: string, path: string, apis: Record<string, ApiConfig>): MatchResult | null {
   for (const [apiKey, apiConfig] of Object.entries(apis)) {
     for (const route of apiConfig.routes) {
-      const parsed = parseRoutePattern(route);
+      const parsed = parseRoute(route);
 
       // メソッドチェック（指定がある場合のみ）
       if (parsed.method && parsed.method !== method.toUpperCase()) {

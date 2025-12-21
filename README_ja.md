@@ -16,7 +16,7 @@
 
 - **4つのモード**: Proxy（透過）/ Record（録画）/ Mock（再生）/ Smart（自動）
 - **パラメータマッチング**: パスパラメータ・クエリパラメータで正確にマッチング
-- **状態の永続化**: モード・パターンをサーバー再起動後も保持
+- **状態の永続化**: モード・シナリオをサーバー再起動後も保持
 - **TypeScript設定**: 型安全な設定ファイル
 
 ## なぜ snaperro？
@@ -66,7 +66,7 @@ npx snaperro demo
 | Query String | `/posts?userId=1` でクエリごとに異なるレスポンスを保存・返却 |
 | Nested Resource | `/posts/:id/comments` でネストしたリソースの取得 |
 
-詳細な管理（パターン/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
+詳細な管理（シナリオ/ファイル/JSON編集）は GUI (`/__snaperro__/client`) で行います。
 
 ### Web GUI
 
@@ -89,7 +89,7 @@ http://localhost:3333/__snaperro__/client
 | 機能 | 説明 |
 |-----|------|
 | モード切替 | Proxy/Record/Mockをワンクリックで切替 |
-| パターン管理 | パターンの作成・削除・複製・リネーム |
+| シナリオ管理 | シナリオの作成・削除・複製・リネーム |
 | ファイル管理 | 記録されたJSONファイルの一覧・削除 |
 | JSONエディタ | レスポンスの確認・編集 |
 | リアルタイム更新 | SSEで状態変更を即座に反映 |
@@ -288,26 +288,26 @@ export default defineConfig({
 })
 ```
 
-### パターンとは
+### シナリオとは
 
-「パターン」はモックデータのセットを管理するフォルダです。
+「シナリオ」はモックデータのセットを管理するフォルダです。
 
 ```
 .snaperro/
-├── state.json              ← サーバー状態（モード、パターン）
+├── state.json              ← サーバー状態（モード、シナリオ）
 └── files/
-    ├── 正常系フル/           ← パターン「正常系フル」
+    ├── 正常系フル/           ← シナリオ「正常系フル」
     │   ├── api_users_001.json
     │   ├── api_users_{id}_001.json
     │   └── api_orders_001.json
-    ├── 空データ/             ← パターン「空データ」
+    ├── 空データ/             ← シナリオ「空データ」
     │   └── api_users_001.json
-    └── エラー系/             ← パターン「エラー系」
+    └── エラー系/             ← シナリオ「エラー系」
         └── api_users_001.json
 ```
 
-パターンを切り替えると、異なるモックデータを使い分けられます。
-サーバーを再起動しても、前回のモードとパターンが復元されます。
+シナリオを切り替えると、異なるモックデータを使い分けられます。
+サーバーを再起動しても、前回のモードとシナリオが復元されます。
 
 ### ルート定義とマッチング
 
@@ -391,13 +391,13 @@ es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
 |---------|------|
 | `connected` | 接続完了（初期状態を含む） |
 | `mode_changed` | モード変更 |
-| `pattern_changed` | パターン切替 |
+| `scenario_changed` | シナリオ切替 |
 | `file_created` | ファイル作成（記録時） |
 | `file_updated` | ファイル更新 |
 | `file_deleted` | ファイル削除 |
-| `pattern_created` | パターン作成 |
-| `pattern_deleted` | パターン削除 |
-| `pattern_renamed` | パターン名変更 |
+| `scenario_created` | シナリオ作成 |
+| `scenario_deleted` | シナリオ削除 |
+| `scenario_renamed` | シナリオ名変更 |
 
 ---
 

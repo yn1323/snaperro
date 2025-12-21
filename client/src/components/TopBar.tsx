@@ -6,7 +6,7 @@ interface TopBarProps {
   version: string;
   mode: Mode;
   connected: boolean;
-  currentPattern: string | null;
+  currentScenario: string | null;
   onModeChange: (mode: Mode) => void;
 }
 
@@ -21,14 +21,14 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ version, mode, connected, currentPattern, onModeChange }: TopBarProps) {
+export function TopBar({ version, mode, connected, currentScenario, onModeChange }: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    // record, smart, mock はパターン選択が必要
-    if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentPattern) {
+    // record, smart, mock はシナリオ選択が必要
+    if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentScenario) {
       toaster.create({
         type: "warning",
-        title: "No pattern selected",
-        description: "Please select a pattern first.",
+        title: "No scenario selected",
+        description: "Please select a scenario first.",
       });
     }
     onModeChange(targetMode);

@@ -1,29 +1,29 @@
 import { IconButton } from "@chakra-ui/react";
 import { MenuContent, MenuItem, MenuRoot, MenuSeparator, MenuTrigger } from "./ui/menu";
 
-interface PatternMenuProps {
-  patternName: string;
+interface ScenarioMenuProps {
+  scenarioName: string;
   onRename: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
 }
 
 /**
- * Pattern action menu (⋮ dropdown)
+ * Scenario action menu (... dropdown)
  */
-export function PatternMenu({ patternName, onRename, onDuplicate, onDelete }: PatternMenuProps) {
+export function ScenarioMenu({ scenarioName, onRename, onDuplicate, onDelete }: ScenarioMenuProps) {
   return (
     <MenuRoot>
       <MenuTrigger asChild>
         <IconButton
-          aria-label={`Menu for ${patternName}`}
+          aria-label={`Menu for ${scenarioName}`}
           variant="ghost"
           size="xs"
           color="gray.500"
           _hover={{ color: "gray.700", bg: "gray.200" }}
           onClick={(e) => e.stopPropagation()}
         >
-          ⋮
+          ...
         </IconButton>
       </MenuTrigger>
       <MenuContent>

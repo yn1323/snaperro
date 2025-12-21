@@ -27,8 +27,8 @@ describe("StateManager", () => {
   });
 
   describe("mode", () => {
-    it("初期モードはproxy", () => {
-      expect(state.getMode()).toBe("proxy");
+    it("初期モードはsmart", () => {
+      expect(state.getMode()).toBe("smart");
     });
 
     it("モードを変更できる", async () => {
@@ -45,33 +45,33 @@ describe("StateManager", () => {
     });
   });
 
-  describe("pattern", () => {
-    it("初期パターンはnull", () => {
-      expect(state.getPattern()).toBeNull();
+  describe("scenario", () => {
+    it("初期シナリオはnull", () => {
+      expect(state.getScenario()).toBeNull();
     });
 
-    it("パターンを変更できる", async () => {
-      await state.setPattern("正常系フル");
-      expect(state.getPattern()).toBe("正常系フル");
+    it("シナリオを変更できる", async () => {
+      await state.setScenario("正常系フル");
+      expect(state.getScenario()).toBe("正常系フル");
     });
 
-    it("パターンをnullに戻せる", async () => {
-      await state.setPattern("テスト");
-      await state.setPattern(null);
-      expect(state.getPattern()).toBeNull();
+    it("シナリオをnullに戻せる", async () => {
+      await state.setScenario("テスト");
+      await state.setScenario(null);
+      expect(state.getScenario()).toBeNull();
     });
   });
 
   describe("永続化", () => {
     it("save()で状態がファイルに保存される", async () => {
       await state.setMode("mock");
-      await state.setPattern("テストパターン");
+      await state.setScenario("テストシナリオ");
 
       const content = await fs.readFile(STATE_FILE, "utf-8");
       const saved = JSON.parse(content);
 
       expect(saved.mode).toBe("mock");
-      expect(saved.currentPattern).toBe("テストパターン");
+      expect(saved.currentScenario).toBe("テストシナリオ");
     });
 
     it("load()でファイルから状態が復元される", async () => {
@@ -81,7 +81,7 @@ describe("StateManager", () => {
         STATE_FILE,
         JSON.stringify({
           mode: "record",
-          currentPattern: "復元テスト",
+          currentScenario: "復元テスト",
         }),
         "utf-8",
       );
@@ -89,15 +89,15 @@ describe("StateManager", () => {
       await state.load();
 
       expect(state.getMode()).toBe("record");
-      expect(state.getPattern()).toBe("復元テスト");
+      expect(state.getScenario()).toBe("復元テスト");
     });
 
     it("ファイルが存在しない場合はデフォルト値を使用", async () => {
       // ファイルがない状態でload
       await state.load();
 
-      expect(state.getMode()).toBe("proxy");
-      expect(state.getPattern()).toBeNull();
+      expect(state.getMode()).toBe("smart");
+      expect(state.getScenario()).toBeNull();
     });
 
     it("setMode()で自動的にファイルが更新される", async () => {
@@ -116,25 +116,25 @@ describe("StateManager", () => {
       expect(saved.mode).toBe("record");
     });
 
-    it("setPattern()で自動的にファイルが更新される", async () => {
-      await state.setPattern("自動保存テスト");
+    it("setScenario()で自動的にファイルが更新される", async () => {
+      await state.setScenario("自動保存テスト");
 
       const content = await fs.readFile(STATE_FILE, "utf-8");
       const saved = JSON.parse(content);
 
-      expect(saved.currentPattern).toBe("自動保存テスト");
+      expect(saved.currentScenario).toBe("自動保存テスト");
     });
   });
 
   describe("getStatus", () => {
     it("現在の状態を取得できる", async () => {
       await state.setMode("mock");
-      await state.setPattern("正常系フル");
+      await state.setScenario("正常系フル");
 
       const status = state.getStatus();
       expect(status).toEqual({
         mode: "mock",
-        pattern: "正常系フル",
+        scenario: "正常系フル",
       });
     });
   });
@@ -142,12 +142,12 @@ describe("StateManager", () => {
   describe("reset", () => {
     it("状態をデフォルト値にリセットできる", async () => {
       await state.setMode("mock");
-      await state.setPattern("テスト");
+      await state.setScenario("テスト");
 
       state.reset();
 
-      expect(state.getMode()).toBe("proxy");
-      expect(state.getPattern()).toBeNull();
+      expect(state.getMode()).toBe("smart");
+      expect(state.getScenario()).toBeNull();
     });
   });
 });

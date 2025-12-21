@@ -14,15 +14,15 @@ export async function handleSmart(c: Context, match: MatchResult): Promise<Respo
   const method = c.req.method;
   const url = new URL(c.req.url);
   const path = url.pathname;
-  const pattern = state.getPattern();
+  const scenario = state.getScenario();
 
-  // 1. Pattern is required
-  if (!pattern) {
-    logger.warn(`${method} ${path} → no pattern selected`);
+  // 1. Scenario is required
+  if (!scenario) {
+    logger.warn(`${method} ${path} → no scenario selected`);
     return c.json(
       {
-        error: "No pattern selected",
-        message: "Please select a pattern first",
+        error: "No scenario selected",
+        message: "Please select a scenario first",
       },
       400,
     );
@@ -34,7 +34,7 @@ export async function handleSmart(c: Context, match: MatchResult): Promise<Respo
 
   // 3. Search for existing mock
   const result = await storage.findMatchingFile(
-    pattern,
+    scenario,
     method,
     match.matchedRoute,
     match.pathParams,

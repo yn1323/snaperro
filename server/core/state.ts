@@ -13,16 +13,16 @@ const STATE_FILE = ".snaperro/state.json";
  */
 interface PersistedState {
   mode: Mode;
-  currentPattern: string | null;
+  currentScenario: string | null;
 }
 
 /**
  * 状態管理クラス
- * モードとパターンを管理し、ファイルに永続化
+ * モードとシナリオを管理し、ファイルに永続化
  */
 class StateManager {
   private mode: Mode = "smart";
-  private pattern: string | null = null;
+  private scenario: string | null = null;
 
   /**
    * 現在のモードを取得
@@ -41,23 +41,23 @@ class StateManager {
   }
 
   /**
-   * 現在のパターンを取得
+   * 現在のシナリオを取得
    */
-  getPattern(): string | null {
-    return this.pattern;
+  getScenario(): string | null {
+    return this.scenario;
   }
 
   /**
-   * パターンを設定（自動保存）
+   * シナリオを設定（自動保存）
    */
-  async setPattern(pattern: string | null): Promise<void> {
-    this.pattern = pattern;
+  async setScenario(scenario: string | null): Promise<void> {
+    this.scenario = scenario;
     await this.save();
 
     // ファイルリストも一緒に送信
-    const files = pattern ? await storage.getPatternFiles(pattern) : [];
-    eventBus.emitSSE("pattern_changed", {
-      pattern,
+    const files = scenario ? await storage.getScenarioFiles(scenario) : [];
+    eventBus.emitSSE("scenario_changed", {
+      scenario,
       files: files.map((f) => ({
         filename: f.path,
         endpoint: f.endpoint,
@@ -72,7 +72,7 @@ class StateManager {
   async save(): Promise<void> {
     const state: PersistedState = {
       mode: this.mode,
-      currentPattern: this.pattern,
+      currentScenario: this.scenario,
     };
 
     const dir = path.dirname(STATE_FILE);
@@ -88,11 +88,11 @@ class StateManager {
       const content = await fs.readFile(STATE_FILE, "utf-8");
       const state = JSON.parse(content) as PersistedState;
       this.mode = state.mode;
-      this.pattern = state.currentPattern;
+      this.scenario = state.currentScenario;
     } catch {
       // ファイルが存在しない場合はデフォルト値を使用
       this.mode = "smart";
-      this.pattern = null;
+      this.scenario = null;
     }
   }
 
@@ -101,7 +101,7 @@ class StateManager {
    */
   reset(): void {
     this.mode = "smart";
-    this.pattern = null;
+    this.scenario = null;
   }
 
   /**
@@ -110,7 +110,7 @@ class StateManager {
   getStatus() {
     return {
       mode: this.mode,
-      pattern: this.pattern,
+      scenario: this.scenario,
     };
   }
 }

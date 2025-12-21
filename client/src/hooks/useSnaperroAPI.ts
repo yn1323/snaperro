@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import type { FileData, FileInfo, FolderInfo, Mode, PatternInfo, SearchResult } from "../types";
+import type { FileData, FileInfo, FolderInfo, Mode, ScenarioInfo, SearchResult } from "../types";
 import { downloadAsFile } from "../utils/download";
 
 const API_BASE = "/__snaperro__";
@@ -8,13 +8,13 @@ interface UseSnaperroAPIReturn {
   // モード操作
   setMode: (mode: Mode) => Promise<void>;
 
-  // パターン操作
-  getPatterns: () => Promise<PatternInfo[]>;
-  setCurrentPattern: (pattern: string | null) => Promise<void>;
-  createPattern: (name: string) => Promise<void>;
-  duplicatePattern: (name: string, newName: string) => Promise<void>;
-  renamePattern: (name: string, newName: string) => Promise<void>;
-  deletePattern: (name: string) => Promise<void>;
+  // シナリオ操作
+  getScenarios: () => Promise<ScenarioInfo[]>;
+  setCurrentScenario: (scenario: string | null) => Promise<void>;
+  createScenario: (name: string) => Promise<void>;
+  duplicateScenario: (name: string, newName: string) => Promise<void>;
+  renameScenario: (name: string, newName: string) => Promise<void>;
+  deleteScenario: (name: string) => Promise<void>;
 
   // フォルダ操作
   getFolders: () => Promise<FolderInfo[]>;
@@ -25,13 +25,13 @@ interface UseSnaperroAPIReturn {
   uploadFolder: (file: File) => Promise<void>;
 
   // ファイル操作
-  getFiles: (pattern: string) => Promise<FileInfo[]>;
-  getFile: (pattern: string, filename: string) => Promise<FileData>;
-  updateFile: (pattern: string, filename: string, data: FileData) => Promise<void>;
-  deleteFile: (pattern: string, filename: string) => Promise<void>;
-  uploadFile: (pattern: string, file: File) => Promise<void>;
-  downloadFile: (pattern: string, filename: string) => Promise<void>;
-  searchFiles: (pattern: string, query: string) => Promise<SearchResult[]>;
+  getFiles: (scenario: string) => Promise<FileInfo[]>;
+  getFile: (scenario: string, filename: string) => Promise<FileData>;
+  updateFile: (scenario: string, filename: string, data: FileData) => Promise<void>;
+  deleteFile: (scenario: string, filename: string) => Promise<void>;
+  uploadFile: (scenario: string, file: File) => Promise<void>;
+  downloadFile: (scenario: string, filename: string) => Promise<void>;
+  searchFiles: (scenario: string, query: string) => Promise<SearchResult[]>;
 }
 
 /**
@@ -62,47 +62,47 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
   }, []);
 
   // ============================================================
-  // パターン操作
+  // シナリオ操作
   // ============================================================
-  const getPatterns = useCallback(async (): Promise<PatternInfo[]> => {
-    const result = await apiFetch<{ patterns: PatternInfo[] }>(`${API_BASE}/patterns`);
-    return result.patterns;
+  const getScenarios = useCallback(async (): Promise<ScenarioInfo[]> => {
+    const result = await apiFetch<{ scenarios: ScenarioInfo[] }>(`${API_BASE}/scenarios`);
+    return result.scenarios;
   }, []);
 
-  const setCurrentPattern = useCallback(async (pattern: string | null): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/current`, {
+  const setCurrentScenario = useCallback(async (scenario: string | null): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/current`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pattern }),
+      body: JSON.stringify({ scenario }),
     });
   }, []);
 
-  const createPattern = useCallback(async (name: string): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns`, {
+  const createScenario = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
     });
   }, []);
 
-  const duplicatePattern = useCallback(async (name: string, newName: string): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}/duplicate`, {
+  const duplicateScenario = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/${encodeURIComponent(name)}/duplicate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newName }),
     });
   }, []);
 
-  const renamePattern = useCallback(async (name: string, newName: string): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}/rename`, {
+  const renameScenario = useCallback(async (name: string, newName: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/${encodeURIComponent(name)}/rename`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ newName }),
     });
   }, []);
 
-  const deletePattern = useCallback(async (name: string): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(name)}`, {
+  const deleteScenario = useCallback(async (name: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/${encodeURIComponent(name)}`, {
       method: "DELETE",
     });
   }, []);
@@ -160,38 +160,38 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
   // ============================================================
   // ファイル操作
   // ============================================================
-  const getFiles = useCallback(async (pattern: string): Promise<FileInfo[]> => {
-    const result = await apiFetch<{ pattern: string; files: FileInfo[] }>(
-      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files`,
+  const getFiles = useCallback(async (scenario: string): Promise<FileInfo[]> => {
+    const result = await apiFetch<{ scenario: string; files: FileInfo[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files`,
     );
     return result.files;
   }, []);
 
-  const getFile = useCallback(async (pattern: string, filename: string): Promise<FileData> => {
+  const getFile = useCallback(async (scenario: string, filename: string): Promise<FileData> => {
     return apiFetch<FileData>(
-      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`,
+      `${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/${encodeURIComponent(filename)}`,
     );
   }, []);
 
-  const updateFile = useCallback(async (pattern: string, filename: string, data: FileData): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`, {
+  const updateFile = useCallback(async (scenario: string, filename: string, data: FileData): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/${encodeURIComponent(filename)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
   }, []);
 
-  const deleteFile = useCallback(async (pattern: string, filename: string): Promise<void> => {
-    await apiFetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}`, {
+  const deleteFile = useCallback(async (scenario: string, filename: string): Promise<void> => {
+    await apiFetch(`${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/${encodeURIComponent(filename)}`, {
       method: "DELETE",
     });
   }, []);
 
-  const uploadFile = useCallback(async (pattern: string, file: File): Promise<void> => {
+  const uploadFile = useCallback(async (scenario: string, file: File): Promise<void> => {
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch(`${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/upload`, {
+    const response = await fetch(`${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/upload`, {
       method: "POST",
       body: formData,
     });
@@ -202,15 +202,15 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     }
   }, []);
 
-  const downloadFile = useCallback(async (pattern: string, filename: string): Promise<void> => {
-    const url = `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/${encodeURIComponent(filename)}/download`;
+  const downloadFile = useCallback(async (scenario: string, filename: string): Promise<void> => {
+    const url = `${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/${encodeURIComponent(filename)}/download`;
     const downloadFilename = filename.endsWith(".json") ? filename : `${filename}.json`;
     await downloadAsFile(url, downloadFilename);
   }, []);
 
-  const searchFiles = useCallback(async (pattern: string, query: string): Promise<SearchResult[]> => {
-    const result = await apiFetch<{ pattern: string; query: string; files: SearchResult[] }>(
-      `${API_BASE}/patterns/${encodeURIComponent(pattern)}/files/search?q=${encodeURIComponent(query)}`,
+  const searchFiles = useCallback(async (scenario: string, query: string): Promise<SearchResult[]> => {
+    const result = await apiFetch<{ scenario: string; query: string; files: SearchResult[] }>(
+      `${API_BASE}/scenarios/${encodeURIComponent(scenario)}/files/search?q=${encodeURIComponent(query)}`,
     );
     return result.files;
   }, []);
@@ -218,12 +218,12 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
   return useMemo(
     () => ({
       setMode,
-      getPatterns,
-      setCurrentPattern,
-      createPattern,
-      duplicatePattern,
-      renamePattern,
-      deletePattern,
+      getScenarios,
+      setCurrentScenario,
+      createScenario,
+      duplicateScenario,
+      renameScenario,
+      deleteScenario,
       getFolders,
       createFolder,
       deleteFolder,
@@ -240,12 +240,12 @@ export function useSnaperroAPI(): UseSnaperroAPIReturn {
     }),
     [
       setMode,
-      getPatterns,
-      setCurrentPattern,
-      createPattern,
-      duplicatePattern,
-      renamePattern,
-      deletePattern,
+      getScenarios,
+      setCurrentScenario,
+      createScenario,
+      duplicateScenario,
+      renameScenario,
+      deleteScenario,
       getFolders,
       createFolder,
       deleteFolder,

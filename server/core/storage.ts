@@ -129,19 +129,6 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
 }
 
 /**
- * ディレクトリがフォルダかどうかを判定
- * フォルダ = サブディレクトリを持つ
- */
-async function isFolder(dirPath: string): Promise<boolean> {
-  try {
-    const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.some((e) => e.isDirectory());
-  } catch {
-    return false;
-  }
-}
-
-/**
  * ディレクトリがシナリオかどうかを判定
  * シナリオ = サブディレクトリを持たない（空でもOK）
  */
@@ -319,14 +306,9 @@ export const storage = {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
-        const dirPath = path.join(BASE_DIR, entry.name);
-
-        // フォルダの場合、中のシナリオを取得
-        if (await isFolder(dirPath)) {
-          const subScenarios = await storage.listScenariosInFolder(entry.name);
-          for (const subScenario of subScenarios) {
-            scenarios.push(`${entry.name}/${subScenario}`);
-          }
+        const subScenarios = await storage.listScenariosInFolder(entry.name);
+        for (const subScenario of subScenarios) {
+          scenarios.push(`${entry.name}/${subScenario}`);
         }
       }
 
@@ -555,14 +537,11 @@ export const storage = {
       for (const entry of entries) {
         if (!entry.isDirectory()) continue;
 
-        const dirPath = path.join(BASE_DIR, entry.name);
-        if (await isFolder(dirPath)) {
-          const scenarios = await storage.listScenariosInFolder(entry.name);
-          folders.push({
-            name: entry.name,
-            scenariosCount: scenarios.length,
-          });
-        }
+        const scenarios = await storage.listScenariosInFolder(entry.name);
+        folders.push({
+          name: entry.name,
+          scenariosCount: scenarios.length,
+        });
       }
 
       return folders;
@@ -602,8 +581,7 @@ export const storage = {
     const dir = path.join(BASE_DIR, name);
     try {
       const stat = await fs.stat(dir);
-      if (!stat.isDirectory()) return false;
-      return await isFolder(dir);
+      return stat.isDirectory();
     } catch {
       return false;
     }
@@ -641,46 +619,6 @@ export const storage = {
 
     await fs.rename(oldDir, newDir);
     eventBus.emitSSE("folder_renamed", { oldName, newName });
-  },
-
-  /**
-   * ルート直下の旧シナリオをフォルダ構成に移行
-   * 例: demo -> _demo/demo
-   * 冪等性あり（再実行しても安全）
-   */
-  async migrateRootScenarios(): Promise<void> {
-    try {
-      const entries = await fs.readdir(BASE_DIR, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        const dirPath = path.join(BASE_DIR, entry.name);
-
-        // 直下に.jsonファイルがある = 旧シナリオ（移行対象）
-        if (await isScenario(dirPath)) {
-          const oldName = entry.name;
-          const newFolderName = `_${oldName}`;
-          const newScenarioPath = path.join(BASE_DIR, newFolderName, oldName);
-
-          // 移行先が既に存在する場合はスキップ（冪等性）
-          try {
-            await fs.access(newScenarioPath);
-            continue; // 既に移行済み
-          } catch {
-            // 存在しない = 移行が必要
-          }
-
-          // 新フォルダを作成
-          await fs.mkdir(path.join(BASE_DIR, newFolderName), { recursive: true });
-
-          // シナリオを移動
-          await fs.rename(dirPath, newScenarioPath);
-        }
-      }
-    } catch {
-      // BASE_DIRが存在しない場合など
-    }
   },
 
   /**

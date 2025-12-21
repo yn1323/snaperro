@@ -19,7 +19,6 @@ export default defineConfig({
     //   routes: ["/users", "/users/:id", "/posts", "/posts/:id", "/posts/:id/comments", "/comments"],
     //   maskRequestHeaders: ["connection"],
     // },
-
     // 例: カスタムAPI
     // userService: {
     //   name: "ユーザーサービス",
@@ -30,4 +29,4 @@ export default defineConfig({
     //   routes: ["/api/users", "/api/users/:id"],
     // },
   },
-  });
+});

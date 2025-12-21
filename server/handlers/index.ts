@@ -86,9 +86,6 @@ export function startServer(options: ServerOptions): Promise<ServerInfo> {
       // Initialize storage
       await storage.ensureBaseDir();
 
-      // Migrate root scenarios to folder structure
-      await storage.migrateRootScenarios();
-
       // Load persisted state (mode and scenario)
       await state.load();
 

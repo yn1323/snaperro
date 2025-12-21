@@ -192,10 +192,10 @@ export function ScenarioPane({
               <Flex
                 key={scenario}
                 alignItems="center"
-                bg={isSelected ? "accent.50" : undefined}
-                borderLeft="2px"
-                borderColor={isSelected ? "accent.500" : "transparent"}
-                _hover={{ bg: isSelected ? "accent.50" : "gray.100" }}
+                bg={isSelected ? "accent.100" : undefined}
+                borderLeft={isSelected ? "4px solid" : "4px solid transparent"}
+                borderLeftColor={isSelected ? "accent.500" : "transparent"}
+                _hover={{ bg: isSelected ? "accent.100" : "gray.100" }}
                 transition="all 0.15s ease"
               >
                 <Button
@@ -207,7 +207,7 @@ export function ScenarioPane({
                   h="auto"
                   justifyContent="flex-start"
                   fontSize="sm"
-                  fontWeight="normal"
+                  fontWeight={isSelected ? "semibold" : "normal"}
                   color={isSelected ? "accent.700" : "gray.700"}
                   onClick={() => onSelect(fullName)}
                   title={fullName}
@@ -215,7 +215,7 @@ export function ScenarioPane({
                   _hover={{ bg: "transparent" }}
                   gap={2}
                 >
-                  <LuBox color="#06b6d4" size={16} />
+                  <LuBox color={isSelected ? "#10b981" : "#06b6d4"} size={16} />
                   <Text truncate>{scenario}</Text>
                 </Button>
                 <Box pr={1}>

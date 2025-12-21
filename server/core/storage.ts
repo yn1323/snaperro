@@ -130,13 +130,12 @@ function isDeepEqual(a: unknown, b: unknown): boolean {
 
 /**
  * ディレクトリがフォルダかどうかを判定
- * フォルダ = 直下に.jsonファイルがない（空ディレクトリも含む）
+ * フォルダ = サブディレクトリを持つ
  */
 async function isFolder(dirPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    const hasJsonFiles = entries.some((e) => e.isFile() && e.name.endsWith(".json"));
-    return !hasJsonFiles;
+    return entries.some((e) => e.isDirectory());
   } catch {
     return false;
   }
@@ -144,12 +143,12 @@ async function isFolder(dirPath: string): Promise<boolean> {
 
 /**
  * ディレクトリがシナリオかどうかを判定
- * シナリオ = 直下に.jsonファイルがある
+ * シナリオ = サブディレクトリを持たない（空でもOK）
  */
 async function isScenario(dirPath: string): Promise<boolean> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.some((e) => e.isFile() && e.name.endsWith(".json"));
+    return !entries.some((e) => e.isDirectory());
   } catch {
     return false;
   }

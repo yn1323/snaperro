@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LuSearch, LuUpload, LuX } from "react-icons/lu";
 import { useSnaperroAPI } from "../hooks/useSnaperroAPI";
 import type { FileInfo, SearchResult } from "../types";
+import { AccordionItem, AccordionItemContent, AccordionItemTrigger, AccordionRoot } from "./ui/accordion";
 
 const METHOD_COLORS: Record<string, { bg: string; color: string }> = {
   GET: { bg: "green.100", color: "green.700" },
@@ -41,7 +42,7 @@ export function FilePane({
   searchQuery,
   onSearchQueryChange,
 }: FilePaneProps) {
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const api = useSnaperroAPI();
@@ -49,7 +50,7 @@ export function FilePane({
   // Reset accordion when scenario changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: Reset when files change
   useEffect(() => {
-    setExpandedGroups(new Set());
+    setExpandedGroups([]);
   }, [files]);
 
   // Debounced server search
@@ -126,18 +127,6 @@ export function FilePane({
       .filter((group) => group.files.length > 0);
   }, [groupedFiles, searchQuery, searchResults]);
 
-  const toggleGroup = (endpoint: string) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(endpoint)) {
-        next.delete(endpoint);
-      } else {
-        next.add(endpoint);
-      }
-      return next;
-    });
-  };
-
   return (
     <Flex w={`${width}px`} bg="white" borderRight="1px" borderColor="gray.200" direction="column" flexShrink={0}>
       <Flex
@@ -212,92 +201,91 @@ export function FilePane({
             {files.length === 0 ? "No files" : isSearching ? "Searching..." : "No results"}
           </Text>
         ) : (
-          filteredGroups.map((group) => (
-            <Box key={group.endpoint}>
-              <Button
-                variant="ghost"
-                w="full"
-                px={2}
-                py={1.5}
-                h="auto"
-                bg="gray.100"
-                borderBottom="1px"
-                borderColor="gray.200"
-                borderRadius={0}
-                justifyContent="flex-start"
-                onClick={() => toggleGroup(group.endpoint)}
-                _hover={{ bg: "gray.200" }}
-                transition="all 0.15s ease"
-              >
-                <Text fontSize="xs" color="gray.500">
-                  {expandedGroups.has(group.endpoint) ? "▼" : "▶"}
-                </Text>
-                <Text fontSize="xs" color="gray.700" truncate flex={1} ml={1} textAlign="left" title={group.endpoint}>
-                  {group.endpoint}
-                </Text>
-                <Text fontSize="xs" color="gray.500">
-                  ({group.files.length})
-                </Text>
-              </Button>
-
-              {expandedGroups.has(group.endpoint) &&
-                group.files.map((file) => {
-                  const isSelected = selectedFile === file.filename;
-                  return (
-                    <Box
-                      key={file.filename}
-                      as="button"
-                      w="full"
-                      p={2}
-                      pl={4}
-                      borderBottom="1px"
-                      borderColor="gray.100"
-                      textAlign="left"
-                      cursor="pointer"
-                      bg={isSelected ? "accent.50" : undefined}
-                      borderLeft={isSelected ? "2px solid" : "2px solid transparent"}
-                      borderLeftColor={isSelected ? "accent.500" : "transparent"}
-                      _hover={{ bg: isSelected ? "accent.50" : "gray.50" }}
-                      onClick={() => onSelect(file.filename)}
-                      transition="all 0.15s ease"
-                    >
-                      <Flex alignItems="center" gap={2}>
-                        <Badge
-                          bg={METHOD_COLORS[file.method]?.bg ?? "gray.200"}
-                          color={METHOD_COLORS[file.method]?.color ?? "gray.600"}
-                          fontFamily="mono"
-                          fontSize="2xs"
-                          px={1.5}
-                          py={0.5}
-                          fontWeight="500"
-                        >
-                          {file.method}
-                        </Badge>
-                        <Text flex={1} fontSize="xs" color="gray.500" truncate title={file.filename}>
-                          {file.filename}
-                        </Text>
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          p={1}
-                          minW="auto"
-                          h="auto"
-                          color="gray.400"
-                          _hover={{ color: "accent.500" }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDownload(file.filename);
-                          }}
-                          title="Download"
-                        >
-                          ⬇
-                        </Button>
-                      </Flex>
-                    </Box>
-                  );
-                })}
-            </Box>
-          ))
+          <AccordionRoot
+            variant="plain"
+            multiple
+            value={expandedGroups}
+            onValueChange={(details) => setExpandedGroups(details.value)}
+          >
+            {filteredGroups.map((group) => (
+              <AccordionItem key={group.endpoint} value={group.endpoint}>
+                <AccordionItemTrigger
+                  px={2}
+                  py={1.5}
+                  bg="gray.100"
+                  borderBottom="1px solid"
+                  borderColor="gray.200"
+                  borderRadius={0}
+                  _hover={{ bg: "gray.200" }}
+                  cursor="pointer"
+                >
+                  <Text fontSize="xs" color="gray.700" truncate flex={1} textAlign="left" title={group.endpoint}>
+                    {group.endpoint}
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    ({group.files.length})
+                  </Text>
+                </AccordionItemTrigger>
+                <AccordionItemContent p={0}>
+                  {group.files.map((file) => {
+                    const isSelected = selectedFile === file.filename;
+                    return (
+                      <Box
+                        key={file.filename}
+                        as="button"
+                        w="full"
+                        p={2}
+                        pl={4}
+                        borderBottom="1px"
+                        borderColor="gray.100"
+                        textAlign="left"
+                        cursor="pointer"
+                        bg={isSelected ? "accent.50" : undefined}
+                        borderLeft={isSelected ? "2px solid" : "2px solid transparent"}
+                        borderLeftColor={isSelected ? "accent.500" : "transparent"}
+                        _hover={{ bg: isSelected ? "accent.50" : "gray.50" }}
+                        onClick={() => onSelect(file.filename)}
+                        transition="all 0.15s ease"
+                      >
+                        <Flex alignItems="center" gap={2}>
+                          <Badge
+                            bg={METHOD_COLORS[file.method]?.bg ?? "gray.200"}
+                            color={METHOD_COLORS[file.method]?.color ?? "gray.600"}
+                            fontFamily="mono"
+                            fontSize="2xs"
+                            px={1.5}
+                            py={0.5}
+                            fontWeight="500"
+                          >
+                            {file.method}
+                          </Badge>
+                          <Text flex={1} fontSize="xs" color="gray.500" truncate title={file.filename}>
+                            {file.filename}
+                          </Text>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            p={1}
+                            minW="auto"
+                            h="auto"
+                            color="gray.400"
+                            _hover={{ color: "accent.500" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDownload(file.filename);
+                            }}
+                            title="Download"
+                          >
+                            ⬇
+                          </Button>
+                        </Flex>
+                      </Box>
+                    );
+                  })}
+                </AccordionItemContent>
+              </AccordionItem>
+            ))}
+          </AccordionRoot>
         )}
       </Box>
     </Flex>

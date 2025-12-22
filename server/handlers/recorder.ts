@@ -5,7 +5,7 @@ import { logger } from "../core/logger.js";
 import { getMergedMaskHeaders, maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
-import { copyRequestHeaders, parseQueryParams, parseRequestBody } from "../core/request-utils.js";
+import { copyRequestHeaders, isJsonContentType, parseQueryParams, parseRequestBody } from "../core/request-utils.js";
 import { state } from "../core/state.js";
 import { storage } from "../core/storage.js";
 import type { SnaperroConfig } from "../types/config.js";
@@ -38,17 +38,23 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
   const startTime = Date.now();
 
   try {
+    // Check if request is JSON
+    const isJson = isJsonContentType(c.req.raw.headers);
+
     // Get request body
-    const requestBody = await parseRequestBody(method, () => c.req.text());
+    const requestBody = await parseRequestBody(method, () => c.req.text(), isJson);
 
     // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = copyRequestHeaders(c.req.raw.headers, match.apiConfig.headers);
+
+    // Prepare body for fetch (only stringify if JSON and was parsed)
+    const fetchBody = requestBody ? (isJson ? JSON.stringify(requestBody) : (requestBody as string)) : undefined;
 
     // 1. Request to actual API
     const response = await fetch(targetUrl, {
       method,
       headers,
-      body: requestBody ? JSON.stringify(requestBody) : undefined,
+      body: fetchBody,
       // @ts-expect-error - undici@7 ProxyAgent type differs from undici-types@6 in @types/node
       dispatcher: getProxyAgent(),
     });

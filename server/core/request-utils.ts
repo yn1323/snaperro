@@ -9,6 +9,14 @@
 export const DEFAULT_SKIP_HEADERS = ["host", "connection", "if-none-match", "if-modified-since"];
 
 /**
+ * Check if the Content-Type header indicates JSON
+ */
+export function isJsonContentType(headers: Headers): boolean {
+  const contentType = headers.get("content-type") || "";
+  return contentType.includes("application/json");
+}
+
+/**
  * Parse URL search parameters into a record
  * Handles multiple values for the same key as arrays
  */

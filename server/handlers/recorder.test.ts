@@ -620,6 +620,7 @@ describe("handleRecord", () => {
 
       await app.request("/api/users/123", {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "Updated" }),
       });
 
@@ -663,6 +664,7 @@ describe("handleRecord", () => {
 
       await app.request("/api/users/123", {
         method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "Patched" }),
       });
 
@@ -695,6 +697,101 @@ describe("handleRecord", () => {
         null,
         expect.any(Object),
       );
+    });
+  });
+
+  describe("non-JSON body handling", () => {
+    beforeEach(() => {
+      mockGetScenario.mockReturnValue("test-scenario");
+    });
+
+    it("forwards x-www-form-urlencoded body without JSON.stringify", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      const formBody = "name=test&email=test%40example.com";
+
+      await app.request("/api/users/123", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formBody,
+      });
+
+      // Verify body is forwarded as-is (not JSON.stringified)
+      const fetchCall = mockFetch.mock.calls[0];
+      expect(fetchCall[1].body).toBe(formBody);
+    });
+
+    it("preserves Content-Type header for x-www-form-urlencoded", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      await app.request("/api/users/123", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "foo=bar",
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const headers = fetchCall[1].headers as Headers;
+      expect(headers.get("Content-Type")).toBe("application/x-www-form-urlencoded");
+    });
+
+    it("records x-www-form-urlencoded body as text", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      const formBody = "name=test&value=123";
+
+      await app.request("/api/users/123", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formBody,
+      });
+
+      // Verify body is stored as text in recorded data
+      expect(mockFindAndWriteAtomic).toHaveBeenCalledWith(
+        expect.any(String),
+        "POST",
+        expect.any(String),
+        expect.any(Object),
+        expect.any(Object),
+        formBody,
+        expect.objectContaining({
+          request: expect.objectContaining({
+            body: formBody,
+          }),
+        }),
+      );
+    });
+
+    it("still JSON.stringify for application/json Content-Type", async () => {
+      mockFetch.mockResolvedValue(new Response("{}", { status: 200 }));
+      mockFindAndWriteAtomic.mockResolvedValue({
+        filePath: "/path/to/file.json",
+        isNew: true,
+      });
+
+      const jsonBody = { name: "test" };
+
+      await app.request("/api/users/123", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jsonBody),
+      });
+
+      // Verify body is parsed and re-stringified for JSON
+      const fetchCall = mockFetch.mock.calls[0];
+      expect(fetchCall[1].body).toBe(JSON.stringify(jsonBody));
     });
   });
 });

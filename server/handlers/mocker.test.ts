@@ -299,6 +299,27 @@ describe("handleMock", () => {
       );
     });
 
+    it("handles x-www-form-urlencoded request body as text", async () => {
+      mockFindMatchingFile.mockResolvedValue(null);
+
+      const formBody = "name=test&email=test%40example.com";
+
+      await app.request("/api/users/123", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formBody,
+      });
+
+      expect(mockFindMatchingFile).toHaveBeenCalledWith(
+        "test-scenario",
+        "POST",
+        "/api/users/:id",
+        { id: "123" },
+        {},
+        formBody,
+      );
+    });
+
     it("does not read body for GET requests", async () => {
       mockFindMatchingFile.mockResolvedValue(null);
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { copyRequestHeaders, DEFAULT_SKIP_HEADERS, parseQueryParams, parseRequestBody } from "./request-utils.js";
+import {
+  copyRequestHeaders,
+  DEFAULT_SKIP_HEADERS,
+  isJsonContentType,
+  parseQueryParams,
+  parseRequestBody,
+} from "./request-utils.js";
 
 describe("parseQueryParams", () => {
   it("parses single value parameters", () => {
@@ -163,5 +169,37 @@ describe("DEFAULT_SKIP_HEADERS", () => {
 
   it("has exactly 4 headers", () => {
     expect(DEFAULT_SKIP_HEADERS).toHaveLength(4);
+  });
+});
+
+describe("isJsonContentType", () => {
+  it("returns true for application/json", () => {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    expect(isJsonContentType(headers)).toBe(true);
+  });
+
+  it("returns true for application/json with charset", () => {
+    const headers = new Headers({ "Content-Type": "application/json; charset=utf-8" });
+    expect(isJsonContentType(headers)).toBe(true);
+  });
+
+  it("returns false for x-www-form-urlencoded", () => {
+    const headers = new Headers({ "Content-Type": "application/x-www-form-urlencoded" });
+    expect(isJsonContentType(headers)).toBe(false);
+  });
+
+  it("returns false for text/plain", () => {
+    const headers = new Headers({ "Content-Type": "text/plain" });
+    expect(isJsonContentType(headers)).toBe(false);
+  });
+
+  it("returns false when no Content-Type header", () => {
+    const headers = new Headers();
+    expect(isJsonContentType(headers)).toBe(false);
+  });
+
+  it("returns false for multipart/form-data", () => {
+    const headers = new Headers({ "Content-Type": "multipart/form-data; boundary=----" });
+    expect(isJsonContentType(headers)).toBe(false);
   });
 });

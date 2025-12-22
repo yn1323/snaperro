@@ -330,4 +330,35 @@ describe("handleProxy", () => {
       expect(res.status).toBe(201);
     });
   });
+
+  describe("non-JSON body handling", () => {
+    it("forwards x-www-form-urlencoded body as-is", async () => {
+      mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
+
+      const formBody = "name=test&email=test%40example.com";
+
+      await app.request("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formBody,
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      expect(fetchCall[1].body).toBe(formBody);
+    });
+
+    it("preserves Content-Type header for x-www-form-urlencoded", async () => {
+      mockFetch.mockResolvedValue(new Response("ok", { status: 200 }));
+
+      await app.request("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "foo=bar",
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const headers = fetchCall[1].headers as Headers;
+      expect(headers.get("Content-Type")).toBe("application/x-www-form-urlencoded");
+    });
+  });
 });

@@ -59,7 +59,7 @@ export default defineConfig({
 })
 `;
 
-const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/\n.snaperro/state.json\n";
+const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/*\n!.snaperro/files/.gitkeep\n.snaperro/state.json\n";
 
 // ============================================
 // Helper functions

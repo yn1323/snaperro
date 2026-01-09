@@ -91,7 +91,7 @@ const LogEntry = memo(function LogEntry({ log }: { log: RequestLogEventData }) {
       <Text color={actionColors[actionDisplay] || "gray.400"} flexShrink={0}>
         {actionDisplay}
       </Text>
-      <Text color="gray.400" flex={1}  truncate title={log.filePath}>
+      <Text color="gray.400" flex={1} truncate title={log.filePath}>
         {log.filePath ?? ""}
       </Text>
       <Text color={statusColor} fontWeight="semibold" flexShrink={0} w="32px" textAlign="right">

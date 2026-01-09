@@ -15,4 +15,5 @@ count.txt
 
 
 # snaperro
-.snaperro/
+.snaperro/files/
+.snaperro/state.json

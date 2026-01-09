@@ -59,7 +59,7 @@ export default defineConfig({
 })
 `;
 
-const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/\n";
+const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/\n.snaperro/state.json\n";
 
 // ============================================
 // Helper functions
@@ -442,11 +442,11 @@ export async function initCommand(): Promise<void> {
   const gitignorePath = path.join(cwd, ".gitignore");
   try {
     const content = await fs.readFile(gitignorePath, "utf-8");
-    if (!content.includes(".snaperro/")) {
+    if (!content.includes("# snaperro")) {
       await fs.appendFile(gitignorePath, GITIGNORE_ENTRY);
-      consola.success("Added .snaperro/ to .gitignore");
+      consola.success("Added snaperro entries to .gitignore");
     } else {
-      consola.info(".gitignore already contains .snaperro/");
+      consola.info(".gitignore already contains snaperro entries");
     }
   } catch {
     // Create .gitignore if it doesn't exist

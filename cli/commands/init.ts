@@ -59,7 +59,7 @@ export default defineConfig({
 })
 `;
 
-const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/\n.snaperro/state.json\n";
+const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/*\n!.snaperro/files/.gitkeep\n.snaperro/state.json\n";
 
 // ============================================
 // Helper functions
@@ -420,15 +420,21 @@ export async function initCommand(): Promise<void> {
   consola.start("Initializing snaperro...");
 
   // 1. Create .snaperro/files directory
-  const filesDir = path.join(cwd, ".snaperro", "files");
+  const snaperroDir = path.join(cwd, ".snaperro");
+  const filesDir = path.join(snaperroDir, "files");
   await fs.mkdir(filesDir, { recursive: true });
   consola.success("Created .snaperro/files directory");
 
-  // 2. Place sample data
+  // 2. Create .gitkeep files
+  await fs.writeFile(path.join(snaperroDir, ".gitkeep"), "", "utf-8");
+  await fs.writeFile(path.join(filesDir, ".gitkeep"), "", "utf-8");
+  consola.success("Created .gitkeep files");
+
+  // 3. Place sample data
   await writeSampleFiles(filesDir);
   consola.success("Placed sample scenarios (demo, demo-empty, demo-error)");
 
-  // 3. Create snaperro.config.ts (if not exists)
+  // 4. Create snaperro.config.ts (if not exists)
   const configPath = path.join(cwd, "snaperro.config.ts");
   try {
     await fs.access(configPath);
@@ -438,7 +444,7 @@ export async function initCommand(): Promise<void> {
     consola.success("Created snaperro.config.ts");
   }
 
-  // 4. Add to .gitignore
+  // 5. Add to .gitignore
   const gitignorePath = path.join(cwd, ".gitignore");
   try {
     const content = await fs.readFile(gitignorePath, "utf-8");

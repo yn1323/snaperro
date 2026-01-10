@@ -15,5 +15,6 @@ count.txt
 
 
 # snaperro
-.snaperro/files/
+.snaperro/files/*
+!.snaperro/files/.gitkeep
 .snaperro/state.json

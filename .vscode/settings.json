@@ -44,6 +44,7 @@
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
   "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.preferences.preferTypeOnlyAutoImports": true,
   "favorites.resources": [
     {
       "filePath": "convex-seeds\\backup",

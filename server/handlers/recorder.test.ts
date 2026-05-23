@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logger } from "../core/logger.js";
 import type { ApiConfig, SnaperroConfig } from "../types/config.js";
 import { handleRecord } from "./recorder.js";
 
@@ -54,6 +55,7 @@ vi.mock("../core/logger.js", () => ({
     warn: vi.fn(),
     debug: vi.fn(),
     error: vi.fn(),
+    debugHeaders: vi.fn(),
     request: vi.fn(),
   },
 }));
@@ -538,14 +540,29 @@ describe("handleRecord", () => {
     });
 
     it("returns 502 Bad Gateway on network error", async () => {
-      mockFetch.mockRejectedValue(new Error("Network error"));
+      const cause = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:9999"), {
+        code: "ECONNREFUSED",
+        syscall: "connect",
+        address: "127.0.0.1",
+        port: 9999,
+      });
+      const error = new TypeError("fetch failed");
+      Object.defineProperty(error, "cause", { value: cause });
+      mockFetch.mockRejectedValue(error);
 
       const res = await app.request("/api/users/123");
       const body = (await res.json()) as { error: string; message: string };
 
       expect(res.status).toBe(502);
       expect(body.error).toBe("Bad Gateway");
-      expect(body.message).toBe("Network error");
+      expect(body.message).toBe("fetch failed");
+
+      const logMessage = vi.mocked(logger.error).mock.calls[0][0] as string;
+      expect(logMessage).toContain("Record failed: fetch failed");
+      expect(logMessage).toContain("request: GET /api/users/123");
+      expect(logMessage).toContain("target: https://api.example.com/api/users/123");
+      expect(logMessage).toContain("upstreamProxy: disabled");
+      expect(logMessage).toContain("cause details: code=ECONNREFUSED, syscall=connect, port=9999, address=127.0.0.1");
     });
 
     it("returns 502 Bad Gateway on non-Error thrown value", async () => {

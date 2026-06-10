@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { formatFetchFailureDetails, formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
 import { logger } from "../core/logger.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
 import { copyRequestHeaders, parseRequestBody } from "../core/request-utils.js";
@@ -25,6 +26,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
 
     // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = copyRequestHeaders(c.req.raw.headers, apiConfig.headers);
+    const proxyAgent = getProxyAgent();
 
     logger.debugHeaders(Object.fromEntries(headers.entries()));
 
@@ -33,7 +35,7 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       headers,
       body,
       // @ts-expect-error - undici@7 ProxyAgent type differs from undici-types@6 in @types/node
-      dispatcher: getProxyAgent(),
+      dispatcher: proxyAgent,
     });
 
     const elapsed = Date.now() - startTime;
@@ -65,8 +67,29 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       headers: responseHeaders,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error(`Proxy failed: ${message}`);
+    const message = getErrorMessage(error);
+    const elapsed = Date.now() - startTime;
+    const errorDetails = formatFetchFailureDetails(error);
+    logger.error(
+      formatFetchFailureLog({
+        operation: "Proxy",
+        method,
+        requestPath: path,
+        targetUrl,
+        upstreamProxyEnabled: Boolean(getProxyAgent()),
+        error,
+      }),
+      error instanceof Error ? error : undefined,
+    );
+    logger.request({
+      method,
+      path,
+      action: "proxy",
+      status: 502,
+      errorMessage: message,
+      errorDetails,
+      duration: elapsed,
+    });
     return c.json({ error: "Bad Gateway", message }, 502);
   }
 }

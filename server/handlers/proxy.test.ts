@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { logger } from "../core/logger.js";
 import type { ApiConfig } from "../types/config.js";
 import { handleProxy } from "./proxy.js";
 
@@ -220,14 +221,42 @@ describe("handleProxy", () => {
 
   describe("error handling", () => {
     it("returns 502 Bad Gateway on network error", async () => {
-      mockFetch.mockRejectedValue(new Error("Network error"));
+      const cause = Object.assign(new Error("getaddrinfo ENOTFOUND api.example.com"), {
+        code: "ENOTFOUND",
+        syscall: "getaddrinfo",
+        hostname: "api.example.com",
+      });
+      const error = new TypeError("fetch failed");
+      Object.defineProperty(error, "cause", { value: cause });
+      mockFetch.mockRejectedValue(error);
 
-      const res = await app.request("/api/users");
+      const res = await app.request("/api/users?api_key=secret-token");
       const body = (await res.json()) as { error: string; message: string };
 
       expect(res.status).toBe(502);
       expect(body.error).toBe("Bad Gateway");
-      expect(body.message).toBe("Network error");
+      expect(body.message).toBe("fetch failed");
+
+      const logMessage = vi.mocked(logger.error).mock.calls[0][0] as string;
+      expect(logMessage).toContain("Proxy failed: fetch failed");
+      expect(logMessage).toContain("request: GET /api/users?api_key=secr********");
+      expect(logMessage).toContain("target: https://api.example.com/api/users?api_key=secr********");
+      expect(logMessage).toContain("upstreamProxy: disabled");
+      expect(logMessage).toContain("cause details: code=ENOTFOUND, syscall=getaddrinfo, hostname=api.example.com");
+      expect(logMessage).not.toContain("secret-token");
+      expect(logger.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          path: "/api/users?api_key=secret-token",
+          action: "proxy",
+          status: 502,
+          errorMessage: "fetch failed",
+          errorDetails: expect.arrayContaining([
+            "error: TypeError: fetch failed",
+            "cause details: code=ENOTFOUND, syscall=getaddrinfo, hostname=api.example.com",
+          ]),
+        }),
+      );
     });
 
     it("returns 502 Bad Gateway on timeout", async () => {

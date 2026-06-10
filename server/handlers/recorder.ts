@@ -1,6 +1,7 @@
 import path from "node:path";
 import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
+import { formatFetchFailureDetails, formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
 import { logger } from "../core/logger.js";
 import { getMergedMaskHeaders, maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
@@ -33,7 +34,7 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
     );
   }
 
-  logger.debug(`${method} ${requestPath} → record`);
+  logger.debug(`${method} ${requestPath} → record → ${targetUrl}`);
 
   const startTime = Date.now();
 
@@ -46,6 +47,9 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
 
     // Copy headers (excluding cache-related headers to always get fresh responses)
     const headers = copyRequestHeaders(c.req.raw.headers, match.apiConfig.headers);
+    const proxyAgent = getProxyAgent();
+
+    logger.debugHeaders(Object.fromEntries(headers.entries()));
 
     // Prepare body for fetch (only stringify if JSON and was parsed)
     const fetchBody = requestBody ? (isJson ? JSON.stringify(requestBody) : (requestBody as string)) : undefined;
@@ -56,7 +60,7 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
       headers,
       body: fetchBody,
       // @ts-expect-error - undici@7 ProxyAgent type differs from undici-types@6 in @types/node
-      dispatcher: getProxyAgent(),
+      dispatcher: proxyAgent,
     });
 
     // 2. Get response body (304/204 have no body)
@@ -141,8 +145,29 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
     }
     return c.json(responseBody, response.status as never);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error(`Record failed: ${message}`);
+    const message = getErrorMessage(error);
+    const elapsed = Date.now() - startTime;
+    const errorDetails = formatFetchFailureDetails(error);
+    logger.error(
+      formatFetchFailureLog({
+        operation: "Record",
+        method,
+        requestPath,
+        targetUrl,
+        upstreamProxyEnabled: Boolean(getProxyAgent()),
+        error,
+      }),
+      error instanceof Error ? error : undefined,
+    );
+    logger.request({
+      method,
+      path: requestPath,
+      action: "record",
+      status: 502,
+      errorMessage: message,
+      errorDetails,
+      duration: elapsed,
+    });
     return c.json({ error: "Bad Gateway", message }, 502);
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "snaperro",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "description": "🐕 Record real API responses, replay them anytime. Visual control included.",
   "type": "module",
   "main": "./dist/index.js",

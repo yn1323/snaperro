@@ -1,7 +1,7 @@
 import path from "node:path";
 import type { Context } from "hono";
 import { eventBus } from "../core/event-bus.js";
-import { formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
+import { formatFetchFailureDetails, formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
 import { logger } from "../core/logger.js";
 import { getMergedMaskHeaders, maskHeaders } from "../core/mask.js";
 import type { MatchResult } from "../core/matcher.js";
@@ -146,6 +146,8 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
     return c.json(responseBody, response.status as never);
   } catch (error) {
     const message = getErrorMessage(error);
+    const elapsed = Date.now() - startTime;
+    const errorDetails = formatFetchFailureDetails(error);
     logger.error(
       formatFetchFailureLog({
         operation: "Record",
@@ -157,6 +159,15 @@ export async function handleRecord(c: Context, match: MatchResult, config: Snape
       }),
       error instanceof Error ? error : undefined,
     );
+    logger.request({
+      method,
+      path: requestPath,
+      action: "record",
+      status: 502,
+      errorMessage: message,
+      errorDetails,
+      duration: elapsed,
+    });
     return c.json({ error: "Bad Gateway", message }, 502);
   }
 }

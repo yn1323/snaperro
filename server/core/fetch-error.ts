@@ -8,7 +8,31 @@ const SENSITIVE_QUERY_KEYS = [
   "credential",
   "signature",
 ];
-const DETAIL_KEYS = ["code", "errno", "syscall", "hostname", "host", "port", "address"] as const;
+const DETAIL_KEYS = [
+  "code",
+  "errno",
+  "syscall",
+  "hostname",
+  "host",
+  "port",
+  "address",
+  "localAddress",
+  "localPort",
+  "remoteAddress",
+  "remotePort",
+  "remoteFamily",
+  "timeout",
+  "reason",
+] as const;
+const SOCKET_DETAIL_KEYS = [
+  "localAddress",
+  "localPort",
+  "remoteAddress",
+  "remotePort",
+  "remoteFamily",
+  "bytesWritten",
+  "bytesRead",
+] as const;
 const MAX_NESTED_ERRORS = 5;
 const MAX_DEPTH = 4;
 
@@ -33,12 +57,12 @@ export function formatFetchFailureLog(options: FetchFailureLogOptions): string {
     `  upstreamProxy: ${options.upstreamProxyEnabled ? "enabled" : "disabled"}`,
   ];
 
-  lines.push(...formatErrorChain(options.error).map((line) => `  ${line}`));
+  lines.push(...formatFetchFailureDetails(options.error).map((line) => `  ${line}`));
 
   return lines.join("\n");
 }
 
-function formatErrorChain(error: unknown): string[] {
+export function formatFetchFailureDetails(error: unknown): string[] {
   const seen = new WeakSet<object>();
   return formatErrorNode(error, "error", 0, seen);
 }
@@ -64,6 +88,11 @@ function formatErrorNode(error: unknown, label: string, depth: number, seen: Wea
       lines.push(`${label} details: ${details.join(", ")}`);
     }
 
+    const socketDetails = formatObjectDetails(error.socket, SOCKET_DETAIL_KEYS);
+    if (socketDetails.length > 0) {
+      lines.push(`${label} socket: ${socketDetails.join(", ")}`);
+    }
+
     const nestedErrors = getNestedErrors(error);
     if (nestedErrors.length > 0) {
       lines.push(`${label} aggregate: ${nestedErrors.length} error(s)`);
@@ -82,6 +111,17 @@ function formatErrorNode(error: unknown, label: string, depth: number, seen: Wea
   }
 
   return lines;
+}
+
+function formatObjectDetails<T extends readonly string[]>(value: unknown, keys: T): string[] {
+  if (!isObject(value)) {
+    return [];
+  }
+
+  return keys.flatMap((key) => {
+    const detailValue = value[key];
+    return detailValue === undefined ? [] : [`${key}=${String(detailValue)}`];
+  });
 }
 
 function formatErrorTitle(error: unknown): string {

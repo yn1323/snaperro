@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
+import { formatFetchFailureDetails, formatFetchFailureLog, getErrorMessage } from "../core/fetch-error.js";
 import { logger } from "../core/logger.js";
 import { getProxyAgent } from "../core/proxy-agent.js";
 import { copyRequestHeaders, parseRequestBody } from "../core/request-utils.js";
@@ -68,6 +68,8 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
     });
   } catch (error) {
     const message = getErrorMessage(error);
+    const elapsed = Date.now() - startTime;
+    const errorDetails = formatFetchFailureDetails(error);
     logger.error(
       formatFetchFailureLog({
         operation: "Proxy",
@@ -79,6 +81,15 @@ export async function handleProxy(c: Context, apiConfig: ApiConfig): Promise<Res
       }),
       error instanceof Error ? error : undefined,
     );
+    logger.request({
+      method,
+      path,
+      action: "proxy",
+      status: 502,
+      errorMessage: message,
+      errorDetails,
+      duration: elapsed,
+    });
     return c.json({ error: "Bad Gateway", message }, 502);
   }
 }

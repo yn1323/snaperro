@@ -563,6 +563,19 @@ describe("handleRecord", () => {
       expect(logMessage).toContain("target: https://api.example.com/api/users/123");
       expect(logMessage).toContain("upstreamProxy: disabled");
       expect(logMessage).toContain("cause details: code=ECONNREFUSED, syscall=connect, port=9999, address=127.0.0.1");
+      expect(logger.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          path: "/api/users/123",
+          action: "record",
+          status: 502,
+          errorMessage: "fetch failed",
+          errorDetails: expect.arrayContaining([
+            "error: TypeError: fetch failed",
+            "cause details: code=ECONNREFUSED, syscall=connect, port=9999, address=127.0.0.1",
+          ]),
+        }),
+      );
     });
 
     it("returns 502 Bad Gateway on non-Error thrown value", async () => {
@@ -575,7 +588,7 @@ describe("handleRecord", () => {
       expect(body.message).toBe("String error");
     });
 
-    it("does not emit event on fetch error", async () => {
+    it("does not emit file event on fetch error", async () => {
       mockFetch.mockRejectedValue(new Error("Network error"));
 
       await app.request("/api/users/123");

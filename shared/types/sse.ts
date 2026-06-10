@@ -155,6 +155,10 @@ export interface RequestLogEventData {
   status: number;
   /** File path for record/mock actions */
   filePath?: string;
+  /** Error summary for failed proxy/record actions */
+  errorMessage?: string;
+  /** Error detail lines for diagnostics */
+  errorDetails?: string[];
   /** Request duration in milliseconds */
   duration: number;
 }

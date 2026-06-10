@@ -244,6 +244,19 @@ describe("handleProxy", () => {
       expect(logMessage).toContain("upstreamProxy: disabled");
       expect(logMessage).toContain("cause details: code=ENOTFOUND, syscall=getaddrinfo, hostname=api.example.com");
       expect(logMessage).not.toContain("secret-token");
+      expect(logger.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: "GET",
+          path: "/api/users?api_key=secret-token",
+          action: "proxy",
+          status: 502,
+          errorMessage: "fetch failed",
+          errorDetails: expect.arrayContaining([
+            "error: TypeError: fetch failed",
+            "cause details: code=ENOTFOUND, syscall=getaddrinfo, hostname=api.example.com",
+          ]),
+        }),
+      );
     });
 
     it("returns 502 Bad Gateway on timeout", async () => {

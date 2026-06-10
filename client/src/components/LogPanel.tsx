@@ -52,6 +52,11 @@ const LogEntry = memo(function LogEntry({ log }: { log: RequestLogEventData }) {
   const time = formatTime(log.timestamp);
   const methodStyle = methodColors[log.method] || { bg: "gray.500", color: "white" };
   const statusColor = getStatusColor(log.status);
+  const detailText = log.errorMessage ?? log.filePath ?? "";
+  const detailTitle =
+    log.errorDetails && log.errorDetails.length > 0
+      ? [log.errorMessage, ...log.errorDetails].filter(Boolean).join("\n")
+      : detailText;
 
   // Action display - show subAction directly if present (e.g., smart mode falling back to mock/record)
   const actionDisplay = log.subAction || log.action;
@@ -91,8 +96,8 @@ const LogEntry = memo(function LogEntry({ log }: { log: RequestLogEventData }) {
       <Text color={actionColors[actionDisplay] || "gray.400"} flexShrink={0}>
         {actionDisplay}
       </Text>
-      <Text color="gray.400" flex={1} truncate title={log.filePath}>
-        {log.filePath ?? ""}
+      <Text color={log.errorMessage ? "red.600" : "gray.400"} flex={1} truncate title={detailTitle}>
+        {detailText}
       </Text>
       <Text color={statusColor} fontWeight="semibold" flexShrink={0} w="32px" textAlign="right">
         {log.status}
@@ -236,6 +241,11 @@ export const LogPanel = memo(function LogPanel({ registerRequestLogHandler }: Lo
             <Text color={actionColors[latestLog.subAction || latestLog.action] || "gray.400"}>
               {latestLog.subAction || latestLog.action}
             </Text>
+            {latestLog.errorMessage ? (
+              <Text color="red.600" flex={1} truncate title={latestLog.errorDetails?.join("\n")}>
+                {latestLog.errorMessage}
+              </Text>
+            ) : null}
             <Text color={getStatusColor(latestLog.status)} fontWeight="semibold">
               {latestLog.status}
             </Text>

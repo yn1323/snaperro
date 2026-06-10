@@ -108,6 +108,8 @@ export const logger = {
     subAction?: "mock" | "record";
     status: number;
     filePath?: string;
+    errorMessage?: string;
+    errorDetails?: string[];
     duration: number;
   }) {
     const time = new Date().toLocaleTimeString("ja-JP");
@@ -121,6 +123,9 @@ export const logger = {
     if (options.filePath) {
       message += ` [${options.filePath}]`;
     }
+    if (options.errorMessage) {
+      message += ` [${options.errorMessage}]`;
+    }
     console.log(`${pc.cyan("REQ")}   [${time}] ${message}`);
 
     // Emit SSE event
@@ -133,6 +138,8 @@ export const logger = {
       subAction: options.subAction,
       status: options.status,
       filePath: options.filePath,
+      errorMessage: options.errorMessage,
+      errorDetails: options.errorDetails,
       duration: options.duration,
     };
 

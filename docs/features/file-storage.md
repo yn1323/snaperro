@@ -1,256 +1,138 @@
-# ファイル保存・マッチング
+# ファイル保存
 
-## 概要
+snaperro v2 の filesystem store は、構造情報、scenario ごとの recording metadata、大きな body を分離します。catalog を最後の可視化 marker にすることで、削除の反映遅延、途中書き込み、巨大 JSON response を避けます。
 
-snaperroはモックデータをJSONファイルとして保存・管理します。
-Recordモードで記録し、Mockモードで読み込みます。
+## layout
 
-## 関連ファイル
-
-- **Server**: `server/core/storage.ts`, `server/core/matcher.ts`
-- **Types**: `shared/types/file.ts`
-
----
-
-## ディレクトリ構造
-
-```
-.snaperro/
-├── state.json              # 状態ファイル（モード、現在のシナリオ）
-└── files/
-    └── [シナリオ名]/
-        ├── api_users_001.json
-        ├── api_users_002.json
-        └── api_users_{id}_001.json
-```
-
----
-
-## ファイル命名規則
-
-| エンドポイント | ファイル名ベース |
-|--------------|-----------------|
-| `/api/users` | `api_users` |
-| `/api/users/:id` | `api_users_{id}` |
-| `/api/users/:userId/posts/:postId` | `api_users_{userId}_posts_{postId}` |
-
-**連番**: 同じエンドポイントで異なるパラメータの場合、連番が付与されます。
-- `api_users_{id}_001.json` （id=123, page=1）
-- `api_users_{id}_002.json` （id=123, page=2）
-- `api_users_{id}_003.json` （id=456, page=1）
-
----
-
-## ファイル形式（FileData）
-
-```json
-{
-  "endpoint": "/api/users/:id",
-  "method": "GET",
-  "request": {
-    "pathParams": { "id": "123" },
-    "queryParams": { "include": "posts" },
-    "headers": { "authorization": "***MASKED***" },
-    "body": null
-  },
-  "response": {
-    "status": 200,
-    "headers": {
-      "content-type": "application/json"
-    },
-    "body": {
-      "id": "123",
-      "name": "John Doe",
-      "email": "john@example.com"
-    }
-  }
-}
+```text
+.snaperro/v2/
+├── store.json
+├── catalog.json
+├── manifests/
+│   └── scn_<id>/
+│       ├── 0000000000000000.json
+│       └── 0000000000000001.json
+├── blobs/
+│   └── sha256/
+│       └── ab/
+│           ├── abcdef...        # exact raw bytes
+│           └── abcdef....meta.json
+├── transfers/                   # runtime 内の一時 import/export
+├── gc/                          # GC marker
+├── .tmp/                        # blob staging（終了済み process の残骸は起動時に削除）
+├── tmp/                         # request body spool（終了済み process の残骸は起動時に削除）
+├── .store.lease                 # writer lease 中のみ
+└── migration-v1.json            # migration 済み store のみ
 ```
 
----
+ID や digest の一部を省略して示しています。store 内の path は表示名に依存しないため、folder/scenario/recording の名前変更で file tree を移動しません。
 
-## データモデル
+## `store.json`
 
-```typescript
-// shared/types/file.ts
+store の不変 metadata です。
 
-export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "OPTIONS" | "HEAD";
+- schema version `2`
+- store identity と作成時刻
+- catalog、manifest、blob の固定 layout
+- migration した場合の source format、fingerprint、件数、byte 数、import 済み state
 
-export type FileRequest = {
-  pathParams: Record<string, string>;
-  queryParams: Record<string, string | string[]>;
-  headers: Record<string, string>;
-  body: unknown | null;
-};
+通常の書き込みで更新しません。schema や layout が一致しない store を推測で読みません。
 
-export type FileResponse = {
-  status: number;
-  headers: Record<string, string>;
-  body: unknown;
-};
+## `catalog.json`
 
-export type FileData = {
-  endpoint: string;
-  method: HttpMethod;
-  request: FileRequest;
-  response: FileResponse;
+現在見える構造の正本です。
+
+- catalog revision
+- mode と現在選択中 scenario ID
+- folder と scenario summary
+- 各 scenario の recording 件数と scenario revision
+- 各 scenario が参照する manifest revision
+
+recording metadata や body byte 列は含めません。folder/scenario の作成・名前変更・削除は、この catalog の CAS commit が成功した時点で全 query と GUI に反映されます。
+
+scenario revision は visible manifest revision と常に同じ値です。scenario の名前変更は catalog revision と `updatedAt` だけを進め、recording 集合の ETag である scenario revision と manifest pointer は変更しません。読み込み時に両者が違う catalog は破損として拒否します。
+
+## immutable manifest
+
+各 scenario の recording 集合を `manifests/<scenario-id>/<revision>.json` に保存します。既存 manifest を書き換えず、revision ごとに新しい file を作ります。
+
+recording commit は次の順です。
+
+1. 新しい body blob を commit
+2. 次の scenario manifest を stage
+3. immutable manifest file を確定
+4. catalog と scenario の期待 revision を確認
+5. catalog の manifest pointer と件数を atomic CAS
+
+4 または 5 で競合した場合、新 manifest を以前の catalog から見える状態にはしません。catalog CAS が唯一の可視化 marker です。
+
+## content-addressed blob
+
+body は `blobs/sha256/<先頭2文字>/<64文字digest>` に exact raw bytes で保存します。隣接する `.meta.json` は canonical blob の digest と size を保持します。media type と content encoding は同じbyte列でもrecordingごとに異なり得るため、各 `BodyRef` が表現metadataを保持します。
+
+recording は次の reference だけを持ちます。
+
+```ts
+type BodyRef = {
+  sha256: string;
+  size: number;
+  mediaType: string | null;
+  contentEncoding: string | null;
 };
 ```
 
----
+同じ byte 列は同じ digest を共有できます。open 時は reference の size と実fileを照合し、`doctor` の完全性検査では sidecar に加えてblob fileを読み、実digestとsizeも検証します。
 
-## マッチング処理
+## atomic write
 
-### マッチング条件
+永続 JSON は次の順で確定します。
 
-Mockモードでファイルを検索する際、以下の条件で照合します：
-
-1. **HTTPメソッド** が一致
-2. **エンドポイント** が一致（パスパラメータ展開後）
-3. **パスパラメータ** が一致
-4. **クエリパラメータ** が一致
-5. **リクエストボディ** が一致（POST/PUT/PATCH）
-
-### マッチング例
-
-**リクエスト**:
-```
-GET /api/users/123?include=posts
+```text
+同じ filesystem 上の一時 file を排他的に作成
+  → 全 byte を書く
+  → file を fsync
+  → destination へ rename
+  → parent directory を fsync
 ```
 
-**マッチするファイル**:
-```json
-{
-  "endpoint": "/api/users/:id",
-  "method": "GET",
-  "request": {
-    "pathParams": { "id": "123" },
-    "queryParams": { "include": "posts" }
-  }
-}
-```
+process crash 後に半分だけ書かれた `catalog.json` を正常 metadata として扱いません。blob も一時 path へ stream し、受信が完了して digest/size が確定してから content-addressed path へ移します。
 
----
+## writer coordination
 
-## Record時の動作
+一つの process 内では mutex、process 間では store root ごとの `.store.lease` を使います。lease token と期限を検証し、同時 writer は待機または `STORE_LOCKED` になります。
 
-### 新規記録
-1. エンドポイントとパラメータに基づきファイル名を生成
-2. 既存ファイルを検索
-3. 同じパラメータのファイルがあれば**上書き**
-4. なければ**新規連番ファイル**を作成
+lease だけに依存せず、catalog revision、scenario revision、recording content revision の CAS を併用します。lease 切れや別 process の更新があっても古い state で上書きしません。
 
-### 並行制御
-Mutexを使用してアトミック書き込みを保証します。
-複数リクエストが同時に記録されても競合しません。
+## 削除と GC
 
----
+論理削除は catalog commit で完了します。管理画面から消すために disk の再走査や blob の削除完了を待ちません。
 
-## 検索機能
+参照されない manifest/blob は GC 対象です。ただし commit 前に stage した直後の file と競合しないよう、既定で mtime が 1 時間以上古い orphan だけを削除します。server は起動時と参照変更時に走査を予約し、猶予期間後の再走査も lifecycle 内でまとめて実行します。一時的に走査できなかった場合は次の周期で再試行します。migration receipt が原本保存用に参照する blob は orphan とみなしません。
 
-### 全文検索
-```
-GET /__snaperro__/scenarios/:scenario/files/search?q=<query>
-```
+管理画面からuploadしたbodyは、既定24時間のpending pinとしてGC rootに含めます。同じdigestを複数draftが共有し得るため、recording commit時にはpinを早期削除せずTTLまで保持します。24時間を超えて保存しなかった場合は回収され得ますが、欠損参照をcommitせずerrorにするためbodyを再uploadしてください。importがcommit前に失敗してmaterialize済みblobが残った場合も、requestのabort状態に依存せず猶予後に回収します。
 
-**検索対象**:
-- ファイル名
-- エンドポイント
-- ファイル内容（JSON全体）
+mock response、body download、archive exportが開いたblobはstreamのclose/cancelまでactive pinで保護します。GCはpinを共有filesystemから読み、lease ownershipを各delete直前に再検証するため、別processの削除・保存と競合して読み出し途中のblobを消しません。
 
-### GUI検索
-FilePaneの検索ボックスから検索可能。
-デバウンス（300ms）でリアルタイム検索。
+この分離により、削除の表示は即時、物理回収は安全に遅延させられます。
 
----
+## integrity check
 
-## ファイル操作
+`snaperro doctor` は読み取り専用で次を検証します。
 
-### 作成
-Recordモードで自動作成、またはGUIからアップロード。
+- `store.json` と `catalog.json` の schema
+- folder/scenario/manifest pointer の参照整合性
+- scenario summary と visible manifest の revision/recording 件数
+- recording ID、filename、fingerprint の一意性
+- `BodyRef`、sidecar、blob size、SHA-256 digest
+- migration receipt と source provenance reference
+- orphan / 予期しない path の warning
 
-### 編集
-GUIのEditorPaneでJSON編集 → 保存。
+error があれば store を自動修復せず診断を失敗させます。まず backup を確保し、原因を特定してから対応してください。
 
-### 削除
-GUIのEditorPaneから削除、またはAPI経由。
+## backup
 
-### 一括操作
-- **ZIPエクスポート**: シナリオ単位でダウンロード
-- **ZIPインポート**: シナリオとしてアップロード
+一貫した backup を取るときは server を停止し、`storage.root` 全体を copy してください。個別の `catalog.json` や最新 manifest だけでは body と migration provenance を復元できません。
 
----
+folder または recording を他環境へ移す場合は、filesystem layout を直接 copy せず GUI または `folder.export` / `recording.export` query が返す self-contained ZIP を使います。manifest と参照 body の生 byte 列がひとつの archive に入るため、別 store でも import できます。
 
-## API
-
-### ファイル一覧
-```
-GET /__snaperro__/scenarios/:scenario/files
-```
-
-### ファイル内容取得
-```
-GET /__snaperro__/scenarios/:scenario/files/:filename
-```
-
-### ファイル更新
-```
-PUT /__snaperro__/scenarios/:scenario/files/:filename
-Content-Type: application/json
-
-{ ...FileData }
-```
-
-### ファイル削除
-```
-DELETE /__snaperro__/scenarios/:scenario/files/:filename
-```
-
-### ファイルアップロード
-```
-POST /__snaperro__/scenarios/:scenario/files/upload
-Content-Type: multipart/form-data
-
-file: (JSONファイル)
-```
-
----
-
-## SSEイベント
-
-| イベント | データ | タイミング |
-|---------|--------|----------|
-| `file_created` | `{ scenario, filename, endpoint, method }` | 記録時 |
-| `file_updated` | `{ scenario, filename, endpoint, method }` | 更新時 |
-| `file_deleted` | `{ scenario, filename }` | 削除時 |
-
----
-
-## ヘッダーマスキング
-
-記録時にセンシティブなヘッダーをマスクします。
-
-**設定**:
-```typescript
-maskRequestHeaders: ['authorization', 'cookie', 'x-api-key']
-```
-
-**結果**:
-```json
-{
-  "request": {
-    "headers": {
-      "authorization": "***MASKED***",
-      "cookie": "***MASKED***"
-    }
-  }
-}
-```
-
----
-
-## 関連ドキュメント
-
-- [modes.md](modes.md) - Record/Mockモードの詳細
-- [scenario.md](scenario.md) - シナリオ管理
-- [configuration.md](configuration.md) - maskRequestHeaders設定
+query は、有効期限が短く single-use の same-origin download capability を返します。browser はその path を native download で開き、server は取得開始前に capability を無効化します。ZIP は stream の完了、中断、失敗、または capability の期限切れ後に削除されるため、再取得時は新しい query を実行します。

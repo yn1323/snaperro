@@ -1,4 +1,6 @@
-import { Flex, Heading, HStack, Link, Text } from "@chakra-ui/react";
+import { Button, Flex, Heading, HStack, Link, Text } from "@chakra-ui/react";
+import { LuKeyRound } from "react-icons/lu";
+import type { DemoConnectionState } from "../control/demo-control";
 import type { Mode } from "./ModeSelector";
 import { ModeSelector } from "./ModeSelector";
 
@@ -6,14 +8,21 @@ type HeaderProps = {
   mode: Mode;
   onModeChange: (mode: Mode) => void;
   isLoading: boolean;
+  connection: DemoConnectionState;
+  controlError: string | null;
+  hasControlToken: boolean;
+  onControlTokenClick: () => void;
 };
 
-export function Header({ mode, onModeChange, isLoading }: HeaderProps) {
-  const guiUrl =
-    typeof window !== "undefined"
-      ? `${window.location.protocol}//${window.location.hostname}:3333/__snaperro__/client`
-      : "/__snaperro__/client";
-
+export function Header({
+  mode,
+  onModeChange,
+  isLoading,
+  connection,
+  controlError,
+  hasControlToken,
+  onControlTokenClick,
+}: HeaderProps) {
   return (
     <Flex
       as="header"
@@ -38,10 +47,31 @@ export function Header({ mode, onModeChange, isLoading }: HeaderProps) {
       </HStack>
 
       <HStack gap={4}>
+        <Text
+          maxW="240px"
+          truncate
+          fontFamily="mono"
+          fontSize="xs"
+          color={controlError ? "red.600" : "gray.500"}
+          role={controlError ? "alert" : "status"}
+          title={controlError ?? connection}
+        >
+          {controlError ?? connection}
+        </Text>
         <ModeSelector mode={mode} onChange={onModeChange} isLoading={isLoading} />
 
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label={hasControlToken ? "Update demo control token" : "Configure demo control token"}
+          title={hasControlToken ? "Update control token" : "Configure control token"}
+          onClick={onControlTokenClick}
+        >
+          <LuKeyRound />
+        </Button>
+
         <Link
-          href={guiUrl}
+          href="/__snaperro__/client"
           target="_blank"
           rel="noopener noreferrer"
           px={3}

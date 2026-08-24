@@ -1,6 +1,6 @@
 {
   "name": "snaperro",
-  "version": "1.1.15",
+  "version": "2.0.0",
   "description": "🐕 Record real API responses, replay them anytime. Visual control included.",
   "type": "module",
   "main": "./dist/index.js",
@@ -10,13 +10,12 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist",
-    "templates",
     "logo.png"
   ],
   "publishConfig": {
@@ -40,8 +39,13 @@
     "dev:demo": "vite --config demo/vite.config.ts",
     "build:demo": "vite build --config demo/vite.config.ts",
     "preview:demo": "vite preview --config demo/vite.config.ts",
-    "test": "vitest run",
+    "test": "pnpm test:server && pnpm test:client && pnpm test:demo",
+    "test:server": "vitest run",
+    "test:client": "vitest run --config client/vitest.config.ts",
+    "test:demo": "vitest run --config demo/vitest.config.ts",
+    "test:all": "pnpm test",
     "test:watch": "vitest",
+    "verify:package": "node scripts/verify-package.mjs",
     "type-check": "tsc --noEmit",
     "type-check:client": "tsc --noEmit -p client/tsconfig.json",
     "type-check:demo": "tsc --noEmit -p demo/tsconfig.json",
@@ -62,11 +66,9 @@
   "license": "MIT",
   "packageManager": "pnpm@10.24.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.30.0",
-    "@emotion/react": "^11.14.0",
     "@hono/node-server": "^1.19.6",
     "archiver": "^7.0.1",
     "async-mutex": "^0.5.0",
@@ -76,35 +78,30 @@
     "dotenv": "^17.2.3",
     "hono": "^4.7.10",
     "jiti": "^2.6.1",
-    "next-themes": "^0.4.6",
     "open": "^11.0.0",
-    "picocolors": "^1.1.1",
-    "picomatch": "^4.0.2",
-    "react-icons": "^5.5.0",
     "undici": "^7.16.0",
-    "unzipper": "^0.12.3"
+    "unzipper": "^0.12.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",
+    "@chakra-ui/react": "^3.30.0",
+    "@emotion/react": "^11.14.0",
     "@types/archiver": "^7.0.0",
     "@types/node": "^22.15.29",
-    "@types/picomatch": "^3.0.2",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/unzipper": "^0.10.11",
     "@vitejs/plugin-react": "^5.1.1",
-    "dayjs": "^1.11.19",
+    "next-themes": "^0.4.6",
     "postcss": "^8.5.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-icons": "^5.5.0",
     "tsup": "^8.5.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vitest": "^3.2.2",
-    "zod": "^4.1.12"
-  },
-  "peerDependencies": {
-    "tsx": "^4.0.0"
+    "vitest": "^3.2.2"
   }
 }

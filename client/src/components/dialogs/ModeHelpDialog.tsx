@@ -230,7 +230,7 @@ function RecordModeDiagram() {
 }
 
 // Mock Mode Diagram
-function MockModeDiagram() {
+export function MockModeDiagram() {
   const color = "#3b82f6";
   return (
     <svg viewBox="0 0 480 140" width="100%" height="140" role="img">
@@ -251,28 +251,22 @@ function MockModeDiagram() {
       {/* Decision Diamond - Mock exists? */}
       <FlowNode x={120} y={20} width={90} height={56} label="Mock exists?" color={color} variant="diamond" />
 
-      {/* Yes path - to Return Mock */}
+      {/* Yes path - return the saved response */}
       <FlowArrow points="210,48 260,48" color={color} label="YES" labelPos={{ x: 225, y: 40 }} />
-      <FlowNode x={260} y={30} width={100} height={36} label="Return Mock" color={color} variant="rounded" />
+      <FlowNode x={260} y={30} width={120} height={36} label="Saved response" color={color} variant="rounded" />
 
-      {/* No path - down to Error */}
+      {/* No path - use the configured fallback */}
       <FlowArrow
         points="165,76 165,100 220,100"
-        color="#ef4444"
+        color={color}
         animated={false}
         label="NO"
         labelPos={{ x: 172, y: 92 }}
       />
-      <FlowNode
-        x={220}
-        y={82}
-        width={80}
-        height={36}
-        label="Error"
-        color="#ef4444"
-        variant="rounded"
-        textColor="#ef4444"
-      />
+      <FlowNode x={220} y={82} width={160} height={36} label="Configured fallback" color={color} variant="rounded" />
+      <text x="300" y="132" textAnchor="middle" fill="#6b7280" fontSize="10" fontFamily="system-ui">
+        404 / proxy / proxy&amp;record
+      </text>
     </svg>
   );
 }
@@ -340,6 +334,29 @@ function ModeCard({
   );
 }
 
+export function MockModeGuideCard() {
+  return (
+    <ModeCard
+      icon="◆"
+      name="Mock Mode"
+      color="#3b82f6"
+      description="Saved response on hit; configured fallback on miss"
+    >
+      <MockModeDiagram />
+    </ModeCard>
+  );
+}
+
+export function MockModeTip() {
+  return (
+    <Text>
+      • <strong>Mock Mode</strong> returns a saved response on a hit. On a miss, fallback chooses <strong>404</strong>,
+      <strong> proxy</strong>, or <strong> proxy&amp;record</strong>. Only fallback 404 guarantees offline use and no
+      real API calls.
+    </Text>
+  );
+}
+
 // CSS animations for SVG elements
 const svgStyles = `
   @keyframes flowArrow {
@@ -399,9 +416,7 @@ export function ModeHelpDialog({ isOpen, onClose }: ModeHelpDialogProps) {
               <RecordModeDiagram />
             </ModeCard>
 
-            <ModeCard icon="◆" name="Mock Mode" color="#3b82f6" description="Strict mock-only responses">
-              <MockModeDiagram />
-            </ModeCard>
+            <MockModeGuideCard />
           </Grid>
 
           {/* Legend */}
@@ -454,10 +469,7 @@ export function ModeHelpDialog({ isOpen, onClose }: ModeHelpDialogProps) {
               <Text>
                 • Use <strong>Record Mode</strong> when you want to capture all responses from the real server.
               </Text>
-              <Text>
-                • Use <strong>Mock Mode</strong> for offline testing or when you want to ensure no real API calls are
-                made.
-              </Text>
+              <MockModeTip />
               <Text>
                 • <strong>Proxy Mode</strong> is useful when you want to bypass mocking entirely.
               </Text>

@@ -1,139 +1,250 @@
+import fs from "node:fs/promises";
 import path from "node:path";
-import type { ServerType } from "@hono/node-server";
 import { consola } from "consola";
-import { config as dotenvConfig } from "dotenv";
+import { parse } from "dotenv";
 import open from "open";
-import { mergeWithBuiltinApis } from "../../server/core/builtin-apis.js";
-import { loadConfig } from "../../server/core/config.js";
-import { ConfigWatcher } from "../../server/core/watcher.js";
-import { shutdownServer, startServer } from "../../server/handlers/index.js";
+import type { CompiledSnaperroConfigV2 } from "../../server/v2/config/config.js";
+import { loadConfigV2 } from "../../server/v2/config/loader.js";
+import { ConfigWatcherV2, type ConfigWatcherV2Options } from "../../server/v2/config/watcher.js";
+import { createV2Server, type SnaperroV2Server } from "../../server/v2/server/index.js";
+import { assertMigrationReadiness } from "../../server/v2/store/migration-readiness.js";
 
-interface StartOptions {
+export interface StartOptions {
   port?: string;
   verbose?: boolean;
   config?: string;
   env?: string;
   watch?: boolean;
+  skipBrowser?: boolean;
 }
 
-/**
- * Reload .env file with override
- */
-function reloadDotenv(envPath: string): void {
-  dotenvConfig({ path: envPath, override: true });
+export interface StartedSnaperroCommand {
+  readonly server: SnaperroV2Server;
+  readonly configPath: string;
+  readonly envPath: string;
+  stop(): Promise<void>;
 }
 
-/**
- * start command
- * Start the server with optional file watching
- */
-export async function startCommand(options: StartOptions): Promise<void> {
-  const configPath = path.resolve(process.cwd(), options.config ?? "snaperro.config.ts");
-  const configDir = path.dirname(configPath);
-  const envPath = options.env ? path.resolve(process.cwd(), options.env) : path.join(configDir, ".env");
+interface StartWatcher {
+  start(): void;
+  stop(): Promise<void>;
+}
 
-  // Load initial .env
-  dotenvConfig({ path: envPath });
+export interface StartCommandDependencies {
+  loadConfig?: typeof loadConfigV2;
+  createServer?: typeof createV2Server;
+  createWatcher?: (options: ConfigWatcherV2Options) => StartWatcher;
+  openBrowser?: (url: string) => Promise<unknown>;
+  createEnvironment?: (filePath: string) => EnvFileOverlay;
+}
 
-  let currentServer: ServerType | null = null;
-  let isRestarting = false;
-  let watcher: ConfigWatcher | null = null;
+function errorValue(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
 
-  /**
-   * Start or restart the server
-   */
-  const startOrRestart = async (isInitial = false): Promise<void> => {
-    if (isRestarting) {
-      consola.debug("Already restarting, skipping...");
-      return;
-    }
+function errorCode(error: unknown): string | undefined {
+  return error instanceof Error && "code" in error ? String(error.code) : undefined;
+}
 
-    isRestarting = true;
+function parsePort(port: string | undefined): number | undefined {
+  if (port === undefined) return undefined;
+  if (!/^\d+$/u.test(port)) throw new TypeError(`Invalid port: ${port}`);
+  const parsed = Number(port);
+  if (!Number.isSafeInteger(parsed) || parsed < 1 || parsed > 65_535) throw new TypeError(`Invalid port: ${port}`);
+  return parsed;
+}
 
-    try {
-      // Shutdown existing server
-      if (currentServer) {
-        await shutdownServer(currentServer);
-        currentServer = null;
-      }
-
-      // Reload .env file
-      if (!isInitial) {
-        reloadDotenv(envPath);
-      }
-
-      consola.start("Loading config file...");
-
-      // Load config with cache disabled for reload
-      const rawConfig = await loadConfig(configPath, !isInitial);
-      const config = mergeWithBuiltinApis(rawConfig);
-
-      // Override with command line options
-      if (options.port) {
-        config.port = Number.parseInt(options.port, 10);
-      }
-
-      const serverInfo = await startServer({
-        config,
-        verbose: options.verbose ?? false,
-      });
-
-      currentServer = serverInfo.server;
-
-      // Open browser only on initial start
-      if (isInitial) {
-        await open(serverInfo.guiUrl);
-      }
-    } catch (error) {
-      if (error instanceof Error) {
-        consola.error(error.message);
-      } else {
-        consola.error("Failed to start server");
-      }
-
-      // On reload failure, keep the old server running if possible
-      if (!isInitial && !currentServer) {
-        consola.error("Server restart failed. Please fix the config and save again.");
-      }
-
-      // Exit on initial start failure
-      if (isInitial) {
-        process.exit(1);
-      }
-    } finally {
-      isRestarting = false;
-    }
+export function applyStartOverrides(config: CompiledSnaperroConfigV2, options: StartOptions): CompiledSnaperroConfigV2 {
+  const port = parsePort(options.port);
+  if (port === undefined && !options.skipBrowser) return config;
+  return {
+    ...config,
+    server: {
+      ...config.server,
+      ...(port === undefined ? {} : { port }),
+      ...(options.skipBrowser ? { openBrowser: false } : {}),
+    },
   };
+}
 
-  // Initial start
-  await startOrRestart(true);
+/** Refuses an implicit v1-to-v2 conversion while allowing an empty new project. */
+export async function assertMigrationReady(config: CompiledSnaperroConfigV2): Promise<void> {
+  const legacySource = path.join(config.configDirectory, ".snaperro", "files");
+  await assertMigrationReadiness(legacySource, config.storage.root);
+}
 
-  // Setup file watcher (enabled by default, can be disabled with --no-watch)
-  if (options.watch !== false) {
-    watcher = new ConfigWatcher({
-      configPath,
-      envPath,
-      debounceMs: 1000,
-      onConfigChange: () => startOrRestart(false),
-    });
-    watcher.start();
+/** Applies .env as an overlay without permanently replacing shell variables. */
+export class EnvFileOverlay {
+  readonly #original = new Map<string, string | undefined>();
+  readonly #applied = new Set<string>();
+  #lifecycleGeneration = 0;
+
+  constructor(
+    readonly filePath: string,
+    private readonly environment: NodeJS.ProcessEnv = process.env,
+  ) {}
+
+  async #readValues(): Promise<Record<string, string>> {
+    try {
+      return parse(await fs.readFile(this.filePath));
+    } catch (error) {
+      if (errorCode(error) === "ENOENT") return {};
+      throw error;
+    }
   }
 
-  // Handle graceful shutdown signals
-  const handleShutdown = async (signal: string) => {
-    consola.info(`Received ${signal}, shutting down...`);
-
-    if (watcher) {
-      await watcher.stop();
+  #apply(values: Readonly<Record<string, string>>): void {
+    for (const [name, value] of Object.entries(values)) {
+      if (!this.#original.has(name)) this.#original.set(name, this.environment[name]);
+      if (this.#original.get(name) === undefined) {
+        this.environment[name] = value;
+        this.#applied.add(name);
+      }
     }
+  }
 
-    if (currentServer) {
-      await shutdownServer(currentServer);
+  #replace(values: Readonly<Record<string, string>>): void {
+    this.#restoreApplied();
+    this.#apply(values);
+  }
+
+  #restoreApplied(): void {
+    for (const name of this.#applied) {
+      const original = this.#original.get(name);
+      if (original === undefined) delete this.environment[name];
+      else this.environment[name] = original;
     }
+    this.#applied.clear();
+  }
 
-    process.exit(0);
+  async reload(): Promise<void> {
+    const generation = this.#lifecycleGeneration;
+    const values = await this.#readValues();
+    if (generation !== this.#lifecycleGeneration) throw new Error("Environment reload was cancelled");
+    this.#replace(values);
+  }
+
+  /** Keeps the candidate overlay only when the complete reload succeeds. */
+  async withReloadedEnvironment<Result>(operation: () => Promise<Result>): Promise<Result> {
+    const generation = this.#lifecycleGeneration;
+    const values = await this.#readValues();
+    if (generation !== this.#lifecycleGeneration) throw new Error("Environment reload was cancelled");
+    const previous = Object.fromEntries([...this.#applied].map((name) => [name, this.environment[name] ?? ""]));
+    this.#replace(values);
+    try {
+      return await operation();
+    } catch (error) {
+      if (generation === this.#lifecycleGeneration) this.#replace(previous);
+      throw error;
+    }
+  }
+
+  restore(): void {
+    this.#lifecycleGeneration += 1;
+    this.#restoreApplied();
+  }
+}
+
+export async function startCommand(
+  options: StartOptions,
+  dependencies: StartCommandDependencies = {},
+): Promise<StartedSnaperroCommand> {
+  const configPath = path.resolve(process.cwd(), options.config ?? "snaperro.config.ts");
+  const envPath = options.env ? path.resolve(process.cwd(), options.env) : path.join(path.dirname(configPath), ".env");
+  const environment = dependencies.createEnvironment?.(envPath) ?? new EnvFileOverlay(envPath);
+  const loadConfig = dependencies.loadConfig ?? loadConfigV2;
+  const createServer = dependencies.createServer ?? createV2Server;
+  const createWatcher = dependencies.createWatcher ?? ((watcherOptions) => new ConfigWatcherV2(watcherOptions));
+  const openBrowser = dependencies.openBrowser ?? open;
+  let server: SnaperroV2Server | undefined;
+  let watcher: StartWatcher | undefined;
+  let stopping: Promise<void> | undefined;
+  let stopRequested = false;
+  let handleSignal: ((signal: NodeJS.Signals) => void) | undefined;
+
+  const stop = (): Promise<void> => {
+    if (stopping) return stopping;
+    stopRequested = true;
+    stopping = (async () => {
+      if (handleSignal) {
+        process.removeListener("SIGINT", handleSignal);
+        process.removeListener("SIGTERM", handleSignal);
+      }
+      // Invoke each cleanup behind its own Promise boundary so a
+      // non-conforming synchronous throw cannot prevent the others starting.
+      const settled = await Promise.allSettled([
+        Promise.resolve().then(() => watcher?.stop()),
+        Promise.resolve().then(() => server?.stop()),
+        Promise.resolve().then(() => environment.restore()),
+      ]);
+      const errors = settled
+        .filter((result): result is PromiseRejectedResult => result.status === "rejected")
+        .map((result) => errorValue(result.reason));
+      if (errors.length > 0) throw new AggregateError(errors, "Snaperro command shutdown failed");
+    })();
+    return stopping;
   };
 
-  process.on("SIGINT", () => handleShutdown("SIGINT"));
-  process.on("SIGTERM", () => handleShutdown("SIGTERM"));
+  try {
+    await environment.reload();
+    const initial = applyStartOverrides(await loadConfig(configPath), options);
+    await assertMigrationReady(initial);
+    server = await createServer(initial, { coreOptions: { verbose: options.verbose } });
+    const address = await server.start();
+    consola.success(`snaperro 2.0 is running at ${address.origin}`);
+    consola.info(`GUI: ${address.clientUrl}`);
+    consola.info(`Demo: ${address.demoUrl}`);
+
+    if (initial.server.openBrowser) {
+      // Browser launch is auxiliary and controlled by an external process. It
+      // must not delay watcher/signal installation or make startup unbounded.
+      void openBrowser(address.clientUrl).catch((error: unknown) => {
+        consola.warn(`Could not open the browser: ${error instanceof Error ? error.message : String(error)}`);
+      });
+    }
+
+    if (options.watch !== false) {
+      watcher = createWatcher({
+        paths: [configPath, envPath],
+        onChange: async () => {
+          await environment.withReloadedEnvironment(async () => {
+            const candidate = applyStartOverrides(await loadConfig(configPath, { disableCache: true }), options);
+            if (stopRequested) throw new Error("Configuration reload was cancelled during shutdown");
+            await server?.reload(candidate);
+          });
+          consola.success("Configuration reloaded");
+        },
+        shutdownTimeoutMs: initial.server.shutdownTimeoutMs,
+        onError: (error) => {
+          consola.error(
+            `Configuration reload failed; the active runtime was kept: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        },
+      });
+      watcher.start();
+    }
+
+    handleSignal = (signal: NodeJS.Signals) => {
+      consola.info(`Received ${signal}; shutting down`);
+      void stop().catch((error: unknown) => {
+        consola.error(`Shutdown failed: ${error instanceof Error ? error.message : String(error)}`);
+        process.exitCode = 1;
+      });
+    };
+    process.once("SIGINT", handleSignal);
+    process.once("SIGTERM", handleSignal);
+
+    return { server, configPath, envPath, stop };
+  } catch (error) {
+    try {
+      await stop();
+    } catch (cleanupError) {
+      throw new AggregateError([errorValue(error), errorValue(cleanupError)], "Snaperro startup and cleanup failed", {
+        cause: error,
+      });
+    }
+    throw error;
+  }
 }

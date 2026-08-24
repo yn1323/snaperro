@@ -1,507 +1,215 @@
 # snaperro
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/logo.png" alt="snaperro Logo" width="200" />
-</p>
+[日本語](README_ja.md)
 
-A mock proxy server that records and replays responses from multiple APIs to streamline development and testing.
-
-## Name Origin
-
-- **snap**: snapshot, quickly capture
-- **perro**: Spanish for "dog"
-- The image of "a faithful dog that fetches data"
+snaperro is a local mock proxy that records responses from real APIs and replays them as named scenarios. A Hono server and React control panel run in one process, while large and non-JSON bodies stay on streaming paths.
 
 ## Features
 
-- **4 Modes**: Proxy (passthrough) / Record (capture) / Mock (playback) / Smart (auto)
-- **Parameter Matching**: Accurate matching by path parameters and query parameters
-- **State Persistence**: Mode and scenario settings persist across server restarts
-- **TypeScript Configuration**: Type-safe configuration files
-
-## Why snaperro?
-
-Are you facing these problems during development?
-
-- Depending on multiple APIs, making environment setup difficult
-- Local development stops due to external API outages
-- Preparing test data is tedious
-- "I want to reproduce this state" but manually operating each time is a hassle
-
-snaperro is a mock proxy server that saves API responses as "snapshots" and can replay them anytime.
-
----
-
-## For Users
-
-### Quick Start
-
-```bash
-# Install
-npm install -D snaperro
-
-# Initialize (generates .snaperro/, snaperro.config.ts)
-npx snaperro init
-
-# Start server
-npx snaperro start
-```
-
-### Demo
-
-We provide a demo environment where you can experience snaperro in action.
-
-```bash
-npx snaperro demo
-```
-
-Your browser will open `http://localhost:3333/__snaperro__/demo`.
-
-#### Features You Can Try
-
-| Feature | Description |
-|---------|-------------|
-| Mode Switching | Experience the differences between Proxy/Record/Mock modes |
-| Path Parameter | Save and return different responses for each ID with `/users/:id` |
-| Query String | Save and return different responses for each query with `/posts?userId=1` |
-| Nested Resource | Fetch nested resources with `/posts/:id/comments` |
-
-For detailed management (scenarios/files/JSON editing), use the GUI (`/__snaperro__/client`).
-
-### Built-in APIs
-
-The following APIs are available without configuration:
-
-| API | Target | Routes |
-|-----|--------|--------|
-| jsonPlaceholder | https://jsonplaceholder.typicode.com | /users, /posts, /comments, etc. |
-
-These are used by the demo page and can be overridden in your config if needed.
-
-### Web GUI
-
-Intuitively operate snaperro from your browser.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/yn1323/snaperro/main/gui-screenshot.png" alt="snaperro GUI" width="800" />
-</p>
-
-#### Access
-
-```
-http://localhost:3333/__snaperro__/client
-```
-
-The browser opens automatically when the server starts.
-
-#### Features
-
-| Feature | Description |
-|---------|-------------|
-| Mode Switch | Switch between Proxy/Record/Mock with one click |
-| Scenario Management | Create, delete, duplicate, and rename scenarios |
-| File Management | List and delete recorded JSON files |
-| JSON Editor | View and edit responses |
-| Real-time Updates | Instantly reflect state changes via SSE |
-
-### Configuration File
-
-#### snaperro.config.ts
-
-```typescript
-import { defineConfig } from 'snaperro'
-
-export default defineConfig({
-  port: 3333,
-
-  apis: {
-    userService: {
-      name: "User Service",
-      target: "https://api.example.com",
-      headers: {
-        "X-Api-Key": process.env.API_KEY!,
-      },
-      routes: [
-        "/api/users",
-        "/api/users/:id",
-        "/api/users/:id/profile",
-      ],
-    },
-
-    orderService: {
-      name: "Order Service",
-      target: "https://order-api.example.com",
-      routes: [
-        "/api/orders",
-        "/api/orders/:id",
-        "/api/users/:userId/orders",
-      ],
-    },
-  },
-})
-```
-
-#### .env
-
-```bash
-# Sensitive information such as API keys
-API_KEY=your-api-key-here
-```
-
-#### Configuration Options
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `port` | number | Server port (default: 3333) |
-| `filesDir` | string | File storage directory (default: `.snaperro/files`) |
-| `mockFallback` | string | Fallback behavior when mock file is not found (default: `"404"`) |
-| `maskRequestHeaders` | string[] | Headers to mask when recording (applied to all APIs) |
-| `apis` | object | API definitions object |
-
-#### API Definition
-
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `name` | string | Yes | API display name |
-| `target` | string | Yes | Proxy target URL |
-| `routes` | string[] | Yes | Matching route patterns |
-| `headers` | object | No | Headers to add |
-| `maskRequestHeaders` | string[] | No | Headers to mask when recording |
-
-#### Upstream Proxy
-
-If you're behind a corporate proxy, configure upstream proxy settings:
-
-**Via config file:**
-
-```typescript
-export default defineConfig({
-  upstreamProxy: {
-    url: "http://proxy.company.com:8080",
-  },
-  // ...
-})
-```
-
-**Via environment variable:**
-
-```bash
-export HTTPS_PROXY=http://proxy.company.com:8080
-# or with authentication
-export HTTPS_PROXY=http://username:password@proxy.company.com:8080
-```
-
-Config file takes priority over environment variables.
-
-**Important:** When using an upstream proxy, add `localhost` to `NO_PROXY` to ensure local requests bypass the proxy:
-
-```bash
-export NO_PROXY=localhost,127.0.0.1
-```
-
-### CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `npx snaperro init` | Initialize project |
-| `npx snaperro start` | Start server |
-| `npx snaperro start -p 4000` | Start with specified port |
-| `npx snaperro demo` | Start demo environment |
-| `npx snaperro postman` | Export Postman collection |
-
-#### init Process
-
-1. Create `.snaperro/` directory
-2. Create `.snaperro/files/` directory
-3. Create `snaperro.config.ts` template (if it doesn't exist)
-4. Add `.snaperro/` to `.gitignore`
-
-#### start Options
-
-| Option | Description |
-|--------|-------------|
-| `-p, --port <port>` | Specify port number |
-| `-c, --config <path>` | Specify config file path |
-| `-e, --env <path>` | Specify env file path (default: `.env` in config directory) |
-| `-v, --verbose` | Show detailed logs |
-
-### 4 Modes
-
-| Mode | Real API | Save JSON | Returns |
-|------|----------|-----------|---------|
-| **Proxy** | Access | No | Real response |
-| **Record** | Access | Yes | Real response |
-| **Mock** | No access | No | Saved JSON |
-| **Smart** | Conditional | Conditional | Mock or Real |
-
-#### Proxy Mode
-
-Connects to the actual API with headers (API Key, etc.) defined in the configuration file.
-
-```
-Request → snaperro → Real API → Response
-```
-
-#### Record Mode
-
-Connects to the actual API while recording responses to JSON files.
-
-```
-Request → snaperro → Real API → Response
-                ↓
-           Save to JSON file
-```
-
-- Same endpoint, same parameters → Overwrite
-- Same endpoint, different parameters → Create new file
-
-#### Mock Mode
-
-Returns responses from saved JSON files. Does not access the actual API.
-
-```
-Request → snaperro → Search JSON files → Response
-```
-
-#### Smart Mode
-
-Automatically returns mock data if it exists, otherwise proxies to the real server and records the response.
-
-```
-Request → snaperro → Search mock files
-                ↓
-         Found? → Yes → Return mock (no API access)
-                ↓ No
-         Proxy to real API & Record
-                ↓
-         Return response
-```
-
-This is the recommended mode for daily development:
-- Prevents unnecessary API calls when mock data already exists
-- Automatically records new endpoints
-- Reduces API rate limit concerns
-
-#### Mock Fallback Behavior
-
-When a mock file is not found, you can configure the fallback behavior with `mockFallback`:
-
-| Value | Description |
-|-------|-------------|
-| `"404"` | Return 404 error (default) |
-| `"proxy"` | Forward request to real server |
-| `"proxy&record"` | Forward to real server and record the response |
-
-```typescript
-export default defineConfig({
-  mockFallback: "proxy&record",  // Fallback to proxy and record
-  // ...
-})
-```
-
-### What is a Scenario?
-
-A "scenario" is a folder that manages a set of mock data.
-
-```
-.snaperro/
-├── state.json              ← Server state (mode, scenario)
-└── files/
-    ├── normal-full/           ← Scenario "normal-full"
-    │   ├── api_users_001.json
-    │   ├── api_users_{id}_001.json
-    │   └── api_orders_001.json
-    ├── empty-data/             ← Scenario "empty-data"
-    │   └── api_users_001.json
-    └── error-cases/             ← Scenario "error-cases"
-        └── api_users_001.json
-```
-
-By switching scenarios, you can use different mock data sets.
-The previous mode and scenario are restored even after server restart.
-
-### Route Definition and Matching
-
-#### Path Parameters
-
-Define path parameters with `:param` format.
-
-```typescript
-routes: [
-  "/api/users",           // Exact match
-  "/api/users/:id",       // :id is a parameter
-  "/api/users/:id/orders/:orderId",  // Multiple parameters
-]
-```
-
-#### Matching Examples
-
-```typescript
-routes: ["/api/users/:id"]
-```
-
-| Request | Match | pathParams |
-|---------|-------|------------|
-| `/api/users/123` | Yes | `{ id: "123" }` |
-| `/api/users/abc` | Yes | `{ id: "abc" }` |
-| `/api/users` | No | - |
-| `/api/users/123/profile` | No | - |
-
-#### Record Mode Behavior
-
-- Same parameter request → Overwrite existing file
-- New parameter request → Create new file
-
-#### Mock Mode Behavior
-
-- Return file with exact match of path parameters and query parameters
-- Return 404 error if no matching file
-
-### File Structure
-
-```
-your-project/
-├── snaperro.config.ts     # Config file (Git managed)
-├── .env                   # Sensitive info (Not Git managed)
-├── .env.example           # Env template (Git managed)
-└── .snaperro/             # Recorded data (Not Git managed)
-    ├── state.json         # Server state
-    └── files/
-        ├── normal-full/
-        │   ├── api_users_001.json
-        │   └── api_users_{id}_001.json
-        └── error-cases/
-            └── api_users_001.json
-```
-
-### SSE (Server-Sent Events)
-
-An SSE endpoint is provided for GUI and clients to detect state changes in real-time.
-
-#### Endpoint
-
-```
-GET /__snaperro__/events
-```
-
-#### Verification
-
-```bash
-# curl
-curl -N http://localhost:3333/__snaperro__/events
-
-# Browser console
-const es = new EventSource('http://localhost:3333/__snaperro__/events');
-es.addEventListener('connected', (e) => console.log(JSON.parse(e.data)));
-es.addEventListener('file_created', (e) => console.log(JSON.parse(e.data)));
-```
-
-#### Event Types
-
-| Event | Description |
-|-------|-------------|
-| `connected` | Connection complete (includes initial state) |
-| `mode_changed` | Mode changed |
-| `scenario_changed` | Scenario switched |
-| `file_created` | File created (during recording) |
-| `file_updated` | File updated |
-| `file_deleted` | File deleted |
-| `scenario_created` | Scenario created |
-| `scenario_deleted` | Scenario deleted |
-| `scenario_renamed` | Scenario renamed |
-
----
-
-## For Developers
-
-### Local Development (Testing CLI without npm publish)
-
-```bash
-# 1. Install dependencies
-pnpm install
-
-# 2. Build
-pnpm build
-
-# 3. Run CLI locally
-npx . init
-npx . start
-```
-
-During development (run directly without build):
-
-```bash
-npx tsx src/cli/index.ts init
-npx tsx src/cli/index.ts start
-```
-
-### Development Commands
-
-**When you want to:**
-
-| Goal | Command |
-|------|---------|
-| Watch code changes during development | `pnpm dev` |
-| Build for production | `pnpm build` |
-| Run tests | `pnpm test` |
-| Run tests in watch mode | `pnpm test:watch` |
-| Format code | `pnpm format` |
-| Check type errors | `pnpm type-check` |
-| Develop GUI | `pnpm dev:client` |
-| Build GUI | `pnpm build:client` |
-| Develop demo | `pnpm dev:demo` |
-| Build demo | `pnpm build:demo` |
-
-### Project Structure
-
-```
-snaperro/
-├── cli/                      # CLI commands
-│   ├── index.ts
-│   └── commands/
-│       ├── init.ts
-│       ├── postman.ts
-│       └── start.ts
-├── server/                   # Hono server
-│   ├── handlers/
-│   │   ├── handler.ts
-│   │   ├── proxy.ts
-│   │   ├── recorder.ts
-│   │   ├── mocker.ts
-│   │   └── control-api.ts
-│   ├── core/
-│   │   ├── config.ts
-│   │   ├── state.ts
-│   │   ├── storage.ts
-│   │   └── matcher.ts
-│   └── types/
-├── client/                   # React GUI
-│   └── src/
-├── demo/                     # Demo application
-│   └── src/
-└── doc/                      # Documentation
-```
-
----
-
-## Tech Stack
-
-| Category | Choice |
-|----------|--------|
-| Server | Hono |
-| CLI | Commander |
-| GUI | React + Tailwind CSS |
-| Schema | Zod |
-| Logging | Consola |
-| Path Matching | Picomatch |
-| Build | tsup, Vite |
-| Linter/Formatter | Biome |
-| Test | Vitest |
+- Four modes: `proxy`, `record`, `mock`, and `smart`
+- Create, edit, duplicate, search, and delete folders, scenarios, and recordings
+- Portable ZIP import/export for folders and individual recordings, plus body upload/download
+- Revision-aware commands and queries with Server-Sent Events synchronization
+- A v2 store with content-addressed blobs, atomic metadata commits, and integrity checks
 
 ## Requirements
 
-- Node.js 18 or higher
-- tsx must be installed (peerDependencies)
+- Node.js 22.12 or newer
+- npm, pnpm, or another compatible Node.js package manager
+
+## Install and initialize
+
+Add snaperro as a development dependency, then initialize the project.
+
+```bash
+pnpm add -D snaperro
+pnpm exec snaperro init
+```
+
+`init` creates:
+
+- `snaperro.config.ts`: a `configVersion: 2` configuration
+- `.snaperro/v2`: a v2 store containing a sample folder and demo scenarios
+- a `.snaperro/v2/` entry in `.gitignore`
+
+An existing v2 store containing `store.json` is left unchanged. If migratable `.snaperro/files` data exists, `init` stops before writing configuration, ignore rules, or a sample store; run `migrate --dry-run` and `migrate` first. An empty legacy root or a root containing only `.gitkeep` does not trigger this guard. If only an incomplete v2 directory exists, initialization stops instead of overwriting it. Use `doctor` to verify an existing store.
+
+## Start
+
+```bash
+pnpm exec snaperro start
+```
+
+By default, snaperro listens on `127.0.0.1:3333` and opens the control panel.
+
+- Control panel: `http://127.0.0.1:3333/__snaperro__/client`
+- Demo: `http://127.0.0.1:3333/__snaperro__/demo`
+- Proxied API: send configured routes to the same origin, for example `http://127.0.0.1:3333/users`
+
+The configuration file is watched for changes. Pass `--no-watch` to disable watching. Changes to listener or storage boundaries, such as host, port, or storage root, require a restart.
+
+## Configuration
+
+The smallest practical configuration looks like this. `storage.root` is resolved relative to the configuration file.
+
+```ts
+import { defineConfig } from "snaperro";
+
+export default defineConfig({
+  configVersion: 2,
+  server: {
+    host: "127.0.0.1",
+    port: 3333,
+  },
+  storage: {
+    root: ".snaperro/v2",
+  },
+  mock: {
+    fallback: "404",
+  },
+  apis: {
+    example: {
+      name: "Example API",
+      target: "https://api.example.com",
+      routes: ["GET /api/users", "POST /api/users", "/api/users/:id"],
+      headers: {},
+      maskRequestHeaders: ["authorization", "cookie"],
+    },
+  },
+});
+```
+
+Important defaults:
+
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `server.host` | `127.0.0.1` | Listener host |
+| `server.port` | `3333` | Listener port |
+| `server.openBrowser` | `true` | Open the control panel on startup |
+| `server.allowedOrigins` | `[]` | Explicit origins allowed to use the control plane |
+| `storage.root` | `.snaperro/v2` | v2 store location |
+| `storage.maxImportBytes` | 512 MiB | Upload and expanded-archive limit |
+| `recording.maxRequestBodyBytes` | 256 MiB | Maximum request body captured for recording |
+| `recording.completeOnClientDisconnect` | `true` | Finish recording an upstream response after client disconnect |
+| `mock.fallback` | `404` | Behavior when no recording matches |
+
+Configuration is strict: unknown keys and ambiguous routes are rejected at startup. The built-in `jsonPlaceholder` API is always included and can be replaced with a user entry using the same key. A different API key cannot declare a route that conflicts with a built-in route.
+
+`mock.fallback` accepts `404`, `proxy`, or `proxy&record`. `recording.maskRequestHeaders` applies globally, while an API's `maskRequestHeaders` applies only to that API. For corporate networks, configure an upstream proxy through `proxy.url`, or through `HTTPS_PROXY`, `HTTP_PROXY`, and then their lowercase equivalents. The explicit configuration always wins.
+
+See [Configuration](docs/features/configuration.md) for every setting.
+
+## Four modes
+
+| Mode | Recording exists | Recording is missing | Persistence |
+| --- | --- | --- | --- |
+| `proxy` | Forward upstream | Forward upstream | None |
+| `record` | Forward upstream | Forward upstream | Record the response in the selected scenario |
+| `mock` | Return the matching response | Follow `mock.fallback` | Only when fallback is `proxy&record` |
+| `smart` | Return the matching response | Forward upstream | Record responses that were not found |
+
+Matching uses the method, route, path parameters, normalized query fields, and a request-body fingerprint. Select a scenario before using a mode that reads or writes recordings.
+
+## Control panel
+
+The React control panel supports:
+
+- Switching the mode and current scenario
+- Creating, renaming, deleting, importing, and exporting folders
+- Creating, renaming, duplicating, and deleting scenarios
+- Paginated recording lists; metadata, header, and body search; JSON/ZIP import; editing; deletion; and portable ZIP export
+- Request/response body upload and download, JSON-editor match navigation, and request logs; server search also covers filenames and detached, unencoded body bytes
+
+Updates use catalog, scenario, and recording revisions. If another window or process updates an item first, snaperro reports a conflict instead of overwriting newer data. A missing event or server restart triggers a fresh snapshot.
+
+## Large responses and storage
+
+Request and response bodies are never embedded in metadata JSON. Raw bytes are stored as SHA-256 blobs and stay streamed during traffic, recording, import, export, and download. A large response therefore does not become one huge JSON response or an in-memory buffer.
+
+Downloads use short-lived, single-use capabilities handed to the browser's native download path. The control token never enters the URL, and browsers without the File System Access API do not need to load large files into JavaScript memory.
+
+Folders, scenarios, and recordings use stable IDs independent of display names. A new immutable scenario manifest is stored first; the catalog manifest pointer is committed atomically last. A deletion disappears from queries and the UI at that catalog commit, while unreferenced blobs are reclaimed later after a safety grace period.
+
+See [File storage](docs/features/file-storage.md) for the layout and crash-consistency rules.
+
+## Migrate existing data
+
+Stop the server, then run:
+
+```bash
+pnpm exec snaperro migrate --dry-run
+pnpm exec snaperro migrate
+# Replace the old configuration with a configVersion: 2 configuration.
+pnpm exec snaperro doctor
+```
+
+The default source is `.snaperro/files` plus `.snaperro/state.json`; the destination is `.snaperro/v2`. Migration is copy-on-write and never modifies the source files. A separate staging store is fully built and verified before it becomes the destination. Source fingerprints are streamed; legacy recording JSON is capped at 256 MiB per file and v1 state at 1 MiB before parsing.
+
+The data migrator does not rewrite executable TypeScript configuration. Update an existing config to the `configVersion: 2` shape shown above before `doctor` or `start`; `init` deliberately never overwrites an existing config file.
+
+If an existing destination cannot be proven to be the result of the same migration, snaperro stops without overwriting it. `init`, `start`, and `doctor` also reject migratable v1 data paired with an unrelated native or incomplete v2 store. The receipt protects source provenance and its original-byte blobs; normal renames and deletions in the migrated v2 catalog remain valid. Automation can consume `migrate --json` and `doctor --json`. See [Migration](docs/features/migration.md) for details.
+
+## CLI
+
+| Command | Purpose | Main options |
+| --- | --- | --- |
+| `snaperro init` | Initialize configuration and a sample v2 store | None |
+| `snaperro start` | Start the Hono server and React control panel | `--port`, `--config`, `--env`, `--no-watch`, `--skip-browser`, `--verbose` |
+| `snaperro demo` | Open the demo on a running server | `--port`, `--config` |
+| `snaperro postman` | Print a Postman collection covering every v2 command, query, and stream | None |
+| `snaperro migrate` | Copy-on-write migration into the v2 store | `--source`, `--state`, `--destination`, `--dry-run`, `--json` |
+| `snaperro doctor` | Read-only checks for config, Node.js, store metadata, and integrity | `--config`, `--env`, `--json` |
+
+See [CLI](docs/features/cli.md) for details.
+
+## Control-plane communication
+
+The control panel uses typed commands and queries, body/import streams, and an event stream under `/__snaperro__/v2`. Shared Zod schemas validate both requests and responses. Mutating commands require expected revisions so conflicts are explicit.
+
+Export and download queries do not mutate persistent data; they only issue an ephemeral download capability. The resulting `/__snaperro__/downloads/<capability>` path treats the capability itself as authorization and is valid for a short time and one claim only.
+
+This is not a conventional resource-per-URL public API. Automation should follow the [Control API](docs/features/control-api.md) and [Event synchronization](docs/features/sse.md) contracts.
+
+## Security
+
+The server binds only to loopback `127.0.0.1` by default. Binding to a LAN or container interface requires a `server.controlToken` of at least 16 characters.
+
+```ts
+server: {
+  host: "0.0.0.0",
+  port: 3333,
+  controlToken: process.env.SNAPERRO_CONTROL_TOKEN,
+  allowedOrigins: ["https://tools.example.com"],
+}
+```
+
+Control requests use `Authorization: Bearer <token>`. After a `401`, the control panel asks for the token and shares it between HTTP and event connections using page-private memory only. It disappears after reload, navigation, or tab close. Add a browser origin to `allowedOrigins` before using the control plane cross-origin. Never store the token in source control, URLs, or Web Storage. See [Security](docs/features/security.md).
+
+## Development and CI
+
+```bash
+pnpm install
+pnpm lint
+pnpm type-check
+pnpm type-check:client
+pnpm type-check:demo
+pnpm test:all
+pnpm build
+pnpm verify:package
+```
+
+Vitest covers the server, store, migration, CLI, and browser client at unit, contract, E2E, and performance levels. GitHub Actions runs lint and all three type checks, the complete test suite, the build, and package-content verification for pull requests and pushes to `main`.
+
+## Documentation
+
+- [Documentation index](docs/INDEX.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Folders, scenarios, and recordings](docs/features/scenario.md)
+- [Modes](docs/features/modes.md)
+- [GUI](docs/features/gui.md)
+- [File storage](docs/features/file-storage.md)
+- [Control API](docs/features/control-api.md)
+- [Event synchronization](docs/features/sse.md)
 
 ## License
 

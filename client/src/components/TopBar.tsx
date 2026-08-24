@@ -1,6 +1,6 @@
 import { Box, Button, Flex, HStack, IconButton, Spacer, Text } from "@chakra-ui/react";
-import { LuInfo } from "react-icons/lu";
-import type { Mode } from "../types";
+import { LuInfo, LuKeyRound } from "react-icons/lu";
+import type { Mode } from "../v2/contracts";
 import { toaster } from "./ui/toaster";
 
 interface TopBarProps {
@@ -10,6 +10,11 @@ interface TopBarProps {
   currentScenario: string | null;
   onModeChange: (mode: Mode) => void;
   onHelpClick: () => void;
+  connectionLabel?: string;
+  connectionError?: string | null;
+  disabled?: boolean;
+  hasControlToken?: boolean;
+  onControlTokenClick?: () => void;
 }
 
 const modes: { value: Mode; label: string; icon: string }[] = [
@@ -23,15 +28,28 @@ const modes: { value: Mode; label: string; icon: string }[] = [
  * Top bar
  * Displays mode switch buttons and connection status
  */
-export function TopBar({ version, mode, connected, currentScenario, onModeChange, onHelpClick }: TopBarProps) {
+export function TopBar({
+  version,
+  mode,
+  connected,
+  currentScenario,
+  onModeChange,
+  onHelpClick,
+  connectionLabel,
+  connectionError,
+  disabled = false,
+  hasControlToken = false,
+  onControlTokenClick,
+}: TopBarProps) {
   const handleModeClick = (targetMode: Mode) => {
-    // record, smart, mock はシナリオ選択が必要
+    // Every mode that reads or writes recordings requires an active scenario.
     if ((targetMode === "record" || targetMode === "smart" || targetMode === "mock") && !currentScenario) {
       toaster.create({
         type: "warning",
         title: "No scenario selected",
         description: "Please select a scenario first.",
       });
+      return;
     }
     onModeChange(targetMode);
   };
@@ -87,6 +105,7 @@ export function TopBar({ version, mode, connected, currentScenario, onModeChange
                 borderColor: isActive ? `${color}.600` : "gray.600",
               }}
               onClick={() => handleModeClick(value)}
+              disabled={disabled}
               transition="all 0.15s ease"
             >
               <Text mr={1.5} fontSize="xs">
@@ -109,12 +128,26 @@ export function TopBar({ version, mode, connected, currentScenario, onModeChange
         <LuInfo />
       </IconButton>
 
+      {onControlTokenClick ? (
+        <IconButton
+          aria-label={hasControlToken ? "Update control token" : "Configure control token"}
+          title={hasControlToken ? "Control token configured" : "Configure control token"}
+          variant="ghost"
+          size="sm"
+          color={hasControlToken ? "accent.300" : "gray.400"}
+          _hover={{ color: "white", bg: "gray.800" }}
+          onClick={onControlTokenClick}
+        >
+          <LuKeyRound />
+        </IconButton>
+      ) : null}
+
       <Spacer />
 
-      <HStack gap={2}>
+      <HStack gap={2} role="status" title={connectionError ?? undefined}>
         <Box w={2} h={2} borderRadius="full" bg={connected ? "accent.400" : "recording.400"} />
-        <Text fontSize="xs" color="gray.500">
-          {connected ? "Connected" : "Disconnected"}
+        <Text fontSize="xs" color={connectionError ? "recording.300" : "gray.500"} maxW="280px" truncate>
+          {connectionError ?? connectionLabel ?? (connected ? "Connected" : "Disconnected")}
         </Text>
       </HStack>
     </Flex>

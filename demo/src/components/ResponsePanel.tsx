@@ -1,5 +1,6 @@
 import { Badge, Box, Button, Flex, HStack, Spinner, Text } from "@chakra-ui/react";
-import type { ErrorInfo } from "../App";
+import type { ResponsePreview } from "../response-preview";
+import type { ErrorInfo } from "../traffic-errors";
 import type { Mode } from "./ModeSelector";
 
 type ResponsePanelProps = {
@@ -9,7 +10,7 @@ type ResponsePanelProps = {
   } | null;
   response: {
     status: number;
-    body: unknown;
+    preview: ResponsePreview;
   } | null;
   mode: Mode;
   isLoading: boolean;
@@ -30,12 +31,13 @@ const getStatusColorPalette = (status: number): string => {
   return "red";
 };
 
-function highlightJson(json: string): string {
-  return json
-    .replace(/"([^"]+)"(?=\s*:)/g, '<span class="json-key">"$1"</span>')
-    .replace(/:\s*"([^"]*)"/g, ': <span class="json-string">"$1"</span>')
-    .replace(/:\s*(-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-    .replace(/:\s*(true|false|null)/g, ': <span class="json-boolean">$1</span>');
+function previewSize(preview: ResponsePreview): string {
+  if (preview.contentLength !== null) {
+    return preview.truncated
+      ? `${preview.bytesRead} of ${preview.contentLength} bytes previewed`
+      : `${preview.contentLength} bytes`;
+  }
+  return `${preview.bytesRead} bytes${preview.truncated ? " previewed" : ""}`;
 }
 
 export function ResponsePanel({ request, response, mode, isLoading, error }: ResponsePanelProps) {
@@ -156,6 +158,7 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
         {error && (
           <Flex h="full" alignItems="center" justifyContent="center" p={4}>
             <Box
+              role="alert"
               maxW="md"
               w="full"
               px={5}
@@ -229,9 +232,15 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
                 Response Body
               </Text>
               <Text fontFamily="mono" fontSize="xs" color="gray.500" opacity={0.6}>
-                {typeof response.body === "object" ? `${JSON.stringify(response.body).length} bytes` : ""}
+                {previewSize(response.preview)}
               </Text>
             </Flex>
+
+            {response.preview.truncated ? (
+              <Text role="status" fontFamily="mono" fontSize="xs" color="orange.700" mb={2}>
+                The response exceeded the safe preview limit. The remaining stream was cancelled.
+              </Text>
+            ) : null}
 
             <Box position="relative" flex={1} minH={0} role="group">
               <Box
@@ -259,11 +268,9 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
                 fontFamily="mono"
                 fontSize="sm"
                 lineHeight="relaxed"
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: For JSON highlighting
-                dangerouslySetInnerHTML={{
-                  __html: highlightJson(JSON.stringify(response.body, null, 2)),
-                }}
-              />
+              >
+                {response.preview.text || (response.preview.truncated ? "Body preview omitted." : "")}
+              </Box>
 
               <Button
                 size="xs"
@@ -278,8 +285,9 @@ export function ResponsePanel({ request, response, mode, isLoading, error }: Res
                 color="gray.700"
                 _hover={{ bg: "gray.300" }}
                 onClick={() => {
-                  navigator.clipboard.writeText(JSON.stringify(response.body, null, 2));
+                  void navigator.clipboard.writeText(response.preview.text);
                 }}
+                disabled={!response.preview.text}
               >
                 Copy
               </Button>

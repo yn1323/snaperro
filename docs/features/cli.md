@@ -1,151 +1,110 @@
-# CLIコマンド
+# CLI
 
-## 概要
+snaperro v2 の CLI は、初期化、起動、動作確認、既存データの移行、store 診断を担当します。すべて Node.js 22.12 以上で実行してください。
 
-snaperroはコマンドラインから操作可能です。
-プロジェクトの初期化、サーバー起動、デモ実行などをCLIで行います。
+プロジェクトへ追加した場合の呼び出し例は `pnpm exec snaperro <command>` です。以下では短く `snaperro` と表記します。
 
-## 関連ファイル
-
-- **CLI**: `cli/index.ts`, `cli/commands/*.ts`
-
----
-
-## インストール
+## `init`
 
 ```bash
-# グローバルインストール
-npm install -g snaperro
-
-# ローカルインストール（推奨）
-npm install --save-dev snaperro
+snaperro init
 ```
 
----
+次を安全に初期化します。
 
-## コマンド一覧
+- `snaperro.config.ts`
+- `.snaperro/v2` の v2 store
+- `Samples` folder 内の `demo`、`demo-empty`、`demo-error` scenario
+- `.gitignore` の `.snaperro/v2/`
 
-| コマンド | 説明 |
-|---------|------|
-| `snaperro init` | プロジェクト初期化 |
-| `snaperro start` | サーバー起動 |
-| `snaperro demo` | デモページ起動 |
-| `snaperro postman` | Postmanコレクション出力 |
+既存 config や `.gitignore` の内容は不用意に上書きしません。移行対象の `.snaperro/files` がある場合は、config、`.gitignore`、sample store を一つも書かずに停止します。先に `migrate --dry-run` と `migrate` を実行してください。空の legacy root と root 直下の `.gitkeep` だけは移行対象とみなしません。`store.json` を持つ既存 v2 store には何もせず、directory だけがある不完全な store は修復を推測せず停止します。既存 store の完全性は `doctor` で確認します。
 
----
+sample store の公開後に directory の durability 確認だけが失敗した場合は、公開済みの path を含むエラーを表示します。store を自動削除せず、同じ `init` を再実行して既存 store を確認したうえで config と `.gitignore` の初期化を続行できます。公開前の失敗に加えて staging の削除も失敗した場合は、両方のエラーと残った staging path を表示します。
 
-## snaperro init
+## `start`
 
-プロジェクトにsnaperroを初期化します。
-
-### 実行
 ```bash
-npx snaperro init
+snaperro start
 ```
 
-### 作成されるファイル
-```
-.snaperro/
-├── files/           # モックデータ保存先
-└── state.json       # 状態ファイル
+| option | 既定値 | 説明 |
+| --- | --- | --- |
+| `-p, --port <port>` | config の値 | 起動時の port override |
+| `-c, --config <path>` | `snaperro.config.ts` | v2 config file |
+| `-e, --env <path>` | config と同じ directory の `.env` | 環境変数 file |
+| `--no-watch` | watch 有効 | config と env file の監視を止める |
+| `--skip-browser` | config の `openBrowser` | 今回の起動では管理画面を自動で開かない |
+| `-v, --verbose` | 無効 | 詳細 log |
 
-snaperro.config.ts   # 設定ファイル
-```
+`.env` は shell ですでに設定されている環境変数を上書きしません。watch 中に新しい config の load や validation が失敗した場合、稼働中の generation を維持して error を表示します。
 
-### 処理内容
-1. `.snaperro/` ディレクトリ作成
-2. `.snaperro/files/` ディレクトリ作成
-3. `.snaperro/state.json` 初期ファイル作成
-4. `snaperro.config.ts` テンプレート作成
-5. `.gitignore` に `.snaperro/files/` 追加
+次の設定は server/store の境界なので、watch 中には変更できません。変更後に process を再起動してください。
 
----
+- `storage.root`、`storage.maxImportBytes`
+- `server.host`、`server.port`、`server.openBrowser`
+- `server.allowedOrigins`、`server.controlToken`、`server.shutdownTimeoutMs`
 
-## snaperro start
+移行対象の既存データがあり、対応する migration provenance を持つ v2 store がない場合、`start` は暗黙に移行せず `MigrationRequired` として停止します。native sample store や不完全な v2 store が併存する場合も停止するため、対象を backup または別名へ移してから [`migrate`](migration.md) を実行してください。
 
-サーバーを起動します。
+## `demo`
 
-### 実行
 ```bash
-npx snaperro start
-npx snaperro start -p 4000
-npx snaperro start --verbose
+snaperro demo
+snaperro demo --port 3333
 ```
 
-### オプション
+起動中 server の v2 snapshot endpoint を確認してから `/__snaperro__/demo` を browser で開きます。server 自体は起動しないため、先に `start` が必要です。
 
-| オプション | 短縮形 | 説明 | デフォルト |
-|-----------|--------|------|----------|
-| `--port <port>` | `-p` | ポート番号 | `3333` |
-| `--config <path>` | `-c` | 設定ファイルパス | `snaperro.config.ts` |
-| `--env <path>` | `-e` | 環境変数ファイルパス | - |
-| `--verbose` | `-v` | 詳細ログ表示 | `false` |
-| `--no-watch` | - | 設定ファイル監視を無効化 | `false` |
+## `postman`
 
-### 処理内容
-1. 設定ファイル読み込み（`snaperro.config.ts`）
-2. 設定検証（Zodスキーマ）
-3. 前回の状態復元（`.snaperro/state.json`）
-4. サーバー起動
-5. ブラウザ自動起動（GUI）
-6. 設定ファイル監視（変更時に自動リロード）
-
-### 設定ファイル監視
-`--no-watch` を指定しない限り、設定ファイルの変更を監視し自動リロードします。
-
----
-
-## snaperro demo
-
-デモページをブラウザで開きます。
-
-### 実行
 ```bash
-npx snaperro demo
-npx snaperro demo -p 4000
+snaperro postman > snaperro.postman_collection.json
 ```
 
-### オプション
+同梱した v2 control collection を JSON として標準出力へ出します。command/query、body upload/download、folder/recording ZIP の stage/import/export、event stream、single-use download capability を含みます。進捗 message を混ぜないため、redirect してそのまま Postman へ import できます。
 
-| オプション | 短縮形 | 説明 | デフォルト |
-|-----------|--------|------|----------|
-| `--port <port>` | `-p` | ポート番号 | `3333` |
+## `migrate`
 
-### アクセス先
-```
-http://localhost:3333/__snaperro__/demo
-```
-
----
-
-## snaperro postman
-
-Postmanコレクションを出力します。
-
-### 実行
 ```bash
-npx snaperro postman
+snaperro migrate --dry-run
+snaperro migrate
 ```
 
-### 出力
-設定ファイルで定義されたAPIエンドポイントをPostmanコレクション形式で出力します。
+| option | 既定値 | 説明 |
+| --- | --- | --- |
+| `-s, --source <path>` | `.snaperro/files` | 移行元 directory |
+| `--state <path>` | `.snaperro/state.json` | 移行元 state file |
+| `-d, --destination <path>` | `.snaperro/v2` | 移行先 store |
+| `--dry-run` | 無効 | validation と計画だけを行い、file を書かない |
+| `--json` | human-readable | machine-readable JSON を出力 |
 
----
+preflight、warning、error、source file/byte 数、scenario 数、整合性検査結果を表示します。dry-run と本移行のどちらでも移行元を変更しません。安全と確認できない既存 destination は上書きしません。
 
-## 開発時の実行方法
+成功時は exit code `0`、blocking error 時は `1` です。
 
-### ビルド後に実行
+## `doctor`
+
 ```bash
-pnpm build && npx . start
+snaperro doctor
+snaperro doctor --json
 ```
 
-### ビルドなしで直接実行
-```bash
-npx tsx cli/index.ts start
-```
+| option | 既定値 | 説明 |
+| --- | --- | --- |
+| `-c, --config <path>` | `snaperro.config.ts` | 診断対象 config |
+| `-e, --env <path>` | config と同じ directory の `.env` | config load に使う環境変数 file |
+| `--json` | human-readable | machine-readable JSON を出力 |
 
----
+次を読み取り専用で確認します。
 
-## 関連ドキュメント
+1. Node.js が 22.12 以上か
+2. `configVersion: 2` の config を load/validation できるか
+3. `storage.root` が directory として存在するか
+4. store metadata、catalog、manifest、blob の整合性
+5. 移行対象の既存データに対し migration が未実施、または無関係な v2 destination が競合していないか
 
-- [configuration.md](configuration.md) - 設定ファイルの詳細
+warning だけなら成功、fail が一つでもあれば exit code `1` です。`doctor` は file の修復、削除、migration を行いません。
+
+## CI での利用
+
+移行の事前確認や環境診断を script から扱う場合は `--json` と exit code を使います。human-readable output の文言を parse せず、JSON の `ok`、`checks`、`report` を参照してください。

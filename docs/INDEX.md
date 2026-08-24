@@ -1,96 +1,34 @@
-# snaperro ドキュメントインデックス
+# snaperro v2 ドキュメント
 
-## 概要
+snaperro v2 の利用方法は [日本語 README](../README_ja.md) だけで一通り確認できます。このディレクトリでは、設定、通信契約、保存方式などを実装単位で詳しく説明します。
 
-snaperro（スナペーロ）は、GUI付きモックプロキシサーバーです。
-複数のAPIからのレスポンスを記録・再生し、開発・テストを効率化します。
+## 利用者向け
 
----
+- [CLI](features/cli.md): 初期化、起動、demo、Postman、migration、診断
+- [設定](features/configuration.md): `configVersion: 2` の全設定項目
+- [4 つのモード](features/modes.md): proxy / record / mock / smart の動作
+- [folder / scenario / recording](features/scenario.md): データモデルと操作
+- [GUI](features/gui.md): 管理画面の機能と競合時の動作
+- [migration](features/migration.md): 既存データを非破壊で v2 store へ移す手順
+- [セキュリティ](features/security.md): bind、token、origin、upload の境界
 
-## クイックスタート
+## 実装・連携向け
 
-```bash
-# インストール
-npm install --save-dev snaperro
+- [アーキテクチャ](ARCHITECTURE.md): Hono × React、application 層、store、同期の全体像
+- [control API](features/control-api.md): typed command/query と stream endpoint
+- [イベント同期](features/sse.md): revision とイベント stream による再同期
+- [ファイル保存](features/file-storage.md): catalog、manifest、blob、atomic commit、GC
+- [実装上の不変条件](impl/README.md): 改修時に維持する整合性と release gate
 
-# 初期化
-npx snaperro init
+## 用語
 
-# サーバー起動
-npx snaperro start
-```
-
-ブラウザで `http://localhost:3333/__snaperro__/client` が自動で開きます。
-
----
-
-## ドキュメント構成
-
-| ドキュメント | 説明 |
-|-------------|------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | アーキテクチャ概要、ディレクトリ構造、データフロー |
-| [features/](features/) | 各機能の詳細仕様 |
-| [impl/](impl/) | 実装計画・仕様書（履歴） |
-
----
-
-## 機能一覧
-
-| 機能 | ドキュメント | 概要 |
-|------|-------------|------|
-| モード | [modes.md](features/modes.md) | Proxy/Record/Mock/Smartの4モード |
-| シナリオ管理 | [scenario.md](features/scenario.md) | モックデータのグループ管理 |
-| Web GUI | [gui.md](features/gui.md) | ブラウザベースの管理画面 |
-| CLIコマンド | [cli.md](features/cli.md) | init, start, demo, postman |
-| 内部制御API | [control-api.md](features/control-api.md) | `/__snaperro__/*` エンドポイント |
-| 設定ファイル | [configuration.md](features/configuration.md) | `snaperro.config.ts` の詳細 |
-| ファイル管理 | [file-storage.md](features/file-storage.md) | 保存形式、マッチングロジック |
-| SSE | [sse.md](features/sse.md) | リアルタイム更新 |
-
----
-
-## 主要概念
-
-### 4つのモード
-
-| モード | 動作 |
-|--------|------|
-| **Proxy** | 実APIへ転送 |
-| **Record** | 実APIへ転送 + JSON保存 |
-| **Mock** | 保存済みJSONを返却 |
-| **Smart** | モックあり→Mock、なし→Record（推奨） |
-
-### シナリオ
-
-モックデータをフォルダ単位でグループ化。
-テストケースや状況に応じて切り替え可能。
-
-```
-.snaperro/files/
-├── 正常系フル/     ← シナリオ1
-├── 空データ/       ← シナリオ2
-└── エラー系/       ← シナリオ3
-```
-
----
-
-## 技術スタック
-
-| カテゴリ | 技術 |
-|---------|------|
-| サーバー | Hono, Node.js |
-| クライアント | React 19, Chakra UI v3 |
-| CLI | Commander.js |
-| バリデーション | Zod v4 |
-| ビルド | tsup, Vite |
-| パッケージマネージャー | pnpm |
-
-詳細は [ARCHITECTURE.md](ARCHITECTURE.md) を参照。
-
----
-
-## 関連リンク
-
-- [GitHub リポジトリ](https://github.com/your-org/snaperro)
-- [README](../README.md)
-- [CLAUDE.md](../CLAUDE.md) - AI向けプロジェクト情報
+| 用語 | 意味 |
+| --- | --- |
+| folder | 複数の scenario をまとめる表示単位 |
+| scenario | 一組の mock 状態。選択中の scenario が照合・記録対象になる |
+| recording | 一つの request fingerprint と response の組 |
+| catalog revision | folder、scenario、選択状態など全体構造の版 |
+| scenario revision | scenario 内 recording 集合の版 |
+| content revision | 一つの recording 内容の版 |
+| blob | request / response body の生 byte 列を SHA-256 で保存したもの |
+| snapshot | 管理画面が同期開始・再同期に使う現在状態 |

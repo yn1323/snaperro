@@ -1,151 +1,101 @@
-# Web GUI
+# GUI
 
-## 概要
+React 管理画面は `http://<host>:<port>/__snaperro__/client` で提供します。Hono server と同一 origin で動き、共有 v2 contract の command/query、upload/import stream、native download capability、イベント stream を利用します。
 
-snaperroはブラウザベースの管理画面を提供します。
-モード切替、シナリオ管理、ファイル編集、リクエストログの確認が可能です。
+## 画面構成
 
-## 関連ファイル
-
-- **Client**: `client/src/` 配下全般
-- **Server**: `server/handlers/index.ts`（静的ファイル配信）
-
----
-
-## アクセス方法
-
-```
-http://localhost:3333/__snaperro__/client
+```text
+┌──────────────────────────────────────────────────────┐
+│ connection / mode / current scenario                 │
+├──────────────┬────────────────┬──────────────────────┤
+│ folder /     │ recording      │ recording editor     │
+│ scenario     │ list / search  │ body actions         │
+├──────────────┴────────────────┴──────────────────────┤
+│ request log                                           │
+└──────────────────────────────────────────────────────┘
 ```
 
-`npx snaperro start` 実行時にブラウザが自動で開きます。
+panel 幅は操作に合わせて調整でき、recording 一覧は endpoint ごとにまとめます。
 
----
+## top bar
 
-## 画面構成（3ペインレイアウト）
+server version、connection state、mode、現在選択中 scenario、control token の設定状態を表示します。mode は `proxy`、`record`、`mock`、`smart` から切り替えます。
 
-```
-┌─────────────────────────────────────────────────────┐
-│  [Proxy] [Record] [Mock] [Smart]      接続状態      │
-├────────────┬────────────────┬───────────────────────┤
-│ Scenarios  │ Files          │  Editor               │
-│ (左ペイン)  │ (中央ペイン)    │  (右ペイン)            │
-│            │                │                       │
-│ ・正常系   │ 検索 [______]  │  ファイル名            │
-│ ・空データ  │               │                       │
-│ ・エラー系  │ /api/users    │  {                    │
-│            │  └ _001.json  │    "endpoint": "...", │
-│            │  └ _002.json  │    ...                │
-│            │               │  }                    │
-│            │ /api/orders   │                       │
-│            │  └ _001.json  │  [整形] [保存] [削除]  │
-├────────────┴────────────────┴───────────────────────┤
-│ Request Logs (折りたたみ可能)                         │
-└─────────────────────────────────────────────────────┘
-```
+connection state は connecting、connected、reconnecting、resyncing、disconnected を区別します。reload や一時的な切断を「データが空」と誤認せず、snapshot の再取得中であることを表示します。
 
----
+server が `401 UNAUTHORIZED` を返すと control token dialog を自動で開きます。token を入力すると HTTP とイベント接続の両方を同じ bearer token で再接続します。key icon から token の更新、clear、再接続もできます。
 
-## 主要コンポーネント
+token は password input で受け取り、その page instance の private memory だけに保持します。`sessionStorage`、`localStorage`、URL、React の公開 state、markup、error message には保存・表示しません。reload、navigation、tab close で消えるため、次の接続時に再入力します。
 
-### TopBar（トップバー）
-**ファイル**: `client/src/components/TopBar.tsx`
+## folder / scenario panel
 
-- 4つのモードボタン
-- 現在モードのハイライト表示
-- Recordモード時は録画インジケーター（●）
-- 接続状態表示
+folder view では次を行えます。
 
-### ScenarioPane（左ペイン）
-**ファイル**: `client/src/components/ScenarioPane.tsx`
+- folder の作成、名前変更、削除
+- ZIP archive の import / export
+- folder を開いて scenario 一覧へ移動
 
-- シナリオ一覧表示
-- フォルダ構造対応
-- 新規作成、ZIPアップロード
-- コンテキストメニュー（リネーム、複製、ダウンロード、削除）
+scenario view では次を行えます。
 
-### FilePane（中央ペイン）
-**ファイル**: `client/src/components/FilePane.tsx`
+- scenario の作成、名前変更、複製、削除
+- traffic が参照・記録する current scenario の選択
+- folder 一覧へ戻る
 
-- ファイル一覧表示
-- エンドポイント別グルーピング
-- 検索機能（ファイル名・エンドポイント・内容）
-- ファイルアップロード
+削除は確認 dialog を経由します。server の catalog commit が成功してから UI state に反映し、失敗時に見た目だけ削除しません。
 
-### EditorPane（右ペイン）
-**ファイル**: `client/src/components/EditorPane.tsx`
+## recording panel
 
-- JSONエディター（textarea）
-- 整形ボタン（Pretty Print）
-- 保存・削除ボタン
-- 検索文字列のハイライト表示
+選択中 scenario の recording summary を cursor pagination で読み込みます。
 
-### LogPanel（ログパネル）
-**ファイル**: `client/src/components/LogPanel.tsx`
+- endpoint ごとの group 表示
+- method、filename の表示
+- filename、metadata/header、分離保存された非圧縮 request/response body を対象にした text search
+- `Load more` による次 page の取得
+- recording JSON/ZIP の import と、body を含む portable ZIP download
 
-- リクエストログのリアルタイム表示
-- メソッド、パス、ステータス、所要時間
-- 折りたたみ可能
+一覧 result には body byte 列を含めません。recording を開いたときに詳細 metadata を取得し、必要な body だけを個別に stream します。
+検索結果の Previous/Next は editor 内の JSON 一致だけを移動します。filename または分離保存された非圧縮 body だけが一致した場合は、画面の body download で内容を確認します。`content-encoding` がある body は圧縮 byte 列を文字列として誤判定しないよう、本文検索の対象外です。
 
----
+## editor
 
-## カスタムフック
+editor は recording の JSON 表現を編集します。
 
-| フック | 役割 | ファイル |
-|-------|------|---------|
-| `useSnaperroSSE` | SSE接続、状態同期 | `hooks/useSnaperroSSE.ts` |
-| `useSnaperroAPI` | REST API呼び出し | `hooks/useSnaperroAPI.ts` |
-| `useFileEditor` | ファイル編集状態 | `hooks/useFileEditor.ts` |
-| `useFavicon` | ファビコン動的変更 | `hooks/useFavicon.ts` |
-| `useScenarioNavigation` | シナリオナビゲーション | `hooks/useScenarioNavigation.ts` |
+- format
+- save、delete
+- request body の upload / download
+- response body の upload / download
+- `Ctrl+S` / `Cmd+S` で保存
 
----
+body upload は raw file を先に blob endpoint へ stream し、返された `BodyRef` を draft に設定します。巨大な body を editor 用 JSON に埋め込みません。
 
-## 技術スタック
+body を置き換えると、`BodyRef` を正本として `content-type`、`content-encoding`、`content-length` も同期します。古い representation header を残して mock response や request fingerprint と byte 実体を不一致にしません。
 
-| 技術 | 用途 |
-|-----|------|
-| React 19 | UIフレームワーク |
-| Chakra UI v3 | コンポーネントライブラリ |
-| Emotion | CSS-in-JS |
-| next-themes | ダークモード切替 |
+textarea の入力 buffer は server snapshot から分離します。key 入力ごとに大きな document 全体を React tree へ複製せず、明示的な parse/save 時に contract へ変換します。
 
----
+## 未保存変更と競合
 
-## リアルタイム更新
+別 recording や scenario を開く前に dirty draft がある場合、破棄確認を表示します。イベントで remote change を受けた場合も draft を自動破棄しません。
 
-SSE（Server-Sent Events）により、以下が自動更新されます：
+| 状態 | GUI の動作 |
+| --- | --- |
+| 同じ recording が更新された | reload または draft 継続を選択 |
+| 同じ recording が削除された | draft を保持し、保存を停止 |
+| current scenario が変わった | 元 scenario へ戻るまで保存を停止 |
+| 保存時 revision conflict | 最新値を取得し、古い draft の黙示上書きをしない |
+| event sequence gap / runtime 変更 | snapshot を取得し直して resync |
 
-- モード変更
-- シナリオ切り替え
-- ファイル作成・更新・削除
-- リクエストログ
+## request log
 
-詳細は [sse.md](sse.md) を参照。
+下部 panel は traffic の完了と非同期の記録結果を同じ request 行へ反映します。時刻、method、path、実行 action/sub-action、status、所要時間、mock の match、保存中・保存成功・保存失敗と安全な失敗内容を確認できます。mock hit の `matched` は既存 recording の選択を表すだけで、`saved` とは表示しません。
 
----
+request log は runtime telemetry であり、永続 recording 一覧とは別です。mock で既存 recording に一致した状態を `matched`、record/smart の非同期保存を `saving…`、`saved`、`failed` として区別します。同じ request ID の outcome event で一つの行を更新します。画面上で clear しても recording や store を削除しません。
 
-## ファビコン
+## import / export の失敗
 
-モードに応じてファビコンが動的に変化：
+folder import は upload、archive validation、blob materialize、catalog commit を分離します。途中で失敗した場合は error を表示し、folder の一部だけを一覧へ追加しません。
 
-| モード | ファビコン |
-|--------|----------|
-| Proxy | 通常アイコン |
-| Record | 赤いドット付き |
-| Mock | 青いアイコン |
-| Smart | 緑のアイコン |
+folder export と body/recording download は、既定 60 秒で失効する single-use capability を browser の native download へ渡します。control token や byte 列を URL/JavaScript memory に入れません。一時 ZIP は完了、中断、失効、shutdown 後に削除します。再試行するときは export/download 操作をもう一度実行します。
 
----
+## 同期の詳細
 
-## ダークモード
-
-`next-themes` によりシステム設定に連動したダークモードをサポート。
-
----
-
-## 関連ドキュメント
-
-- [scenario.md](scenario.md) - シナリオ管理の詳細
-- [sse.md](sse.md) - リアルタイム更新
-- [control-api.md](control-api.md) - 内部API
+GUI が使う command/query は [control API](control-api.md)、snapshot と event の規則は [イベント同期](sse.md) を参照してください。

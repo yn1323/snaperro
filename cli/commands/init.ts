@@ -1,24 +1,53 @@
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { consola } from "consola";
+import { requestFingerprint } from "../../server/v2/domain/request-fingerprint.js";
+import { RandomIdGenerator } from "../../server/v2/runtime/system-adapters.js";
+import { fsyncDirectory } from "../../server/v2/store/atomic.js";
+import { writeBlobBytes } from "../../server/v2/store/blob-store.js";
+import { FilesystemStore } from "../../server/v2/store/filesystem-store.js";
+import { assertMigrationReadiness } from "../../server/v2/store/migration-readiness.js";
+import {
+  CatalogSnapshotSchema,
+  FolderSchema,
+  type Recording,
+  RecordingSchema,
+  type Scenario,
+  ScenarioManifestSchema,
+  ScenarioSchema,
+} from "../../shared/contracts-v2/entities.js";
+import {
+  HttpMethodSchema,
+  IsoDateTimeSchema,
+  RequestFingerprintSchema,
+  RevisionSchema,
+  V2_SCHEMA_VERSION,
+} from "../../shared/contracts-v2/primitives.js";
 
 const CONFIG_TEMPLATE = `import { defineConfig } from 'snaperro'
 
 export default defineConfig({
-  port: 3333,
-  filesDir: '.snaperro/files',
+  configVersion: 2,
+  server: {
+    host: '127.0.0.1',
+    port: 3333,
+  },
+  storage: {
+    root: '.snaperro/v2',
+  },
 
   // Mock fallback behavior when mock file is not found
   // "404" - Return 404 error (default)
   // "proxy" - Forward to real server
   // "proxy&record" - Forward to real server and record response
-  mockFallback: "404",
+  mock: { fallback: '404' },
 
   // Request headers to mask when recording (applied to all APIs)
-  // maskRequestHeaders: ["Authorization", "Cookie"],
+  // recording: { maskRequestHeaders: ['Authorization', 'Cookie'] },
 
   // Upstream proxy (for corporate networks)
-  // upstreamProxy: {
+  // proxy: {
   //   url: "http://proxy.company.com:8080",
   // },
 
@@ -59,7 +88,7 @@ export default defineConfig({
 })
 `;
 
-const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/files/*\n!.snaperro/files/.gitkeep\n.snaperro/state.json\n";
+const GITIGNORE_ENTRY = "\n# snaperro\n.snaperro/v2/\n";
 
 // ============================================
 // Helper functions
@@ -80,6 +109,47 @@ type FileData = {
     body: unknown;
   };
 };
+
+function isNotFound(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "ENOENT";
+}
+
+function isAlreadyExists(error: unknown): boolean {
+  return error instanceof Error && "code" in error && error.code === "EEXIST";
+}
+
+function errorValue(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function hasV2GitignoreEntry(content: string): boolean {
+  return content.split(/\r?\n/u).some((line) => /^\/?\.snaperro\/v2\/?[\t ]*$/u.test(line));
+}
+
+async function updateExistingGitignore(gitignorePath: string): Promise<"updated" | "unchanged"> {
+  const content = await fs.readFile(gitignorePath, "utf-8");
+  if (hasV2GitignoreEntry(content)) return "unchanged";
+  await fs.appendFile(gitignorePath, GITIGNORE_ENTRY);
+  return "updated";
+}
+
+async function ensureGitignore(gitignorePath: string): Promise<"created" | "updated" | "unchanged"> {
+  try {
+    return await updateExistingGitignore(gitignorePath);
+  } catch (error) {
+    if (!isNotFound(error)) throw error;
+  }
+
+  try {
+    await fs.writeFile(gitignorePath, `${GITIGNORE_ENTRY.trim()}\n`, { encoding: "utf-8", flag: "wx" });
+    return "created";
+  } catch (error) {
+    // Another initializer may have created the file after our missing read.
+    // Re-read and append so its content is never truncated.
+    if (!isAlreadyExists(error)) throw error;
+    return updateExistingGitignore(gitignorePath);
+  }
+}
 
 function createFileData(
   endpoint: string,
@@ -395,70 +465,208 @@ const SAMPLE_DATA: Record<string, Record<string, FileData>> = {
   "demo-error": SAMPLE_DEMO_ERROR,
 };
 
-/**
- * Write sample files
- */
-async function writeSampleFiles(filesDir: string): Promise<void> {
-  for (const [scenario, files] of Object.entries(SAMPLE_DATA)) {
-    for (const [filePath, data] of Object.entries(files)) {
-      const fullPath = path.join(filesDir, scenario, filePath);
-      await fs.mkdir(path.dirname(fullPath), { recursive: true });
-      await fs.writeFile(fullPath, JSON.stringify(data, null, 2), "utf-8");
+function headerFields(headers: Record<string, string>): Array<[string, string]> {
+  return Object.entries(headers);
+}
+
+function queryFields(query: Record<string, string>): Array<[string, string]> {
+  return Object.entries(query);
+}
+
+function contentType(headers: Record<string, string>): string {
+  return Object.entries(headers).find(([name]) => name.toLowerCase() === "content-type")?.[1] ?? "application/json";
+}
+
+async function writeJsonBody(store: FilesystemStore, value: unknown, headers: Record<string, string>) {
+  const serialized = JSON.stringify(value);
+  if (serialized === undefined) throw new Error("Sample JSON body cannot be serialized");
+  return writeBlobBytes(store.blobs, Buffer.from(serialized, "utf8"), {
+    mediaType: contentType(headers),
+    contentEncoding: null,
+  });
+}
+
+async function seedSampleStore(cwd: string): Promise<boolean> {
+  const storageRoot = path.join(cwd, ".snaperro", "v2");
+  try {
+    const stat = await fs.stat(storageRoot);
+    if (!stat.isDirectory()) throw new Error(`The v2 storage path is not a directory: ${storageRoot}`);
+    try {
+      await fs.access(path.join(storageRoot, "store.json"));
+      return false;
+    } catch {
+      throw new Error(`An incomplete v2 store already exists: ${storageRoot}`);
     }
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+  }
+
+  const storageParent = path.dirname(storageRoot);
+  const stagingRoot = path.join(storageParent, `.v2.init.${randomUUID()}`);
+  const store = new FilesystemStore(stagingRoot);
+  const ids = new RandomIdGenerator();
+  const timestamp = IsoDateTimeSchema.parse(new Date().toISOString());
+  let storagePublished = false;
+  const folder = FolderSchema.parse({
+    id: ids.nextFolderId(),
+    name: "Samples",
+    revision: 0,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  });
+  const scenarios: Scenario[] = [];
+
+  try {
+    await store.initialize();
+    for (const [scenarioName, files] of Object.entries(SAMPLE_DATA)) {
+      const scenarioId = ids.nextScenarioId();
+      const recordings: Recording[] = [];
+      for (const [filename, file] of Object.entries(files)) {
+        const requestBody =
+          file.request.body === null ? null : await writeJsonBody(store, file.request.body, file.request.headers);
+        const responseBody =
+          file.response.body === null && [204, 205, 304].includes(file.response.status)
+            ? null
+            : await writeJsonBody(store, file.response.body, file.response.headers);
+        const fingerprint = RequestFingerprintSchema.parse(
+          requestFingerprint({
+            method: file.method,
+            route: file.endpoint,
+            pathParams: file.request.pathParams,
+            query: queryFields(file.request.queryParams),
+            body: file.request.body === null ? { kind: "empty" } : { kind: "json", value: file.request.body },
+          }),
+        );
+        recordings.push(
+          RecordingSchema.parse({
+            id: ids.nextRecordingId(),
+            scenarioId,
+            filename,
+            revision: 0,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            route: file.endpoint,
+            method: HttpMethodSchema.parse(file.method.toUpperCase()),
+            requestFingerprint: fingerprint,
+            request: {
+              pathParams: file.request.pathParams,
+              query: queryFields(file.request.queryParams),
+              headers: headerFields(file.request.headers),
+              body: requestBody,
+            },
+            response: {
+              status: file.response.status,
+              statusText: "",
+              headers: headerFields(file.response.headers),
+              body: responseBody,
+            },
+          }),
+        );
+      }
+      const scenario = ScenarioSchema.parse({
+        id: scenarioId,
+        folderId: folder.id,
+        name: scenarioName,
+        revision: 0,
+        recordingsCount: recordings.length,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+      await store.manifests.create(
+        ScenarioManifestSchema.parse({
+          schemaVersion: V2_SCHEMA_VERSION,
+          scenarioId,
+          revision: 0,
+          recordings,
+        }),
+      );
+      scenarios.push(scenario);
+    }
+
+    const initialCatalog = await store.catalogs.read();
+    await store.catalogs.compareAndSwap(
+      initialCatalog.revision,
+      CatalogSnapshotSchema.parse({
+        schemaVersion: V2_SCHEMA_VERSION,
+        revision: RevisionSchema.parse(1),
+        mode: "smart",
+        currentScenarioId: scenarios.at(0)?.id ?? null,
+        folders: [folder],
+        scenarios,
+      }),
+    );
+    const integrity = await store.verifyIntegrity();
+    if (!integrity.ok) throw new Error(`Initialized v2 store failed integrity checks: ${integrity.errors.join("; ")}`);
+    await fsyncDirectory(stagingRoot);
+    await fs.rename(stagingRoot, storageRoot);
+    storagePublished = true;
+    try {
+      await fsyncDirectory(storageParent);
+    } catch (error) {
+      throw new Error(
+        `The v2 sample store was published at ${storageRoot}, but parent-directory durability could not be confirmed: ${errorValue(error).message}. Re-run snaperro init to verify the existing store.`,
+        { cause: error },
+      );
+    }
+    return true;
+  } catch (error) {
+    if (storagePublished) throw error;
+    try {
+      await fs.rm(stagingRoot, { recursive: true, force: true });
+    } catch (cleanupError) {
+      const primary = errorValue(error);
+      const cleanup = errorValue(cleanupError);
+      throw new AggregateError(
+        [primary, cleanup],
+        `${primary.message}; additionally, failed to remove the incomplete v2 staging directory ${stagingRoot}: ${cleanup.message}`,
+        { cause: error },
+      );
+    }
+    throw error;
   }
 }
 
 /**
  * init command
- * - Create .snaperro/files directory
+ * - Create an atomic v2 store with sample scenarios
  * - Create snaperro.config.ts (if not exists)
- * - Add .snaperro/ to .gitignore
+ * - Add .snaperro/v2/ to .gitignore
  */
-export async function initCommand(): Promise<void> {
-  const cwd = process.cwd();
+export interface InitCommandOptions {
+  cwd?: string;
+}
+
+export async function initCommand(options: InitCommandOptions = {}): Promise<void> {
+  const cwd = path.resolve(options.cwd ?? process.cwd());
+
+  // Refuse before creating config, ignore rules, or a sample store. Otherwise a
+  // native sample destination would hide the legacy data and block migration.
+  await assertMigrationReadiness(path.join(cwd, ".snaperro", "files"), path.join(cwd, ".snaperro", "v2"));
 
   consola.start("Initializing snaperro...");
 
-  // 1. Create .snaperro/files directory
+  // 1. Create the v2 store and sample catalog.
   const snaperroDir = path.join(cwd, ".snaperro");
-  const filesDir = path.join(snaperroDir, "files");
-  await fs.mkdir(filesDir, { recursive: true });
-  consola.success("Created .snaperro/files directory");
+  await fs.mkdir(snaperroDir, { recursive: true });
+  if (await seedSampleStore(cwd)) consola.success("Created v2 sample store (demo, demo-empty, demo-error)");
+  else consola.info("The v2 store already exists; sample data was left unchanged");
 
-  // 2. Create .gitkeep files
-  await fs.writeFile(path.join(snaperroDir, ".gitkeep"), "", "utf-8");
-  await fs.writeFile(path.join(filesDir, ".gitkeep"), "", "utf-8");
-  consola.success("Created .gitkeep files");
-
-  // 3. Place sample data
-  await writeSampleFiles(filesDir);
-  consola.success("Placed sample scenarios (demo, demo-empty, demo-error)");
-
-  // 4. Create snaperro.config.ts (if not exists)
+  // 2. Create snaperro.config.ts (if not exists)
   const configPath = path.join(cwd, "snaperro.config.ts");
   try {
-    await fs.access(configPath);
-    consola.info("snaperro.config.ts already exists");
-  } catch {
-    await fs.writeFile(configPath, CONFIG_TEMPLATE, "utf-8");
+    await fs.writeFile(configPath, CONFIG_TEMPLATE, { encoding: "utf-8", flag: "wx" });
     consola.success("Created snaperro.config.ts");
+  } catch (error) {
+    if (!isAlreadyExists(error)) throw error;
+    consola.info("snaperro.config.ts already exists");
   }
 
-  // 5. Add to .gitignore
+  // 3. Add the v2 store to .gitignore.
   const gitignorePath = path.join(cwd, ".gitignore");
-  try {
-    const content = await fs.readFile(gitignorePath, "utf-8");
-    if (!content.includes("# snaperro")) {
-      await fs.appendFile(gitignorePath, GITIGNORE_ENTRY);
-      consola.success("Added snaperro entries to .gitignore");
-    } else {
-      consola.info(".gitignore already contains snaperro entries");
-    }
-  } catch {
-    // Create .gitignore if it doesn't exist
-    await fs.writeFile(gitignorePath, `${GITIGNORE_ENTRY.trim()}\n`, "utf-8");
-    consola.success("Created .gitignore");
-  }
+  const gitignoreResult = await ensureGitignore(gitignorePath);
+  if (gitignoreResult === "created") consola.success("Created .gitignore");
+  else if (gitignoreResult === "updated") consola.success("Added snaperro entries to .gitignore");
+  else consola.info(".gitignore already contains snaperro entries");
 
   consola.box({
     title: "snaperro initialization complete 🐕",

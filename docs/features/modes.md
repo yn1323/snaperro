@@ -1,174 +1,58 @@
-# モード（Proxy / Record / Mock / Smart）
+# 4 つのモード
 
-## 概要
+snaperro は request ごとに route と fingerprint を決定し、現在の mode に従って proxy、record、mock を組み合わせます。mode の切り替えは revision 付き command として全 client に同期されます。
 
-snaperroは4つの動作モードを持ち、用途に応じて切り替えて使用します。
+各 request は受付時に一度だけ catalog を読み、その時点の mode と選択中 scenario を処理完了まで固定します。処理中に管理画面から mode や scenario が変更されても、一つの request が新旧状態を混在させることはありません。
 
-| モード | 動作 | 用途 |
-|--------|------|------|
-| **Proxy** | 実APIへ転送 | 本番同等の動作確認 |
-| **Record** | 実APIへ転送 + JSON保存 | モックデータ作成 |
-| **Mock** | 保存済みJSONを返却 | オフラインテスト |
-| **Smart** | モックあり→Mock、なし→Record | 通常開発（推奨） |
+## 比較
 
-## 関連ファイル
+| mode | upstream へ接続 | recording を参照 | response を保存 |
+| --- | --- | --- | --- |
+| `proxy` | 常に | しない | しない |
+| `record` | 常に | しない | 選択中 scenario へ保存 |
+| `mock` | miss 時は fallback に従う | 選択中 scenario | `proxy&record` fallback のときだけ保存 |
+| `smart` | miss 時だけ | 選択中 scenario | miss response を保存 |
 
-- **Server**: `server/handlers/proxy.ts`, `recorder.ts`, `mocker.ts`, `smart.ts`, `handler.ts`
-- **Client**: `client/src/components/TopBar.tsx`
-- **Types**: `shared/types/mode.ts`
+## `proxy`
 
----
+すべての matching route を upstream へ転送し、返ってきた status、header、body を client へ流します。store を読み書きしないため scenario の選択は不要です。
 
-## Proxyモード
+## `record`
 
-### 動作
-```
-リクエスト → snaperro → 実API → レスポンス
-```
+すべての matching route を upstream へ転送しながら response を選択中 scenario へ記録します。同じ request fingerprint がすでに存在する場合は、その scenario の recording を更新します。
 
-### 特徴
-- 設定ファイルで定義されたヘッダー（API Key等）を自動付与
-- レスポンスはそのままクライアントへ返却
-- ファイル保存なし
+scenario が選択されていない場合は記録先を推測せず失敗します。
 
-### 用途
-- 実際のAPIと同じ挙動を確認したい場合
-- API開発の初期段階
+## `mock`
 
----
+選択中 scenario から fingerprint が一致する recording を探し、保存済み status、header、body を返します。見つからない場合は `mock.fallback` に従います。
 
-## Recordモード
+- `404`: not found を返す
+- `proxy`: upstream response をそのまま返す
+- `proxy&record`: upstream response を返し、選択中 scenario へ記録する
 
-### 動作
-```
-リクエスト → snaperro → 実API → レスポンス
-                           ↓
-                      JSON保存 + SSE通知
-```
+## `smart`
 
-### 特徴
-- 選択中のシナリオディレクトリに記録
-- リクエスト情報（パラメータ、ヘッダー、ボディ）とレスポンスを保存
-- **同じエンドポイント + 同じパラメータ** → ファイル上書き
-- **同じエンドポイント + 異なるパラメータ** → 別ファイル生成
+一致する recording があれば mock response を返します。見つからなければ upstream へ転送して response を記録します。通常利用では、既存 fixture を維持しながら未記録 request だけを補う mode です。
 
-### 用途
-- モックデータの初期作成
-- 特定のAPIレスポンスを保存したい場合
+## request matching
 
----
+fingerprint は次の情報から決まります。
 
-## Mockモード
+1. HTTP method
+2. 設定で一致した route pattern
+3. path parameter
+4. key/value を正規化した query parameter
+5. request body の内容
 
-### 動作
-```
-リクエスト → snaperro → JSON検索 → レスポンス返却
-```
+host や表示用 filename では識別しません。同じ意味の query を安定して照合し、body が異なる request は別 recording として扱います。
 
-### マッチング条件
-1. HTTPメソッドが一致
-2. エンドポイントが一致
-3. パスパラメータが一致
-4. クエリパラメータが一致
-5. リクエストボディが一致（POST/PUT/PATCH）
+request body が `recording.maxRequestBodyBytes` を超える場合、無制限に memory を消費して fingerprint を作りません。記録できない理由を typed error と request log に残します。
 
-### mockFallback設定
-マッチするファイルがない場合の挙動を設定可能：
+## streaming
 
-| 値 | 動作 |
-|----|------|
-| `"404"` | 404エラーを返す（デフォルト） |
-| `"proxy"` | 実APIへ転送 |
-| `"proxy&record"` | 実APIへ転送 + 記録 |
+proxy と record の response は upstream から client へ chunk 単位で流します。record 時は同じ stream を blob writer にも渡し、backpressure を維持します。
 
-### 用途
-- オフライン開発
-- 安定したテスト環境
-- CIでの自動テスト
+blob書き込みやrecording commitだけが失敗した場合も、すでに得たupstream responseのstatus・header・bodyはclientへ最後まで返します。request logでは通信結果と保存結果を分け、保存失敗を`recording.outcome`として通知します。不完全なrecordingはcatalogへ公開しません。
 
----
-
-## Smartモード
-
-### 動作
-```
-リクエスト → JSON検索
-              ↓
-           見つかった？
-          /          \
-        Yes           No
-         ↓             ↓
-     Mock返却     Record実行
-```
-
-### 特徴
-- モックがあれば即座に返却（APIコール不要）
-- モックがなければ自動的に記録
-- 2回目以降は記録されたモックを使用
-
-### 用途
-- **日常開発での推奨モード**
-- APIレート制限の回避
-- 開発効率の最大化
-
----
-
-## データモデル
-
-```typescript
-// shared/types/mode.ts
-export type Mode = "proxy" | "record" | "mock" | "smart";
-```
-
----
-
-## API
-
-### 内部API（Control API）
-
-#### モード取得
-```
-GET /__snaperro__/mode
-```
-**レスポンス**:
-```json
-{ "mode": "smart" }
-```
-
-#### モード変更
-```
-PUT /__snaperro__/mode
-Content-Type: application/json
-
-{ "mode": "record" }
-```
-
----
-
-## 設定オプション
-
-| オプション | 型 | 説明 | デフォルト |
-|-----------|-----|------|----------|
-| `mockFallback` | `"404" \| "proxy" \| "proxy&record"` | Mockモードでファイルが見つからない時の挙動 | `"404"` |
-
----
-
-## 使用例
-
-### GUI での切り替え
-トップバーの4つのボタンでモードを切り替えます。
-
-### API での切り替え
-```bash
-# Smartモードに変更
-curl -X PUT http://localhost:3333/__snaperro__/mode \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "smart"}'
-```
-
----
-
-## 関連ドキュメント
-
-- [file-storage.md](file-storage.md) - ファイル保存・マッチングの詳細
-- [configuration.md](configuration.md) - mockFallback設定
+client 切断後の動作は `recording.completeOnClientDisconnect` で選びます。`true` は記録を完成させ、`false` は upstream と stage 中の保存を中止します。どちらの場合も、不完全な recording を catalog へ公開しません。

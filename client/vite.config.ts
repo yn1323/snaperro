@@ -6,6 +6,11 @@ export default defineConfig(({ command }) => ({
   plugins: [react()],
   root: path.resolve(__dirname),
   base: command === "build" ? "/__snaperro__/client/" : "/",
+  resolve: {
+    alias: {
+      "@snaperro/shared": path.resolve(__dirname, "../shared"),
+    },
+  },
   build: {
     outDir: path.resolve(__dirname, "../dist/client"),
     emptyOutDir: true,

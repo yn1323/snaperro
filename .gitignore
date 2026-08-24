@@ -11,10 +11,10 @@ count.txt
 
 # env files (can opt-in for committing if needed)
 .env*
-!.env.forTestRestart
 
 
 # snaperro
 .snaperro/files/*
 !.snaperro/files/.gitkeep
 .snaperro/state.json
+.snaperro/v2/

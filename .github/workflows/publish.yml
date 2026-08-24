@@ -1,75 +1,48 @@
-name: Publish to npm
+name: Publish
 
 on:
-  pull_request:
-    types: [closed]
-    branches:
-      - main
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   publish:
-    if: github.event.pull_request.merged == true
+    name: Verify and publish package
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
     permissions:
-      contents: write
-      id-token: write
-
+      contents: read
+      id-token: write # Required by npm trusted publishing and provenance generation.
     steps:
-      - name: Check release label
-        id: check-label
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+        with:
+          node-version: '24.12'
+
+      - name: Verify tag and package version
+        shell: bash
         run: |
-          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
-          if echo "$LABELS" | grep -q "release:major"; then
-            echo "release_type=major" >> $GITHUB_OUTPUT
-          elif echo "$LABELS" | grep -q "release:minor"; then
-            echo "release_type=minor" >> $GITHUB_OUTPUT
-          elif echo "$LABELS" | grep -q "release:patch"; then
-            echo "release_type=patch" >> $GITHUB_OUTPUT
-          else
-            echo "release_type=none" >> $GITHUB_OUTPUT
-          fi
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          test "$GITHUB_REF_NAME" = "v$PACKAGE_VERSION"
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          node scripts/verify-release-tag.mjs
 
-      - name: Skip if no release label
-        if: steps.check-label.outputs.release_type == 'none'
-        run: echo "No release label found. Skipping publish."
-
-      - name: Checkout
-        if: steps.check-label.outputs.release_type != 'none'
-        uses: actions/checkout@v4
-
-      - name: Setup
-        if: steps.check-label.outputs.release_type != 'none'
-        uses: ./.github/actions/setup
-
-      - name: Install latest npm
-        if: steps.check-label.outputs.release_type != 'none'
-        run: npm install -g npm@latest
-
-      - name: Configure Git
-        if: steps.check-label.outputs.release_type != 'none'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Bump version
-        if: steps.check-label.outputs.release_type != 'none'
-        id: bump-version
-        run: |
-          NEW_VERSION=$(npm version ${{ steps.check-label.outputs.release_type }} --no-git-tag-version)
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: Commit and push
-        if: steps.check-label.outputs.release_type != 'none'
-        run: |
-          git add package.json
-          git commit -m "chore: release ${{ steps.bump-version.outputs.new_version }}"
-          git tag ${{ steps.bump-version.outputs.new_version }}
-          git push origin main --tags
-
-      - name: Build
-        if: steps.check-label.outputs.release_type != 'none'
-        run: pnpm build
-
-      - name: Publish to npm
-        if: steps.check-label.outputs.release_type != 'none'
-        run: npm publish --provenance --access public
+      - run: pnpm lint
+      - run: pnpm type-check
+      - run: pnpm type-check:client
+      - run: pnpm type-check:demo
+      - run: pnpm test:all
+      - run: pnpm build
+      - run: pnpm verify:package
+      - run: npm publish --provenance --access public

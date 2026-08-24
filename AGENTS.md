@@ -4,7 +4,7 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## プロジェクト概要
 
-snaperro（スナペーロ）- GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化する。詳細は [docs/impl/2025-11-29_プロジェクト方針.md](docs/impl/2025-11-29_プロジェクト方針.md)、[docs/impl/2025-12-02_01_概要.md](docs/impl/2025-12-02_01_概要.md) を参照。
+snaperro（スナペーロ）- GUI付きモックプロキシサーバー。複数APIからのレスポンスを記録・再生し、開発・テストを効率化する。詳細は [README_ja.md](README_ja.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照。
 
 ## 参照ドキュメント
 - @docs/ARCHITECTURE.md
@@ -16,29 +16,30 @@ snaperro（スナペーロ）- GUI付きモックプロキシサーバー。複�
 pnpm install          # 依存関係インストール
 pnpm format           # Biomeでフォーマット + lint修正
 pnpm lint             # Biomeでlintチェックのみ
+pnpm test:all         # server/client/demoの全テスト
 ```
 
 ## ローカルCLI実行
 
 ```bash
-pnpm build && npx . init      # ビルド後にCLI実行
-npx tsx src/cli/index.ts init # ビルドなしで直接実行
+pnpm build && node dist/cli/index.js init # ビルド後にCLI実行
+pnpm exec tsx cli/index.ts init           # ビルドなしで直接実行
 ```
 
 ## コミット前チェック
 
 ```bash
-pnpm type-check && pnpm format
+pnpm type-check && pnpm type-check:client && pnpm type-check:demo
+pnpm format && pnpm test:all && pnpm build
 ```
-
-※ `type-check` スクリプトは未実装（TypeScript設定後に追加予定）
 
 ## 技術スタック
 
 - パッケージマネージャー: pnpm
 - Linter/Formatter: Biome
 - バリデーション: Zod
-- 日付: dayjs
+- サーバー: Hono
+- GUI: React + Chakra UI
 
 ## 核心制約
 

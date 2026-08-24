@@ -1,297 +1,172 @@
-# 内部制御API
+# control API
 
-## 概要
+snaperro v2 の管理機能は `/__snaperro__/v2` 配下にあります。書き込みを command、読み取りを query、大きな byte 列を upload/import stream と native download に分け、すべての JSON 契約を共有 Zod schema で検証します。
 
-snaperroは `/__snaperro__/` プレフィックスで内部制御APIを提供します。
-GUI、外部ツール、スクリプトからの操作に使用します。
+この interface は管理画面と同じ内部契約を使う高度な連携向けです。command/query の schema は `shared/contracts-v2` が正本です。
 
-## 関連ファイル
+## endpoint
 
-- **Server**: `server/handlers/control-api.ts`
-- **Types**: `shared/types/sse.ts`
+| method / path | 用途 | response |
+| --- | --- | --- |
+| `GET /__snaperro__/v2/snapshot` | 現在の server snapshot | JSON |
+| `POST /__snaperro__/v2/commands` | 型付き書き込み | JSON |
+| `POST /__snaperro__/v2/queries` | 型付き読み取り | JSON |
+| `GET /__snaperro__/v2/events` | revision 付き event stream | `text/event-stream` |
+| `POST /__snaperro__/v2/bodies` | raw body upload | `BodyRef` JSON |
+| `POST /__snaperro__/v2/transfers/imports?filename=...` | folder ZIP の検証・stage | transfer JSON |
+| `POST /__snaperro__/v2/transfers/recording-imports?filename=...` | recording ZIP の検証・stage | transfer JSON |
+| `GET /__snaperro__/downloads/:capability` | 発行済み download の一回限りの取得 | byte stream |
 
----
+未定義の `/__snaperro__/*` は user traffic として upstream へ転送しません。
 
-## エンドポイント一覧
+## envelope
 
-### 状態管理
+command は `protocolVersion: 2`、一意な `commandId`、`type` と type 固有 payload を持ちます。catalog を変える command は `expectedRevision`、recording を変える command は `expectedScenarioRevision` を使います。recording 更新・削除には `expectedContentRevision` も必要です。
 
-| メソッド | パス | 説明 |
-|---------|------|------|
-| GET | `/__snaperro__/status` | サーバー状態一括取得 |
-| GET | `/__snaperro__/mode` | 現在のモード取得 |
-| PUT | `/__snaperro__/mode` | モード変更 |
-
-### シナリオ管理
-
-| メソッド | パス | 説明 |
-|---------|------|------|
-| GET | `/__snaperro__/scenarios` | シナリオ一覧 |
-| POST | `/__snaperro__/scenarios` | シナリオ作成 |
-| PUT | `/__snaperro__/scenarios/current` | シナリオ切り替え |
-| DELETE | `/__snaperro__/scenarios/:name` | シナリオ削除 |
-| PUT | `/__snaperro__/scenarios/:name/rename` | シナリオリネーム |
-| POST | `/__snaperro__/scenarios/:name/duplicate` | シナリオ複製 |
-| GET | `/__snaperro__/scenarios/:name/download` | ZIPダウンロード |
-| POST | `/__snaperro__/scenarios/upload` | ZIPアップロード |
-
-### ファイル管理
-
-| メソッド | パス | 説明 |
-|---------|------|------|
-| GET | `/__snaperro__/scenarios/:scenario/files` | ファイル一覧 |
-| GET | `/__snaperro__/scenarios/:scenario/files/search` | ファイル検索 |
-| GET | `/__snaperro__/scenarios/:scenario/files/:filename` | ファイル内容取得 |
-| PUT | `/__snaperro__/scenarios/:scenario/files/:filename` | ファイル更新 |
-| DELETE | `/__snaperro__/scenarios/:scenario/files/:filename` | ファイル削除 |
-| POST | `/__snaperro__/scenarios/:scenario/files/upload` | ファイルアップロード |
-| GET | `/__snaperro__/scenarios/:scenario/files/:filename/download` | ファイルダウンロード |
-
-### SSE
-
-| メソッド | パス | 説明 |
-|---------|------|------|
-| GET | `/__snaperro__/events` | SSEストリーム |
-
----
-
-## API詳細
-
-### GET /__snaperro__/status
-
-サーバーの全状態を一括取得します。
-
-**レスポンス**:
 ```json
 {
-  "version": "1.0.0",
-  "mode": "smart",
-  "currentScenario": "正常系フル",
-  "scenarios": ["正常系フル", "空データ", "エラー系"],
-  "folders": [
-    { "name": "テスト", "scenariosCount": 2 }
-  ],
-  "files": [
-    { "filename": "api_users_001.json", "endpoint": "/api/users", "method": "GET" }
-  ]
+  "protocolVersion": 2,
+  "commandId": "cmd_0123456789abcdef",
+  "type": "mode.set",
+  "expectedRevision": 12,
+  "mode": "smart"
 }
 ```
 
----
+成功時は type 固有 result を返します。
 
-### GET /__snaperro__/mode
-
-**レスポンス**:
-```json
-{ "mode": "smart" }
-```
-
----
-
-### PUT /__snaperro__/mode
-
-**リクエスト**:
-```json
-{ "mode": "record" }
-```
-
-**レスポンス**:
-```json
-{ "mode": "record" }
-```
-
----
-
-### GET /__snaperro__/scenarios
-
-**レスポンス**:
 ```json
 {
-  "scenarios": ["正常系フル", "空データ"],
-  "folders": [
-    { "name": "テスト", "scenariosCount": 2 }
-  ],
-  "currentScenario": "正常系フル"
+  "revision": 13,
+  "mode": "smart"
 }
 ```
 
----
+query は永続データを変更せず、`protocolVersion: 2` と `type` を受け取ります。export/download query だけは短命な capability と一時 file を作りますが、catalog、manifest、blob の状態は変えません。
 
-### POST /__snaperro__/scenarios
-
-**リクエスト**:
-```json
-{ "name": "新規シナリオ" }
-```
-
-**レスポンス**:
-```json
-{ "name": "新規シナリオ" }
-```
-
----
-
-### PUT /__snaperro__/scenarios/current
-
-**リクエスト**:
-```json
-{ "name": "エラー系" }
-```
-
-**レスポンス**:
 ```json
 {
-  "scenario": "エラー系",
-  "files": [...]
+  "protocolVersion": 2,
+  "type": "recording.list",
+  "scenarioId": "scn_0123456789abcdef",
+  "limit": 50
 }
 ```
 
----
+schema は strict です。未知 field、不正な prefix の ID、範囲外 revision/limit、参照不整合を許容しません。
 
-### PUT /__snaperro__/scenarios/:name/rename
+## command type
 
-**リクエスト**:
-```json
-{ "newName": "新しい名前" }
-```
+| type | 操作 | 競合 token |
+| --- | --- | --- |
+| `mode.set` | mode を変更 | catalog revision |
+| `scenario.select` | 現在の scenario を変更または解除 | catalog revision |
+| `folder.create` | folder を作成 | catalog revision |
+| `folder.rename` | folder 名を変更 | catalog revision |
+| `folder.delete` | folder と配下 scenario を削除 | catalog revision |
+| `folder.import` | stage 済み archive を commit | catalog revision |
+| `scenario.create` | folder 内へ scenario を作成 | catalog revision |
+| `scenario.rename` | scenario 名を変更 | catalog revision |
+| `scenario.duplicate` | scenario を別の安定 ID で複製 | catalog revision |
+| `scenario.delete` | scenario を削除 | catalog revision |
+| `recording.create` | recording を作成 | scenario revision |
+| `recording.import` | stage 済み recording ZIP を作成として commit | scenario revision |
+| `recording.update` | recording を更新 | scenario + content revision |
+| `recording.delete` | recording を削除 | scenario + content revision |
 
----
+同じ revision に対する書き込みが先に commit されていた場合は `REVISION_CONFLICT` です。client は最新状態を query し直し、利用者の変更を黙って上書きしません。
 
-### POST /__snaperro__/scenarios/:name/duplicate
+## query type
 
-**リクエスト**:
-```json
-{ "newName": "コピー先" }
-```
+| type | 読み取る内容 |
+| --- | --- |
+| `runtime.snapshot` | runtime、revision、mode、現在の scenario、folder/scenario summary。recording は含めない |
+| `folder.list` | folder 一覧 |
+| `folder.export` | folder ZIP の `DownloadTicket` |
+| `scenario.list` | scenario 一覧。folder で絞り込み可能 |
+| `scenario.get` | scenario 詳細 |
+| `recording.list` | recording summary の page |
+| `recording.search` | scenario 内検索の page |
+| `recording.get` | recording metadata |
+| `recording.body` | request または response の `BodyRef` |
+| `recording.export` | body を含む移植可能な recording ZIP の `DownloadTicket` |
+| `body.download` | raw body の `DownloadTicket` |
 
----
+list/search は cursor pagination です。`limit` の既定値は 50、最大値は 200 です。body byte 列は JSON result に含めません。
 
-### GET /__snaperro__/scenarios/:name/download
+## body stream
 
-**レスポンス**: ZIPファイル（`application/zip`）
+`POST /bodies` の request body は raw bytes です。`Content-Type` と `Content-Encoding` は blob metadata に保存し、成功すると status `201` で次の `BodyRef` を返します。
 
----
-
-### POST /__snaperro__/scenarios/upload
-
-**リクエスト**: `multipart/form-data`
-- `file`: ZIPファイル
-
----
-
-### GET /__snaperro__/scenarios/:scenario/files
-
-**レスポンス**:
 ```json
 {
-  "files": [
-    { "filename": "api_users_001.json", "endpoint": "/api/users", "method": "GET" },
-    { "filename": "api_users_002.json", "endpoint": "/api/users", "method": "POST" }
-  ]
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "size": 1234,
+  "mediaType": "application/json",
+  "contentEncoding": null
 }
 ```
 
----
+download は `body.download` query で capability を発行してから、返された `downloadPath` を一回だけ取得します。exact raw bytes を browser の native download へ流すため、JavaScript memory に全量を保持しません。
 
-### GET /__snaperro__/scenarios/:scenario/files/search
+body と folder/recording ZIP の upload 上限は `storage.maxImportBytes` です。宣言された `Content-Length` だけでなく、実際に受信した byte 数でも検査します。不正な宣言値は stream 処理を始める前に拒否します。
 
-**クエリパラメータ**:
-- `q`: 検索クエリ
+## folder transfer
 
-**例**:
-```
-GET /__snaperro__/scenarios/demo/files/search?q=users
-```
+import は二段階です。
 
-**レスポンス**:
+1. `Content-Type: application/zip` の raw stream を `/transfers/imports?filename=folder.zip` へ送る
+2. 返された `transferId` と folder 名を `folder.import` command へ渡す
+
+ZIP は stage 時に format、path、entry、展開 size を検証します。`folder.import` command は `transferId` を単回 claim し、blob を materialize しながら size と digest を検証して、すべてが成功してから catalog へ commit します。失敗した archive を部分反映しません。`retryable: true` の失敗では claim を解放して同じ transfer を再試行でき、それ以外の失敗では消費します。
+
+成功resultは `revision`、作成した `folder`、`recordingsInvalidated: true` だけを返します。全scenario配列は返さず、GUIはsnapshotを再取得します。catalog/manifest aggregate上限を超える場合は `413 PAYLOAD_LIMIT_EXCEEDED` で、catalogは変更しません。
+
+export は `folder.export` query で `DownloadTicket` を得ます。ZIP は scenario/recording metadata と deduplicate した body blob を含むため、別の v2 store へ移植できます。
+
+## recording transfer
+
+recording export も metadata だけの JSON ではなく、参照する request/response blob を含む self-contained ZIP です。永続 ID、revision、timestamp、派生 fingerprint は archive に含めません。folder archiveだけはv1 duplicate shadowの `matchable` を保持します。import 先で新しい ID を割り当て、blob 実体を検証して fingerprint を再導出します。
+
+import は `/transfers/recording-imports` へ ZIP を stage し、返された `transferId`、対象 `scenarioId`、`expectedScenarioRevision` を `recording.import` command へ渡します。JSON import は body を含まない従来の手動入力として GUI で引き続き利用できます。
+
+## download capability
+
+`folder.export`、`recording.export`、`body.download` の result は次の `download` を返します。
+
 ```json
 {
-  "files": [
-    { "filename": "api_users_001.json", "endpoint": "/api/users", "method": "GET" }
-  ]
-}
-```
-
----
-
-### GET /__snaperro__/scenarios/:scenario/files/:filename
-
-**レスポンス**:
-```json
-{
-  "endpoint": "/api/users/:id",
-  "method": "GET",
-  "request": {
-    "pathParams": { "id": "123" },
-    "queryParams": {},
-    "headers": {},
-    "body": null
-  },
-  "response": {
-    "status": 200,
-    "headers": { "content-type": "application/json" },
-    "body": { "id": "123", "name": "John" }
+  "download": {
+    "downloadPath": "/__snaperro__/downloads/<43-character-capability>",
+    "expiresAt": "2026-08-24T00:00:00.000Z",
+    "filename": "recording.snaperro.zip",
+    "mediaType": "application/zip",
+    "size": 12345
   }
 }
 ```
 
----
+capability は暗号学的乱数から作り、server は hash だけを memory に保持します。既定 60 秒で失効し、取得開始前に atomic に消費します。同時取得は一つだけ成功し、使用済み・期限切れ・未知の値は同じ `404` です。期限判定は server clock を正本とし、browser は clock skew で有効な取得を拒まないよう `expiresAt` を事前判定しません。shutdown 開始後は新しい ticket を発行せず、生成中の ZIP と取得中の body/ZIP stream を中断します。ZIP 一時 file は完了、中断、期限切れ、shutdown のいずれでも削除します。再試行時は query から新しい ticket を発行してください。
 
-### PUT /__snaperro__/scenarios/:scenario/files/:filename
+## error
 
-**リクエスト**: `FileData` オブジェクト（JSON）
-
----
-
-### DELETE /__snaperro__/scenarios/:scenario/files/:filename
-
-**レスポンス**:
-```json
-{ "deleted": true }
-```
-
----
-
-## エラーレスポンス
+error response は次の envelope です。
 
 ```json
 {
-  "error": "エラーメッセージ"
+  "error": {
+    "code": "REVISION_CONFLICT",
+    "message": "...",
+    "retryable": true,
+    "details": {}
+  }
 }
 ```
 
-**ステータスコード**:
-- `400`: リクエスト不正
-- `404`: リソースが見つからない
-- `500`: サーバーエラー
+代表的な status は invalid input `400`、unauthorized `401`、forbidden origin `403`、not found `404`、revision/name conflict `409`、payload too large `413`、store lease `423`、upstream unavailable `502` です。`retryable: true` の場合は `Retry-After` も返します。
 
----
+## 認証と origin
 
-## 使用例
+`server.controlToken` が設定されている場合、すべての `/__snaperro__/v2/*` request に `Authorization: Bearer <token>` が必要です。browser の `Origin` が同一 origin でない場合は `server.allowedOrigins` に完全な origin URL を追加します。
 
-### curlでモード変更
-```bash
-curl -X PUT http://localhost:3333/__snaperro__/mode \
-  -H "Content-Type: application/json" \
-  -d '{"mode": "mock"}'
-```
-
-### curlでシナリオ切り替え
-```bash
-curl -X PUT http://localhost:3333/__snaperro__/scenarios/current \
-  -H "Content-Type: application/json" \
-  -d '{"name": "エラー系"}'
-```
-
-### curlでファイル検索
-```bash
-curl "http://localhost:3333/__snaperro__/scenarios/demo/files/search?q=users"
-```
-
----
-
-## 関連ドキュメント
-
-- [sse.md](sse.md) - SSEイベントの詳細
-- [scenario.md](scenario.md) - シナリオ管理
-- [file-storage.md](file-storage.md) - ファイル管理
+`/__snaperro__/downloads/:capability` は bearer middleware の外側です。capability 自体だけを認可情報として扱うため、control token を URL、redirect、download request へ含めません。download path は同一 origin の相対 path に限定します。詳細は [セキュリティ](security.md) を参照してください。

@@ -1,22 +1,21 @@
-// Type exports
-
-export type { ServerOptions } from "./handlers/index.js";
-// Server functionality exports
-export { startServer } from "./handlers/index.js";
-export type { ApiConfig, SnaperroConfig } from "./types/config.js";
-// Schema exports
-export {
-  ApiConfigSchema,
-  defineConfig,
-  SnaperroConfigSchema,
-} from "./types/config.js";
+export * from "../shared/contracts-v2/index.js";
 export type {
-  FileData,
-  FileRequest,
-  FileResponse,
-} from "./types/file.js";
+  CompiledSnaperroConfigV2,
+  SnaperroConfigV2Input as SnaperroConfig,
+  V2ApiConfig as ApiConfig,
+} from "./v2/config/config.js";
 export {
-  FileDataSchema,
-  FileRequestSchema,
-  FileResponseSchema,
-} from "./types/file.js";
+  BUILTIN_APIS_V2,
+  defineConfigV2,
+  defineConfigV2 as defineConfig,
+  SnaperroConfigV2Schema,
+  V2ApiConfigSchema,
+} from "./v2/config/config.js";
+export { loadConfigV2 } from "./v2/config/loader.js";
+export {
+  createV2App,
+  createV2Server,
+  ImmutableConfigChangeError,
+  SnaperroV2Server,
+} from "./v2/server/index.js";
+export { VERSION } from "./version.js";
